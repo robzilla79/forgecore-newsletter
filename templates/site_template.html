@@ -8,20 +8,24 @@
   <link rel="canonical" href="{{ canonical }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
   <div class="site-shell">
+
     <header class="site-header">
-      <div class="site-header-inner">
-        <a href="/" class="site-logo">&#9881;&#65039; ForgeCore</a>
+      <div class="header-inner">
+        <a href="/" class="site-logo">ForgeCore</a>
         <nav class="site-nav">
+          <a href="/">Home</a>
           <a href="/archive/">Archive</a>
           <a href="/about/">About</a>
           <a href="/advertise/">Advertise</a>
         </nav>
-        <a class="btn-subscribe" href="{{ subscribe_url | default('#') }}">Subscribe Free &rarr;</a>
+        <div class="header-actions">
+          <a href="{{ subscribe_url | default('#') }}" class="btn-subscribe">Subscribe</a>
+        </div>
       </div>
     </header>
 
@@ -30,15 +34,16 @@
     </main>
 
     <footer class="site-footer">
-      <div class="site-footer-inner">
-        <span>&copy; ForgeCore AI Productivity Brief</span>
+      <div class="footer-inner">
+        <span>ForgeCore &copy; {{ year | default('2026') }}</span>
         <nav class="footer-nav">
-          <a href="/archive/">Archive</a>
-          <a href="/about/">About</a>
-          <a href="/advertise/">Advertise</a>
+          <a href="{{ subscribe_url | default('#') }}">Join Free &rarr;</a>
+          <a href="/advertise/">&bull; Advertise with us</a>
+          <a href="/about/">&bull; About</a>
         </nav>
       </div>
     </footer>
+
   </div>
 </body>
 </html>
