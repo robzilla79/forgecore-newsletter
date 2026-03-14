@@ -1,0 +1,122 @@
+[
+  {
+    "source": "Ollama Blog",
+    "tags": [
+      "ollama",
+      "local-llm"
+    ],
+    "title": "The simplest and fastest way to setup OpenClaw",
+    "published": "Mon, 23 Feb 2026 00:00:00 +0000",
+    "link": "https://ollama.com/blog/openclaw-tutorial",
+    "summary": "Setup OpenClaw in under two minutes with a single Ollama command.",
+    "url": "https://ollama.com/blog/openclaw-tutorial",
+    "status": "ok",
+    "text": "The simplest and fastest way to setup OpenClaw\nFebruary 23, 2026\nOpenClaw is a personal AI assistant that can clear your inbox, send emails, manage your calendar, and complete other tasks via messaging apps like WhatsApp, Telegram, iMessage, or any chat app you already use.\nIt all runs on your own hardware, and with Ollama 0.17, it’s now a single command to get started.\nWhat you’ll need\n- Ollama 0.17 or later\n- Node.js (npm is used to install OpenClaw)\n- Mac or Linux system (Windows users can install OpenClaw via WSL - Windows Subsystem for Linux)\nStep 1: Run the command\nOpen a terminal, and type in:\nollama launch openclaw --model kimi-k2.5:cloud\nNote: Other models can also be configured. See\nollama launch openclaw\nfor recommended models.\nOllama handles everything from here.\nStep 2: Install OpenClaw\nIf OpenClaw isn’t already on your system, Ollama detects that and prompts you for installation.\nOllama will automatically install and configure OpenClaw for you.\nStep 3: Start chatting\nThis is it! OpenClaw will open up in the terminal where you can start chatting with your AI assistant.\nWeb search\nIf you selected a model from Ollama’s cloud, Ollama installs the web search plugin automatically. This allows OpenClaw to perform web searches for the latest and up-to-date information.\nLocal models work out of the box without additional plugins.\nConnect messaging apps\nOpenClaw can connect to messaging platforms like WhatsApp, Telegram, Slack, Discord, or iMessage to chat with your models from anywhere.\nopenclaw configure --section channels\nAfter configuring, make sure you select Finished\nto save your desired configuration.\nSelecting a model\nOllama shows a model selector with recommended and available models. Agents work best with at least 64k context length.\nOllama’s cloud models have full context length, which provide the best experience with agents like OpenClaw.\nCloud models:\n| Model | Description |\n|---|---|\n| kimi-k2.5:cloud | Multimodal reasoning with subagents |\n| minimax-m2.5:cloud | Fast, efficient coding and real-world productivity |\n| glm-5:cloud | Reasoning and code generation |\nLocal models (requires GPU VRAM):\n| Model | VRAM | Description |\n|---|---|---|\n| glm-4.7-flash | ~25 GB | Reasoning and code generation |\n| qwen3-coder | ~25 GB | Efficient all-purpose assistant |\nRunning securely\nOpenClaw has the ability to read files and execute actions when tools are enabled. Ensure that you run OpenClaw in an isolated environment and are aware of the risks with giving OpenClaw access to your system.\nSee the OpenClaw security documentation for more details.",
+    "file": "research/raw/2026-03-09-the-simplest-and-fastest-way-to-setup-openclaw.md"
+  },
+  {
+    "source": "Ollama Blog",
+    "tags": [
+      "ollama",
+      "local-llm"
+    ],
+    "title": "Subagents and web search in Claude Code",
+    "published": "Mon, 16 Feb 2026 00:00:00 +0000",
+    "link": "https://ollama.com/blog/web-search-subagents-claude-code",
+    "summary": "Ollama now supports subagents and web search in Claude Code.",
+    "url": "https://ollama.com/blog/web-search-subagents-claude-code",
+    "status": "ok",
+    "text": "Subagents and web search in Claude Code\nFebruary 16, 2026\nOllama now supports subagents and web search in Claude Code. No MCP servers or API keys required.\nGet started\nollama launch claude --model minimax-m2.5:cloud\nIt works with any model on Ollama’s cloud.\nSubagents\nSubagents can run tasks in parallel, such as file search, code exploration, and research, each in their own context.\nLonger coding sessions stay productive. Side tasks don’t fill the context with noise.\nSome models will naturally trigger subagents when needed (minimax-m2.5, glm-5, kimi-k2.5), but you can force triggering subagents by telling the model to “use/spawn/create subagents”\nExample prompts:\n> spawn subagents to explore the auth flow, payment integration, and notification system\n> audit security issues, find performance bottlenecks, and check accessibility in parallel with subagents\n> create subagents to map the database queries, trace the API routes, and catalog error handling patterns\nWeb search\nOllama’s web search is now built into the Anthropic compatibility layer. When a model needs current information, Ollama handles the search and returns results directly without any additional configuration.\nSubagents can leverage web search to research topics in parallel and come back with actionable results.\n> research the postgres 18 release notes, audit our queries for deprecated patterns, and create migration tasks\n> create 3 research agents to research how our top 3 competitors price their API tiers, compare against our current pricing, and draft recommendations\n> study how top open source projects handle their release process, review our CI/CD pipeline, and draft improvements\nRecommended cloud models\nminimax-m2.5:cloud\nglm-5:cloud\nkimi-k2.5:cloud\nLearn more\n- ollama launch for more integrations\n- Claude Code with Ollama for basic setup\n- Web search API for standalone usage",
+    "file": "research/raw/2026-03-09-subagents-and-web-search-in-claude-code.md"
+  },
+  {
+    "source": "Ollama Blog",
+    "tags": [
+      "ollama",
+      "local-llm"
+    ],
+    "title": "OpenClaw",
+    "published": "Sun, 01 Feb 2026 00:00:00 +0000",
+    "link": "https://ollama.com/blog/openclaw",
+    "summary": "OpenClaw is a personal AI assistant that connects your messaging apps to local AI coding agents, all running on your own device.",
+    "url": "https://ollama.com/blog/openclaw",
+    "status": "ok",
+    "text": "OpenClaw\nFebruary 1, 2026\nOpenClaw is a personal AI assistant that bridges your favorite messaging platforms to AI coding agents through a centralized gateway. It runs locally on your own devices, keeping your conversations and code private.\nOpenClaw integrates with WhatsApp, Telegram, Slack, Discord, iMessage, and other messaging services, allowing you to interact with AI coding agents from anywhere.\nGet started\nStart by installing OpenClaw\ncurl -fsSL https://openclaw.ai/install.sh | bash\nWindows\niwr -useb https://openclaw.ai/install.ps1 | iex\nRunning with Ollama\nOnce installed, you can launch OpenClaw directly with Ollama to connect local/cloud models:\nollama launch openclaw\nIf you want to configure OpenClaw without immediately starting the service:\nollama launch openclaw --config\nThe gateway will auto-reload if it’s already running.\n##\nRecommended models\nOpenClaw requires a larger context length to complete tasks. It is recommended to use a context length of at least 64k tokens.\nHere are some models that work well with OpenClaw:\n| Model | Description |\n|---|---|\n| qwen3-coder | Optimized for coding tasks |\n| glm-4.7 | Strong general-purpose model |\n| glm-4.7-flash | Balanced performance and speed |\n| gpt-oss:20b | Balanced performance and speed |\n| gpt-oss:120b | Improved capability |\nOllama’s cloud models are available for free to start. Search for models on ollama.com.\n| Model | Description |\n|---|---|\n| kimi-k2.5 | Powerful 1T parameter model for agentic tasks |\n| minimax-m2.1 | Excellent multilingual capabilities |\n| glm-4.7 | Strong general-purpose model |\n| gpt-oss:20b | Balanced performance and speed |\n| gpt-oss:120b | Improved capability |\nPlease see more models on ollama.com.\nExample screen captures\nConnecting to WhatsApp\nNote\nOpenClaw was previously known as Clawdbot and Moltbot. The clawdbot\ncommand still works as an alias.",
+    "file": "research/raw/2026-03-09-openclaw.md"
+  },
+  {
+    "source": "Ollama Blog",
+    "tags": [
+      "ollama",
+      "local-llm"
+    ],
+    "title": "ollama launch",
+    "published": "Fri, 23 Jan 2026 00:00:00 +0000",
+    "link": "https://ollama.com/blog/launch",
+    "summary": "ollama launch is a new command which sets up and runs coding tools like Claude Code, OpenCode, and Codex with local or cloud models. No environment variables or config files needed.",
+    "url": "https://ollama.com/blog/launch",
+    "status": "ok",
+    "text": "ollama launch\nJanuary 23, 2026\nollama launch\nis a new command which sets up and runs your favorite coding tools like Claude Code, OpenCode, and Codex with local or cloud models. No environment variables or config files needed.\nGet started\nDownload Ollama v0.15+, then open a terminal and run:\n# ~23 GB VRAM required with 64000 tokens context length\nollama pull glm-4.7-flash\n# or use a cloud model (with full context length)\nollama pull glm-4.7:cloud\nOne command setup\nClaude Code:\nollama launch claude\nOpenCode:\nollama launch opencode\nThis will guide you to select models and launch your chosen integration. No environment variables or config files needed.\nSupported integrations\n- Claude Code\n- OpenCode\n- Codex\n- Droid\nRecommended models for coding\nNote: Coding tools work best with a full context length. Update the context length in Ollama’s settings to at least 64000 tokens. See the context length documentation on how to make changes.\nLocal models:\nglm-4.7-flash\nqwen3-coder\ngpt-oss:20b\nCloud models:\nglm-4.7:cloud\nminimax-m2.1:cloud\ngpt-oss:120b-cloud\nqwen3-coder:480b-cloud\nExtended coding sessions\nIf you have trouble running these models locally, Ollama also offers a cloud service with hosted models that has full context length and generous limits even at the free tier.\nWith this update Ollama now offers more usage and an extended 5-hour coding session window. See ollama.com/pricing for details.\nConfigure only\nTo configure a tool without launching it immediately:\nollama launch opencode --config",
+    "file": "research/raw/2026-03-09-ollama-launch.md"
+  },
+  {
+    "source": "Ollama Blog",
+    "tags": [
+      "ollama",
+      "local-llm"
+    ],
+    "title": "Image generation (experimental)",
+    "published": "Tue, 20 Jan 2026 00:00:00 +0000",
+    "link": "https://ollama.com/blog/image-generation",
+    "summary": "Generate images locally with Ollama on macOS. Windows and Linux support coming soon.",
+    "url": "https://ollama.com/blog/image-generation",
+    "status": "ok",
+    "text": "Image generation (experimental)\nJanuary 20, 2026\nOllama now supports image generation on macOS, with Windows and Linux coming soon.\nollama run x/z-image-turbo \"your prompt\"\nImages save to your current directory. Terminals that support image rendering (Ghostty, iTerm2, etc.) can preview images directly inline.\nModels\nZ-Image Turbo\nollama run x/z-image-turbo\nZ-Image Turbo is a 6 billion parameter text-to-image model from Alibaba’s Tongyi Lab. It generates photorealistic images and handles bilingual text rendering in both English and Chinese.\n- Photorealistic output: Strong at generating realistic photographs, portraits, and scenes\n- Bilingual text rendering: Accurately renders both English and Chinese text in images\n- Apache 2.0: Open weights available for commercial use\nExamples\nPhotorealistic portraits:\nYoung woman in a cozy coffee shop, natural window lighting, wearing a cream knit sweater, holding a ceramic mug, soft bokeh background with warm ambient lights, candid moment, shot on 35mm film\nChinese calligraphy:\nTraditional Chinese calligraphy brush painting style, the characters \"山高水长\" written in elegant black ink on rice paper, red seal stamp in corner, minimalist composition\nCreative composition:\nSurreal double exposure portrait, woman's silhouette filled with blooming cherry blossom trees, soft pink and white petals floating, dreamy ethereal atmosphere\nFLUX.2 Klein\nBlack Forest Labs’ fastest image-generation model to date, available in 4B and 9B parameter sizes.\nFLUX.2 Klein handles readable text in images well, useful for UI mockups and designs with typography.\n- 4B model: Apache 2.0, fully open for commercial use\n- 9B model: FLUX Non-Commercial License v2.1\nollama run x/flux2-klein\nExamples\nText rendering:\nA neon sign reading \"OPEN 24 HOURS\" in a rainy city alley at night, reflections on wet pavement\nProduct photography:\nMatte black coffee tumbler on wooden desk, morning sunlight casting long shadows, steam rising, commercial product shot\nConfiguration\nCustomize image generation with these parameters:\nImage location\nGenerated images save to your current directory. Change directories in your terminal to save images elsewhere.\nImage sizes\nModify width and height using the /set width\nand /set height\ncommands. Smaller images generate faster and use less memory.\nNumber of steps\nSteps control how many iterations the model runs. Fewer steps = faster but less detailed. Too many steps can cause artifacts. Ollama defaults to the recommended step count for each model.\nRandom seed\nSet a seed for reproducible results, useful for iterating on a subject or sharing exact outputs. Different seeds produce different images, even with the same prompt.\nNegative prompts\nNegative prompts guide the model on what you don’t want in the image.\nWhat’s next\n- Windows and Linux support\n- Additional image generation models, and image editing",
+    "file": "research/raw/2026-03-09-image-generation-experimental.md"
+  },
+  {
+    "source": "Ollama Blog",
+    "tags": [
+      "ollama",
+      "local-llm"
+    ],
+    "title": "Claude Code with Anthropic API compatibility",
+    "published": "Fri, 16 Jan 2026 00:00:00 +0000",
+    "link": "https://ollama.com/blog/claude",
+    "summary": "Ollama is now compatible with the Anthropic Messages API, making it possible to use tools like Claude Code with open models.",
+    "url": "https://ollama.com/blog/claude",
+    "status": "ok",
+    "text": "Claude Code with Anthropic API compatibility\nJanuary 16, 2026\nOllama v0.14.0 and later are now compatible with the Anthropic Messages API, making it possible to use tools like Claude Code with open-source models.\nRun Claude Code with local models on your machine, or connect to cloud models through ollama.com.\nUsing Claude Code with Ollama\nClaude Code is Anthropic’s agentic coding tool that lives in your terminal. With Anthropic API support, you can now use Claude Code with any Ollama model.\nGet started\nInstall Claude Code\nmacOS, Linux, WSL:\ncurl -fsSL https://claude.ai/install.sh | bash\nWindows PowerShell:\nirm https://claude.ai/install.ps1 | iex\nWindows CMD:\ncurl -fsSL https://claude.ai/install.cmd -o install.cmd && install.cmd && del install.cmd\nConnect Ollama\nConfigure environment variables to use Ollama:\nexport ANTHROPIC_AUTH_TOKEN=ollama\nexport ANTHROPIC_BASE_URL=http://localhost:11434\nRun Claude Code with an Ollama model:\nclaude --model gpt-oss:20b\nModels in Ollama’s Cloud also work with Claude Code:\nclaude --model glm-4.7:cloud\nIt is recommended to run a model with at least 32K tokens context length.\nFor more information, please see context length documentation on how to make changes.\nOllama’s cloud models always run at their full context length.\nRecommended models\nFor coding use cases with Claude Code:\nLocal models:\ngpt-oss:20b\nqwen3-coder\nCloud models:\nglm-4.7:cloud\nminimax-m2.1:cloud\nUsing the Anthropic SDK\nExisting applications using the Anthropic SDK can connect to Ollama by changing the base URL. See the Anthropic compatibility documentation for details.\nPython\nimport anthropic\nclient = anthropic.Anthropic(\nbase_url='http://localhost:11434',\napi_key='ollama', # required but ignored\n)\nmessage = client.messages.create(\nmodel='qwen3-coder',\nmessages=[\n{'role': 'user', 'content': 'Write a function to check if a number is prime'}\n]\n)\nprint(message.content[0].text)\nJavaScript\nimport Anthropic from '@anthropic-ai/sdk'\nconst anthropic = new Anthropic({\nbaseURL: 'http://localhost:11434',\napiKey: 'ollama',\n})\nconst message = await anthropic.messages.create({\nmodel: 'qwen3-coder',\nmessages: [{ role: 'user', content: 'Write a function to check if a number is prime' }],\n})\nconsole.log(message.content[0].text)\nTool calling\nModels can use tools to interact with external systems:\nimport anthropic\nclient = anthropic.Anthropic(\nbase_url='http://localhost:11434',\napi_key='ollama',\n)\nmessage = client.messages.create(\nmodel='qwen3-coder',\ntools=[\n{\n'name': 'get_weather',\n'description': 'Get the current weather in a location',\n'input_schema': {\n'type': 'object',\n'properties': {\n'location': {\n'type': 'string',\n'description': 'The city and state, e.g. San Francisco, CA'\n}\n},\n'required': ['location']\n}\n}\n],\nmessages=[{'role': 'user', 'content': \"What's the weather in San Francisco?\"}]\n)\nfor block in message.content:\nif block.type == 'tool_use':\nprint(f'Tool: {block.name}')\nprint(f'Input: {block.input}')\nSupported features\n- Messages and multi-turn conversations\n- Streaming\n- System prompts\n- Tool calling / function calling\n- Extended thinking\n- Vision (image input)\nFor a complete list of supported features, see the Anthropic compatibility documentation.\nLearn more\nFor more detailed setup instructions and configuration options, see the Claude Code guide.",
+    "file": "research/raw/2026-03-09-claude-code-with-anthropic-api-compatibility.md"
+  },
+  {
+    "source": "Ollama Blog",
+    "tags": [
+      "ollama",
+      "local-llm"
+    ],
+    "title": "OpenAI Codex with Ollama",
+    "published": "Thu, 15 Jan 2026 00:00:00 +0000",
+    "link": "https://ollama.com/blog/codex",
+    "summary": "Open models can be used with OpenAI's Codex CLI through Ollama. Codex can read, modify, and execute code in your working directory using models such as gpt-oss:20b, gpt-oss:120b, or other open-weight alternatives.",
+    "url": "https://ollama.com/blog/codex",
+    "status": "ok",
+    "text": "OpenAI Codex with Ollama\nJanuary 15, 2026\nOpen models can be used with OpenAI’s Codex CLI through Ollama. Codex can read, modify, and execute code in your working directory using models such as gpt-oss:20b\n, gpt-oss:120b\n, or other open-weight alternatives.\nGet started\nInstall Codex CLI:\nnpm install -g @openai/codex\nStart Codex with the --oss\nflag:\ncodex --oss\nBy default, Codex will use the local gpt-oss:20b\nmodel.\nNote: Codex requires a large context window. We recommend at least 32K tokens. See the documentation for how to adjust context length in Ollama.\nChanging models\nYou can switch to a different model using the -m\nflag:\ncodex --oss -m gpt-oss:120b\nCloud models\nAll models on Ollama Cloud work with Codex.\ncodex --oss -m gpt-oss:120b-cloud\nLearn more\nFor more detailed setup instructions and configuration options, see the Codex integration guide.",
+    "file": "research/raw/2026-03-09-openai-codex-with-ollama.md"
+  },
+  {
+    "source": "Ollama Blog",
+    "tags": [
+      "ollama",
+      "local-llm"
+    ],
+    "title": "OpenAI gpt-oss-safeguard",
+    "published": "Wed, 29 Oct 2025 00:00:00 +0000",
+    "link": "https://ollama.com/blog/gpt-oss-safeguard",
+    "summary": "Ollama is partnering with OpenAI and ROOST (Robust Open Online Safety Tools) to bring the latest gpt-oss-safeguard reasoning models to users for safety classification tasks. gpt-oss-safeguard models are available in two sizes: 20B and 120B, and are permissively licensed under the Apache 2.0 license.",
+    "url": "https://ollama.com/blog/gpt-oss-safeguard",
+    "status": "ok",
+    "text": "OpenAI gpt-oss-safeguard\nOctober 29, 2025\nOllama is partnering with OpenAI and ROOST (Robust Open Online Safety Tools) to bring the latest gpt-oss-safeguard reasoning models to users for safety classification tasks. gpt-oss-safeguard\nmodels are available in two sizes: 20B and 120B, and are permissively licensed under the Apache 2.0 license.\nGet started\n- Download Ollama\n- Open a terminal and run the model:\n20B:\nollama run gpt-oss-safeguard:20b\n120B:\nollama run gpt-oss-safeguard:120b\nHighlights\n- Trained to reason about safety: Trained and tuned for safety reasoning to accommodate use cases like LLM input-output filtering, online content labeling and offline labeling for Trust and Safety use cases.\n- Bring your own policy: Interprets your written policy, so it generalizes across products and use cases with minimal engineering.\n- Reasoned decisions, not just scores: Gain complete access to the model’s reasoning process, facilitating easier debugging and increased trust in policy decisions. Keep in mind Raw CoT is meant for developers and safety practitioners. It’s not intended for exposure to general users or use cases outside of safety contexts.\n- Configurable reasoning effort: Easily adjust the reasoning effort (low, medium, high) based on your specific use case and latency needs.\n- Permissive Apache 2.0 license: Build freely without copyleft restrictions or patent risk—ideal for experimentation, customization, and commercial deployment.\nPerformance results\nOpenAI evaluated the gpt-oss-safeguard models on both internal and external evaluation sets. In the internal evaluation, OpenAI provided multiple policies simultaneously to gpt-oss-safeguard at inference time. For each test input, OpenAI evaluated whether gpt-oss-safeguard correctly classifies the text under all of the included policies. This is a challenging task—the model is counted as accurate only if it exactly matches the golden set labels for all the included policies.\nOpenAI further evaluated these models on the moderation dataset they released with their 2022 research paper and on ToxicChat, a public benchmark based on user queries to an open-source chatbot.\n“gpt-oss-safeguard is the first open source reasoning model with a ‘bring your own policies and definitions of harm’ design. Organizations deserve to freely study, modify and use critical safety technologies and be able to innovate. In our testing, it was skillful at understanding different policies, explaining its reasoning, and showing nuance in applying the policies, which we believe will be beneficial to builders and safety teams.” - Vinay Rao, CTO of ROOST\nAbout ROOST (Robust Open Online Safety Tools)\n*ROOST is a non-profit organization focused on providing accessible, high-quality, open source safety tools for digital organizations of all kinds in the age of AI. Established in 2025 by a diverse group of leading technology companies, philanthropic organizations and academic institutions, ROOST believes that solutions for online safety can best be achieved by providing organizations with innovative open source tools and technical support.*\nReference\n- OpenAI blog\n- OpenAI gpt-oss-safeguard developer cookbook\n- ROOST’s model community repository on GitHub",
+    "file": "research/raw/2026-03-09-openai-gpt-oss-safeguard.md"
+  }
+]

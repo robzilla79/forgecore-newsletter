@@ -1,0 +1,35 @@
+{
+  "passed": true,
+  "checks": {
+    "exists": true,
+    "issue_path": "C:/Users/RKSFAMILY/Documents/ai_projects/newsletter_engine/content/issues/ISSUE-2026-03-14.md",
+    "word_count": 885,
+    "required_sections_present": [
+      "## Hook",
+      "## Top Story",
+      "## Why It Matters",
+      "## Highlights",
+      "## Tool of the Week",
+      "## Workflow",
+      "## CTA",
+      "## Sources"
+    ],
+    "url_count": 11,
+    "source_links": [
+      "https://ollama.com/blog/openclaw",
+      "https://ollama.com/blog/launch",
+      "https://ollama.com/blog/image-generation",
+      "https://ollama.com/blog/claude",
+      "https://ollama.com/blog/codex",
+      "https://ollama.com/blog/gpt-oss-safeguard",
+      "https://ollama.com/blog/claude",
+      "https://ollama.com/blog/image-generation",
+      "https://ollama.com/blog/launch",
+      "https://ollama.com/blog/codex",
+      "https://ollama.com/blog/gpt-oss-safeguard"
+    ],
+    "has_code_block": true,
+    "errors": []
+  },
+  "issue": "C:/Users/RKSFAMILY/Documents/ai_projects/newsletter_engine/content/issues/ISSUE-2026-03-14.md"
+}

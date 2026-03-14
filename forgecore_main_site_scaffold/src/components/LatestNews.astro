@@ -1,0 +1,12 @@
+---
+import { latestNews } from '../data';
+---
+<div class="grid-3">
+  {latestNews.map((post) => (
+    <article class="panel">
+      <div class="meta"><span>{post.date}</span></div>
+      <h3><a href={post.href}>{post.title}</a></h3>
+      <p><a href={post.href}>Open issue</a></p>
+    </article>
+  ))}
+</div>

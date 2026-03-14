@@ -1,0 +1,14 @@
+{
+  "passed": false,
+  "checks": {
+    "exists": false,
+    "word_count": 0,
+    "headers": 0,
+    "has_cta": false,
+    "has_hook": false,
+    "has_code": false,
+    "has_tool_callout": false,
+    "placeholders": []
+  },
+  "issue": "C:/Users/RKSFAMILY/Documents/ai_projects/forgecore_newsletter_ai_publisher/content/issues/ISSUE-2026-03-10.md"
+}

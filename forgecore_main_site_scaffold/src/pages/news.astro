@@ -1,0 +1,21 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SectionHeader from '../components/SectionHeader.astro';
+import LatestNews from '../components/LatestNews.astro';
+---
+<BaseLayout title="News | ForgeCore" description="Research, signals, and operating notes from the ForgeCore system.">
+  <section class="section">
+    <div class="container">
+      <SectionHeader eyebrow="News" title="Research, signals, and operating notes from the ForgeCore system." description="The publication engine captures current issues, validates demand, and creates visible artifacts that feed the wider system." />
+      <LatestNews />
+      <div class="cta-band" style="margin-top:2rem;">
+        <h3>Archive and subscription</h3>
+        <p>Use the publication engine for the full archive, issue pages, and email signup.</p>
+        <div style="display:flex;gap:0.8rem;flex-wrap:wrap;">
+          <a class="btn btn-primary" href="https://news.forgecore.co/">Visit the archive</a>
+          <a class="btn btn-secondary" href="https://news.forgecore.co/about/">About the publication</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

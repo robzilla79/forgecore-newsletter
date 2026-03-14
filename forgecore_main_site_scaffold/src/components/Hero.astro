@@ -1,0 +1,41 @@
+---
+interface Props {
+  eyebrow: string;
+  title: string;
+  description: string;
+  primaryLabel?: string;
+  primaryHref?: string;
+  secondaryLabel?: string;
+  secondaryHref?: string;
+}
+const {
+  eyebrow,
+  title,
+  description,
+  primaryLabel = 'Subscribe',
+  primaryHref = 'https://news.forgecore.co/',
+  secondaryLabel = 'See the system',
+  secondaryHref = '/system'
+} = Astro.props;
+---
+<section class="container hero">
+  <div>
+    <p class="eyebrow">{eyebrow}</p>
+    <h1>{title}</h1>
+    <p class="muted" style="font-size:1.15rem;max-width:58ch;">{description}</p>
+    <div style="display:flex;gap:0.8rem;flex-wrap:wrap;margin-top:1.5rem;">
+      <a class="btn btn-primary" href={primaryHref}>{primaryLabel}</a>
+      <a class="btn btn-secondary" href={secondaryHref}>{secondaryLabel}</a>
+    </div>
+  </div>
+  <aside class="panel">
+    <p class="eyebrow">Operating posture</p>
+    <h2 style="font-size:1.5rem;">Architecture over hype</h2>
+    <p>ForgeCore identifies opportunity, builds assets, deploys monetization, measures outcomes, and reallocates toward higher-yield structures.</p>
+    <ul>
+      <li>Models are replaceable workers.</li>
+      <li>Channels are selectable modules.</li>
+      <li>Proof matters more than claims.</li>
+    </ul>
+  </aside>
+</section>

@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "checks": {
+    "exists": true,
+    "word_count": 800,
+    "headers": 10,
+    "has_cta": true,
+    "has_hook": true,
+    "has_code": true,
+    "has_tool_callout": true,
+    "placeholders": []
+  },
+  "issue": "/mnt/data/forgecore_newsletter_ai_publisher/content/issues/ISSUE-2026-03-08.md"
+}

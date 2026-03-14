@@ -1,0 +1,11 @@
+---
+import { modules } from '../data';
+---
+<div class="grid-2">
+  {modules.map((item) => (
+    <article class="panel">
+      <h3><a href={item.href}>{item.title}</a></h3>
+      <p>{item.description}</p>
+    </article>
+  ))}
+</div>

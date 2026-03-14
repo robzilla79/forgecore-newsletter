@@ -1,0 +1,13 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SectionHeader from '../../components/SectionHeader.astro';
+import ChangelogList from '../../components/ChangelogList.astro';
+---
+<BaseLayout title="Changelog | ForgeCore" description="A running log of meaningful updates to the ForgeCore site and system.">
+  <section class="section">
+    <div class="reading">
+      <SectionHeader eyebrow="Changelog" title="Visible motion builds trust." description="Every meaningful change should be logged with a date, reason, and impact." />
+      <ChangelogList />
+    </div>
+  </section>
+</BaseLayout>

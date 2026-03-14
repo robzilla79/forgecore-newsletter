@@ -1,0 +1,8 @@
+{
+  "sources": [
+    {"name": "Ollama Blog", "url": "https://ollama.com/blog/rss.xml", "tags": ["ollama", "local-llm"]},
+    {"name": "Hugging Face Blog", "url": "https://huggingface.co/blog/feed.xml", "tags": ["models", "ai-tools"]},
+    {"name": "Anthropic News", "url": "https://www.anthropic.com/news/rss.xml", "tags": ["agents", "productivity"]},
+    {"name": "OpenAI News", "url": "https://openai.com/news/rss.xml", "tags": ["ai-tools", "automation"]}
+  ]
+}

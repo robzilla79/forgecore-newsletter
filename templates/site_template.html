@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{{ title }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="{{ meta_description }}">
+  <link rel="canonical" href="{{ canonical }}">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="site-shell">
+    <header class="site-header">
+      <div class="site-header-inner">
+        <a href="/" class="site-logo">ForgeCore</a>
+        <nav class="site-nav">
+          <a href="/archive/">Archive</a>
+          <a href="/about/">About</a>
+          <a href="/advertise/">Advertise</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="site-main">
+      {{ body | safe }}
+    </main>
+
+    <footer class="site-footer">
+      <p>© ForgeCore AI Productivity Brief</p>
+    </footer>
+  </div>
+</body>
+</html>

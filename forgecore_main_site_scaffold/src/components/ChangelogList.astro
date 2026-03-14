@@ -1,0 +1,12 @@
+---
+import { changelog } from '../data';
+---
+<ul class="list-clean" style="display:grid;gap:1rem;">
+  {changelog.map((entry) => (
+    <li class="panel">
+      <div class="meta"><span>{entry.date}</span></div>
+      <h3>{entry.title}</h3>
+      <p>{entry.impact}</p>
+    </li>
+  ))}
+</ul>

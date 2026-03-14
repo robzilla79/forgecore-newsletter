@@ -1,0 +1,90 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+import SectionHeader from '../components/SectionHeader.astro';
+import ModuleGrid from '../components/ModuleGrid.astro';
+import LatestNews from '../components/LatestNews.astro';
+import ChangelogList from '../components/ChangelogList.astro';
+---
+<BaseLayout
+  title="ForgeCore | Autonomous Revenue Architecture"
+  description="ForgeCore builds a deterministic, self-improving autonomous revenue system that discovers opportunity, creates assets, deploys monetization, measures outcomes, and compounds over time."
+>
+  <Hero
+    eyebrow="Autonomous revenue architecture"
+    title="ForgeCore builds a deterministic, self-improving autonomous revenue system."
+    description="It identifies opportunity, converts it into real assets, deploys monetization strategies, measures performance, reallocates effort, and compounds over time."
+  />
+
+  <section class="section">
+    <div class="container">
+      <SectionHeader
+        eyebrow="Core thesis"
+        title="Not a chatbot. Not a script. Not a trend engine."
+        description="ForgeCore is a long-term revenue system built to survive platform shifts, model churn, and strategy decay. Architecture is the control layer. Models are replaceable workers."
+      />
+      <div class="grid-3">
+        <div class="panel"><h3>Deterministic</h3><p>It operates from defined loops, measurable outcomes, and explicit allocation logic.</p></div>
+        <div class="panel"><h3>Modular</h3><p>Strategies, channels, and monetization paths are pluggable, comparable, and replaceable.</p></div>
+        <div class="panel"><h3>Compounding</h3><p>Each cycle should improve the system’s judgment, assets, distribution, and revenue potential.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" style="background:var(--bg-soft);border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
+    <div class="container">
+      <SectionHeader
+        eyebrow="Operating loop"
+        title="A closed loop built for compounding."
+        description="Every module should be understandable inside the same six-step cycle."
+      />
+      <div class="grid-3">
+        <div class="panel"><h3>1. Detect opportunity</h3><p>Observe shifts, gaps, demand signals, and monetizable inefficiencies.</p></div>
+        <div class="panel"><h3>2. Score and prioritize</h3><p>Rank opportunities by expected leverage, speed, durability, and revenue potential.</p></div>
+        <div class="panel"><h3>3. Build asset</h3><p>Create the page, workflow, report, tool, or distribution object that can carry value.</p></div>
+        <div class="panel"><h3>4. Deploy into channel</h3><p>Place the asset where it can attract attention, leads, conversions, or cash flow.</p></div>
+        <div class="panel"><h3>5. Measure outcomes</h3><p>Track performance using the real metrics that govern allocation, not vanity noise.</p></div>
+        <div class="panel"><h3>6. Reallocate and compound</h3><p>Prune weak paths, strengthen working ones, and feed the next cycle with better judgment.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <SectionHeader
+        eyebrow="Modules"
+        title="Modular monetization, not identity lock-in."
+        description="ForgeCore does not marry tactics. It deploys modules, measures them, compares them, and reallocates toward higher-yield structures."
+      />
+      <ModuleGrid />
+    </div>
+  </section>
+
+  <section class="section" style="background:var(--bg-soft);border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
+    <div class="container">
+      <SectionHeader
+        eyebrow="Proof"
+        title="Visible outputs. Visible motion."
+        description="The site should prove seriousness through artifacts, updates, and operating evidence."
+      />
+      <LatestNews />
+      <div style="margin-top:2rem;">
+        <ChangelogList />
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container cta-band">
+      <SectionHeader
+        eyebrow="Track the system"
+        title="Subscribe for research, operating notes, and visible proof."
+        description="The newsletter is one live ForgeCore module. It turns signals into audience, artifacts, and monetizable distribution."
+      />
+      <div style="display:flex;gap:0.8rem;flex-wrap:wrap;">
+        <a class="btn btn-primary" href="https://news.forgecore.co/">Subscribe</a>
+        <a class="btn btn-secondary" href="/about/manifesto">Read the manifesto</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
