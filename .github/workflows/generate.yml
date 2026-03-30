@@ -1,0 +1,134 @@
+name: Generate Newsletter Issue
+
+on:
+  schedule:
+    # 7 AM CDT (12:00 UTC) and 7 PM CDT (00:00 UTC next day)
+    - cron: '0 12 * * *'
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+    inputs:
+      force_run:
+        description: 'Force run even if recent issue exists'
+        required: false
+        default: 'false'
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      OLLAMA_URL: ${{ secrets.OLLAMA_URL }}
+      RESEARCH_MODEL: ${{ secrets.RESEARCH_MODEL || 'qwen2.5:14b-instruct' }}
+      WRITER_MODEL: ${{ secrets.WRITER_MODEL || 'gemma3:12b' }}
+      EDITOR_MODEL: ${{ secrets.EDITOR_MODEL || 'gemma3:12b' }}
+      FALLBACK_MODEL: ${{ secrets.FALLBACK_MODEL || 'qwen3:8b' }}
+      SITE_DOMAIN: news.forgecore.co
+      SITE_BASE_URL: https://news.forgecore.co
+      NEWSLETTER_NAME: ForgeCore AI Productivity Brief
+      NEWSLETTER_TAGLINE: Practical AI workflows, tools, and ROI cases for operators
+      TARGET_AUDIENCE: Operators, founders, consultants, and technical teams adopting AI workflows.
+      PRIMARY_CTA_TEXT: Subscribe for weekly operator-grade AI workflows
+      PRIMARY_CTA_URL: https://forgecore-newsletter.beehiiv.com/
+      BEEHIIV_PUBLICATION_URL: https://forgecore-newsletter.beehiiv.com/
+      SPONSOR_EMAIL: sponsors@forgecore.co
+      ENABLE_CLOUDFLARE_DEPLOY: '0'
+      MAX_CONTEXT_CHARS: '22000'
+      OLLAMA_TIMEOUT: '300'
+      OLLAMA_RETRIES: '3'
+      AUTO_REPAIR_PATHS: '1'
+      MAX_ARTICLES_PER_RUN: '8'
+      MAX_FEED_ITEMS_PER_SOURCE: '8'
+      CLOUDFLARE_PAGES_PROJECT: forgecore-newsletter
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Check if Ollama is reachable
+        id: ollama_check
+        run: |
+          if curl -sf --max-time 10 "$OLLAMA_URL/api/tags" > /dev/null; then
+            echo "reachable=true" >> $GITHUB_OUTPUT
+          else
+            echo "reachable=false" >> $GITHUB_OUTPUT
+            echo "::warning::Ollama not reachable at $OLLAMA_URL - will skip LLM steps"
+          fi
+
+      - name: Run web research
+        run: python web_research.py
+        continue-on-error: true
+
+      - name: Run scout agent
+        if: steps.ollama_check.outputs.reachable == 'true'
+        run: python agent_loop.py scout
+        continue-on-error: true
+
+      - name: Run analyst agent
+        if: steps.ollama_check.outputs.reachable == 'true'
+        run: python agent_loop.py analyst
+        continue-on-error: true
+
+      - name: Run author agent
+        if: steps.ollama_check.outputs.reachable == 'true'
+        run: python agent_loop.py author
+        continue-on-error: true
+
+      - name: Run editor agent
+        if: steps.ollama_check.outputs.reachable == 'true'
+        run: python agent_loop.py editor
+        continue-on-error: true
+
+      - name: Run quality gate
+        run: python quality_gate.py
+        continue-on-error: true
+
+      - name: Publish site (render HTML)
+        run: python publish_site.py
+        continue-on-error: false
+
+      - name: Commit generated content
+        run: |
+          git config user.name "ForgeCore AI Bot"
+          git config user.email "bot@forgecore.co"
+          git add content/issues/ research/ state/ site/dist/ HEARTBEAT.md
+          if git diff --staged --quiet; then
+            echo "Nothing to commit"
+          else
+            TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M UTC')
+            git commit -m "auto: newsletter issue $TIMESTAMP [bot]"
+            git push
+          fi
+
+      - name: Deploy to Cloudflare Pages
+        if: success()
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy site/dist --project-name=forgecore-newsletter --commit-dirty=true
+
+      - name: Upload progress log as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: progress-log-${{ github.run_id }}
+          path: |
+            state/progress-log.md
+            state/errors.log
+            HEARTBEAT.md
+          retention-days: 14
+          if-no-files-found: warn
