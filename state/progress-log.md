@@ -1099,3 +1099,23 @@ npm error A complete log of this run can be found in: C:\Users\RKSFAMILY\AppData
     if thesis:
        ^^^^^^
 UnboundLocalError: cannot access local variable 'thesis' where it is not associated with a value
+
+
+---
+
+[2026-03-30 17:38:18 UTC] [FAIL] scout: RuntimeError: Ollama request failed: 404 Client Error: Not Found for url: http://localhost:11434/api/generate
+
+
+---
+
+[2026-03-30 17:38:26 UTC] [FAIL] analyst: RuntimeError: Ollama request failed: 404 Client Error: Not Found for url: http://localhost:11434/api/generate
+
+
+---
+
+[2026-03-30 17:38:34 UTC] [FAIL] author: RuntimeError: Ollama request failed: 404 Client Error: Not Found for url: http://localhost:11434/api/generate
+
+
+---
+
+[2026-03-30 17:38:42 UTC] [FAIL] editor: RuntimeError: Ollama request failed: 404 Client Error: Not Found for url: http://localhost:11434/api/generate
