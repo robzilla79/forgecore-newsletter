@@ -1,3 +1,4 @@
+html, body { overflow: auto !important; height: auto !important; position: static !important; }
 /*
   ForgeCore Newsletter
   Design: AI Secret-faithful — minimal, single-column, editorial
