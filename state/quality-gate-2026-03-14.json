@@ -3,7 +3,7 @@
   "checks": {
     "exists": true,
     "issue_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/ISSUE-2026-03-14.md",
-    "word_count": 666,
+    "word_count": 669,
     "required_sections_present": [
       "## Hook",
       "## Top Story",
