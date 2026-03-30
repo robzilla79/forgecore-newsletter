@@ -14,7 +14,7 @@ on:
 
 jobs:
   generate:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     timeout-minutes: 45
     env:
       OLLAMA_URL: ${{ secrets.OLLAMA_URL }}
