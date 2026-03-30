@@ -28,6 +28,7 @@ TAGLINE              = os.getenv("NEWSLETTER_TAGLINE", "Daily AI news and workfl
 SUBSCRIBE_URL        = os.getenv("PRIMARY_CTA_URL", SITE_BASE_URL)
 BEEHIIV_EMBED_HTML   = os.getenv("BEEHIIV_EMBED_HTML", "").strip()
 BEEHIIV_EMBED_HTML = re.sub(r'<script[^>]*>.*?</script>', '', BEEHIIV_EMBED_HTML, flags=re.DOTALL).strip()
+BEEHIIV_EMBED_HTML = re.sub(r'(<iframe\b)', r'\1 sandbox="allow-forms allow-scripts allow-same-origin"', BEEHIIV_EMBED_HTML)
 SPONSOR_EMAIL        = os.getenv("SPONSOR_EMAIL", "sponsors@forgecore.co")
 CURRENT_YEAR         = datetime.now().year
 WPM                  = 220
