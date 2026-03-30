@@ -52,10 +52,12 @@ SYSTEMS = {
 
 
 def progress(msg: str) -> None:
+    print(f"[progress] {msg}", flush=True)
     append_text(WORKSPACE / "state" / "progress-log.md", f"[{now_str()}] {msg}")
 
 
 def error(agent: str, msg: str) -> None:
+    print(f"[error:{agent}] {msg}", file=sys.stderr, flush=True)
     append_text(WORKSPACE / "state" / "errors.log", f"[{now_str()}] {agent}: {msg}")
 
 
@@ -152,7 +154,7 @@ def extract_json(raw: str) -> str:
 
 def parse_json(raw: str) -> dict[str, Any]:
     candidate = extract_json(raw)
-    candidate = candidate.replace("“", '"').replace("”", '"').replace("’", "'")
+    candidate = candidate.replace("\u201c", '"').replace("\u201d", '"').replace("\u2019", "'")
     candidate = re.sub(r",(\s*[}\]])", r"\1", candidate)
     return json.loads(candidate)
 
@@ -266,14 +268,19 @@ def run_llm(agent: str) -> dict[str, Any]:
     raw = ""
     start = time.time()
     model = choose_model(agent)
+    print(f"[{agent}] Starting (model={model}, url={OLLAMA_URL})", flush=True)
     try:
         ok, msg = ollama_healthcheck()
         if not ok:
+            print(f"[{agent}] FATAL: Ollama healthcheck failed: {msg}", flush=True)
             raise RuntimeError(f"Ollama healthcheck failed: {msg}")
+        print(f"[{agent}] Ollama reachable, calling model...", flush=True)
         raw = call_ollama(model, build_prompt(agent, build_context(agent)))
+        print(f"[{agent}] Model responded ({len(raw)} chars), parsing JSON...", flush=True)
         try:
             parsed = parse_json(raw)
-        except Exception:
+        except Exception as parse_exc:
+            print(f"[{agent}] JSON parse failed ({parse_exc}), retrying with fallback model...", flush=True)
             raw = call_ollama(
                 FALLBACK_MODEL,
                 "Your previous response was invalid. Return the same result as exactly one valid JSON object. "
@@ -283,6 +290,7 @@ def run_llm(agent: str) -> dict[str, Any]:
         result = coerce(agent, parsed)
         count = apply(agent, result)
         duration = time.time() - start
+        print(f"[{agent}] Done: {result['summary']} (files={count}, duration={duration:.2f}s)", flush=True)
         progress(f"{agent}: {result['summary']} (files={count}, duration={duration:.2f}s, model={model})")
         return {
             "status": "ok",
@@ -293,7 +301,10 @@ def run_llm(agent: str) -> dict[str, Any]:
         }
     except Exception as exc:
         duration = time.time() - start
-        error(agent, f"{type(exc).__name__}: {exc}\n\nTraceback:\n{traceback.format_exc()}\n\nRaw model output:\n{raw or '[EMPTY RESPONSE]'}\n")
+        tb = traceback.format_exc()
+        print(f"[{agent}] FAILED after {duration:.2f}s: {type(exc).__name__}: {exc}", flush=True)
+        print(f"[{agent}] Traceback:\n{tb}", flush=True)
+        error(agent, f"{type(exc).__name__}: {exc}\n\nTraceback:\n{tb}\n\nRaw model output:\n{raw or '[EMPTY RESPONSE]'}\n")
         progress(f"[FAIL] {agent}: {type(exc).__name__}: {exc}")
         return {
             "status": "error",
@@ -306,6 +317,7 @@ def run_llm(agent: str) -> dict[str, Any]:
 
 def run_script(name: str, script_name: str) -> dict[str, Any]:
     start = time.time()
+    print(f"[{name}] Running {script_name}...", flush=True)
     try:
         cp = subprocess.run(
             [sys.executable, str(WORKSPACE / script_name)],
@@ -316,10 +328,12 @@ def run_script(name: str, script_name: str) -> dict[str, Any]:
             errors="replace",
         )
         if cp.returncode != 0:
+            print(f"[{name}] FAILED (exit {cp.returncode}):\n{cp.stdout}\n{cp.stderr}", flush=True)
             raise RuntimeError((cp.stdout or "") + (cp.stderr or ""))
         duration = time.time() - start
         progress(f"{name}: ok (duration={duration:.2f}s)")
         output = (cp.stdout or "").strip()
+        print(f"[{name}] OK ({duration:.2f}s)", flush=True)
         return {
             "status": "ok",
             "agent": name,
@@ -353,7 +367,7 @@ def run_deployer() -> dict[str, Any]:
 
 
 def heartbeat(results: list[dict[str, Any]]) -> None:
-    fired = ", ".join(f"{r['agent']}={'✓' if r['status'] == 'ok' else '✗'}" for r in results)
+    fired = ", ".join(f"{r['agent']}={'\u2713' if r['status'] == 'ok' else '\u2717'}" for r in results)
     errors = [f"{r['agent']}: {r['summary']}" for r in results if r["status"] != "ok"]
     total_files = sum(int(r.get("files_updated", 0)) for r in results)
     duration = sum(float(r.get("duration_s", 0.0)) for r in results)
@@ -376,6 +390,7 @@ def heartbeat(results: list[dict[str, Any]]) -> None:
 def run_all() -> int:
     ok, msg = ollama_healthcheck()
     if not ok:
+        print(f"[run_all] FATAL: Ollama healthcheck failed at start: {msg}", flush=True)
         error("ollama", f"Healthcheck failed at start of run_all: {msg}")
         progress(f"[FAIL] ollama: healthcheck failed: {msg}")
         heartbeat(

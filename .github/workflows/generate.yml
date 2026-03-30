@@ -40,7 +40,6 @@ jobs:
       MAX_FEED_ITEMS_PER_SOURCE: '8'
       CLOUDFLARE_PAGES_PROJECT: forgecore-newsletter
       BEEHIIV_EMBED_HTML: ${{ secrets.BEEHIIV_EMBED_HTML }}
-      # Improvement loop: bypass time-lock when running inside the pipeline
       MIN_IMPROVEMENT_INTERVAL_MINUTES: '0'
       MAX_ISSUES_TO_IMPROVE: '1'
 
@@ -74,6 +73,7 @@ jobs:
         run: |
           if curl -sf --max-time 10 "$OLLAMA_URL/api/tags" > /dev/null; then
             echo "reachable=true" >> $GITHUB_OUTPUT
+            echo "[ollama] reachable at initial check"
           else
             echo "reachable=false" >> $GITHUB_OUTPUT
             echo "::warning::Ollama not reachable at $OLLAMA_URL - will skip LLM steps"
@@ -85,22 +85,42 @@ jobs:
 
       - name: Run scout agent
         if: steps.ollama_check.outputs.reachable == 'true'
-        run: python agent_loop.py scout
+        run: |
+          if ! curl -sf --max-time 10 "$OLLAMA_URL/api/tags" > /dev/null; then
+            echo "::error::Ollama dropped before scout agent - was reachable at job start but is gone now. Check if your PC slept, WSL reset, or the tunnel expired."
+            exit 1
+          fi
+          python agent_loop.py scout
         continue-on-error: true
 
       - name: Run analyst agent
         if: steps.ollama_check.outputs.reachable == 'true'
-        run: python agent_loop.py analyst
+        run: |
+          if ! curl -sf --max-time 10 "$OLLAMA_URL/api/tags" > /dev/null; then
+            echo "::error::Ollama dropped before analyst agent - was reachable at job start but is gone now."
+            exit 1
+          fi
+          python agent_loop.py analyst
         continue-on-error: true
 
       - name: Run author agent
         if: steps.ollama_check.outputs.reachable == 'true'
-        run: python agent_loop.py author
+        run: |
+          if ! curl -sf --max-time 10 "$OLLAMA_URL/api/tags" > /dev/null; then
+            echo "::error::Ollama dropped before author agent - was reachable at job start but is gone now."
+            exit 1
+          fi
+          python agent_loop.py author
         continue-on-error: true
 
       - name: Run editor agent
         if: steps.ollama_check.outputs.reachable == 'true'
-        run: python agent_loop.py editor
+        run: |
+          if ! curl -sf --max-time 10 "$OLLAMA_URL/api/tags" > /dev/null; then
+            echo "::error::Ollama dropped before editor agent - was reachable at job start but is gone now."
+            exit 1
+          fi
+          python agent_loop.py editor
         continue-on-error: true
 
       - name: Create fallback stub issue (Ollama offline)
@@ -142,6 +162,14 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy site/dist --project-name=forgecore-newsletter --commit-dirty=true --branch=main
+
+      - name: Dump errors.log on failure
+        if: failure()
+        run: |
+          echo "=== state/errors.log ==="
+          cat state/errors.log 2>/dev/null || echo "(no errors.log found)"
+          echo "=== state/progress-log.md ==="
+          cat state/progress-log.md 2>/dev/null || echo "(no progress-log.md found)"
 
       - name: Upload progress log as artifact
         if: always()
