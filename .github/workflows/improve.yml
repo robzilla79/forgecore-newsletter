@@ -1,0 +1,86 @@
+name: Continuous Improvement Loop
+
+on:
+  schedule:
+    # Every 10 minutes around the clock
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  improve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      OLLAMA_URL: ${{ secrets.OLLAMA_URL }}
+      RESEARCH_MODEL: ${{ secrets.RESEARCH_MODEL || 'qwen2.5:14b-instruct' }}
+      WRITER_MODEL: ${{ secrets.WRITER_MODEL || 'gemma3:12b' }}
+      EDITOR_MODEL: ${{ secrets.EDITOR_MODEL || 'gemma3:12b' }}
+      FALLBACK_MODEL: ${{ secrets.FALLBACK_MODEL || 'qwen3:8b' }}
+      SITE_BASE_URL: https://news.forgecore.co
+      NEWSLETTER_NAME: ForgeCore AI Productivity Brief
+      NEWSLETTER_TAGLINE: Practical AI workflows, tools, and ROI cases for operators
+      PRIMARY_CTA_URL: https://forgecore-newsletter.beehiiv.com/
+      BEEHIIV_PUBLICATION_URL: https://forgecore-newsletter.beehiiv.com/
+      SPONSOR_EMAIL: sponsors@forgecore.co
+      ENABLE_CLOUDFLARE_DEPLOY: '0'
+      MAX_CONTEXT_CHARS: '22000'
+      OLLAMA_TIMEOUT: '240'
+      OLLAMA_RETRIES: '2'
+      AUTO_REPAIR_PATHS: '1'
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Check if Ollama is reachable
+        id: ollama_check
+        run: |
+          if curl -sf --max-time 8 "$OLLAMA_URL/api/tags" > /dev/null; then
+            echo "reachable=true" >> $GITHUB_OUTPUT
+          else
+            echo "reachable=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run improvement loop
+        if: steps.ollama_check.outputs.reachable == 'true'
+        run: python improvement_loop.py
+        continue-on-error: true
+
+      - name: Re-render site after improvements
+        run: python publish_site.py
+        continue-on-error: true
+
+      - name: Commit improvements
+        run: |
+          git config user.name "ForgeCore AI Bot"
+          git config user.email "bot@forgecore.co"
+          git add content/issues/ site/dist/ state/ HEARTBEAT.md
+          if git diff --staged --quiet; then
+            echo "No improvements to commit"
+          else
+            TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M UTC')
+            git commit -m "auto: improvement pass $TIMESTAMP [bot]"
+            git push
+          fi
+
+      - name: Deploy improvements to Cloudflare Pages
+        if: success()
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy site/dist --project-name=forgecore-newsletter --commit-dirty=true
