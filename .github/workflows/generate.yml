@@ -40,6 +40,9 @@ jobs:
       MAX_FEED_ITEMS_PER_SOURCE: '8'
       CLOUDFLARE_PAGES_PROJECT: forgecore-newsletter
       BEEHIIV_EMBED_HTML: ${{ secrets.BEEHIIV_EMBED_HTML }}
+      # Improvement loop: bypass time-lock when running inside the pipeline
+      MIN_IMPROVEMENT_INTERVAL_MINUTES: '0'
+      MAX_ISSUES_TO_IMPROVE: '1'
 
     steps:
       - name: Checkout repo
@@ -104,15 +107,22 @@ jobs:
         if: steps.ollama_check.outputs.reachable != 'true'
         run: python create_stub_issue.py
 
-      - name: Run quality gate
+      - name: Improve issue until quality gate passes (max 5 passes)
+        if: steps.ollama_check.outputs.reachable == 'true'
+        run: python improve_until_passes.py
+
+      - name: Run quality gate (final check)
+        if: steps.ollama_check.outputs.reachable != 'true'
         run: python quality_gate.py
         continue-on-error: true
 
       - name: Publish site (render HTML)
+        if: success()
         run: python publish_site.py
         continue-on-error: false
 
       - name: Commit generated content
+        if: success()
         run: |
           git config user.name "ForgeCore AI Bot"
           git config user.email "bot@forgecore.co"
@@ -141,6 +151,7 @@ jobs:
           path: |
             state/progress-log.md
             state/errors.log
+            state/improvement-log.md
             HEARTBEAT.md
           retention-days: 14
           if-no-files-found: warn
