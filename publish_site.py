@@ -58,7 +58,7 @@ def signup_block_html(heading: str = "Get the next issue", sub: str = "") -> str
 
 def feed_subscribe_html() -> str:
     """Inline email box shown on homepage (mirrors AI Secret hero form)."""
-    if BEEHIIV_EMBED_HTML:
+    if False:  # Beehiiv embed disabled - causes scroll lockout on homepage
         return BEEHIIV_EMBED_HTML
     return (
         f"<p class='feed-subscribe-text'>Join operators building with AI &mdash; free weekly rundown.</p>"
