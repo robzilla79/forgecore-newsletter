@@ -48,6 +48,13 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GH_PAT }}
 
+      - name: Sync workspace with remote (self-hosted runner)
+        run: |
+          git fetch origin main
+          git reset --hard origin/main
+          git clean -fd
+          echo "Workspace synced to $(git rev-parse --short HEAD)"
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
