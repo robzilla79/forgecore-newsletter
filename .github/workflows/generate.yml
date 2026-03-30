@@ -119,7 +119,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy site/dist --project-name=forgecore-newsletter --commit-dirty=true
+          command: pages deploy site/dist --project-name=forgecore-newsletter --commit-dirty=true --branch=main
 
       - name: Upload progress log as artifact
         if: always()
