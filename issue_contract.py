@@ -44,7 +44,7 @@ BANNED_TOKENS = [
 
 def list_issue_files() -> list[Path]:
     root = WORKSPACE / 'content' / 'issues'
-    files = sorted(root.glob('ISSUE-*.md')) + sorted(root.glob('20*.md'))
+    files = [p for p in root.glob('20[0-9][0-9]-[0-9][0-9]-[0-9][0-9].md') if p.is_file()]
     return sorted({p.resolve() for p in files if p.is_file()})
 
 
