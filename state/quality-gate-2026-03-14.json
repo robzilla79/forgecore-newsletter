@@ -2,8 +2,8 @@
   "passed": true,
   "checks": {
     "exists": true,
-    "issue_path": "C:/Users/RKSFAMILY/Documents/ai_projects/newsletter_engine/content/issues/ISSUE-2026-03-14.md",
-    "word_count": 885,
+    "issue_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/ISSUE-2026-03-14.md",
+    "word_count": 666,
     "required_sections_present": [
       "## Hook",
       "## Top Story",
@@ -29,7 +29,9 @@
       "https://ollama.com/blog/gpt-oss-safeguard"
     ],
     "has_code_block": true,
+    "leaked_phrases": [],
+    "duplicate_paragraphs": [],
     "errors": []
   },
-  "issue": "C:/Users/RKSFAMILY/Documents/ai_projects/newsletter_engine/content/issues/ISSUE-2026-03-14.md"
+  "issue": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/ISSUE-2026-03-14.md"
 }
