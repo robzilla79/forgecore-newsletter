@@ -39,6 +39,7 @@ jobs:
       MAX_ARTICLES_PER_RUN: '8'
       MAX_FEED_ITEMS_PER_SOURCE: '8'
       CLOUDFLARE_PAGES_PROJECT: forgecore-newsletter
+      BEEHIIV_EMBED_HTML: ${{ secrets.BEEHIIV_EMBED_HTML }}
 
     steps:
       - name: Checkout repo
@@ -92,55 +93,10 @@ jobs:
         run: python agent_loop.py editor
         continue-on-error: true
 
-        - name: Create fallback stub issue (Ollama offline)
-          if: steps.ollama_check.outputs.reachable != 'true'
-          run: |
-            TODAY=$(date -u '+%Y-%m-%d')
-            ISSUE_PATH="content/issues/${TODAY}.md"
-            if [ ! -f "$ISSUE_PATH" ]; then
-              cat > "$ISSUE_PATH" << 'STUB'
-            # ForgeCore AI Dispatch — $TODAY
+      - name: Create fallback stub issue (Ollama offline)
+        if: steps.ollama_check.outputs.reachable != 'true'
+        run: python create_stub_issue.py
 
-            ## Hook
-            Today's AI landscape continues to shift rapidly. Operators who build repeatable systems outperform those chasing individual tools.
-
-            ## Top Story
-            Local AI deployment is accelerating as teams look for privacy-preserving, cost-effective alternatives to cloud APIs. Ollama and similar runtimes are at the center of this shift.
-
-            ## Why It Matters
-            - Local models eliminate per-token cost and keep sensitive data on-premise.
-            - Reproducible pipelines matter more than raw model capability for most business tasks.
-            - Teams building internal tools with open-weight models are compounding faster.
-
-            ## Highlights
-            - Llama 3 variants continue to lead open-weight benchmarks for instruction following.
-            - Claude and GPT-4o remain dominant for long-context reasoning tasks.
-            - Fine-tuned 7B models now match GPT-3.5 on many vertical-specific workflows.
-
-            ## Tool of the Week
-            Ollama — run Llama, Mistral, Gemma, and others locally with a single CLI command. Ideal for private inference, agent pipelines, and cost control.
-
-            ## Workflow
-            ```bash
-            # Pull a model and run it locally
-            ollama pull gemma3:12b
-            ollama run gemma3:12b
-
-            # Integrate with Python
-            pip install ollama
-            python -c "import ollama; print(ollama.chat('gemma3:12b', [{'role':'user','content':'Summarize today in AI'}]))"
-            ```
-
-            ## CTA
-            Pick one local model this week, run it against a real task, and measure the output quality against your current tool.
-
-            ## Sources
-            - No live sources available for this run (offline mode).
-            STUB
-              echo "Created stub issue: $ISSUE_PATH"
-            else
-              echo "Issue already exists: $ISSUE_PATH — skipping stub"
-            fi
       - name: Run quality gate
         run: python quality_gate.py
         continue-on-error: true
