@@ -4,7 +4,8 @@ from __future__ import annotations
 import json
 import os
 import re
-from typing import Any
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Any, Dict, List
 
 import feedparser
 import trafilatura
@@ -16,31 +17,50 @@ load_dotenv(WORKSPACE / '.env')
 
 MAX_ARTICLES = int(os.getenv('MAX_ARTICLES_PER_RUN', '8'))
 MAX_FEED_ITEMS = int(os.getenv('MAX_FEED_ITEMS_PER_SOURCE', '8'))
+MAX_WORKERS = int(os.getenv('WEB_RESEARCH_MAX_WORKERS', '6'))
+FETCH_TIMEOUT = int(os.getenv('WEB_RESEARCH_FETCH_TIMEOUT', '20'))
 
 
 def slugify(value: str) -> str:
     return re.sub(r'[^a-z0-9]+', '-', value.lower()).strip('-')[:80] or 'item'
 
 
-def fetch_article(url: str) -> dict[str, Any]:
+def fetch_article(url: str) -> Dict[str, Any]:
+    """Fetch and extract an article body with a hard timeout.
+
+    Returns a dict with url, status, and truncated text to keep manifests small.
+    """
     try:
-        downloaded = trafilatura.fetch_url(url)
-        text = trafilatura.extract(downloaded, include_links=False, include_images=False) if downloaded else ''
-        return {'url': url, 'status': 'ok' if text else 'empty', 'text': (text or '')[:7000]}
+        downloaded = trafilatura.fetch_url(url, timeout=FETCH_TIMEOUT)
+        text = (
+            trafilatura.extract(
+                downloaded,
+                include_links=False,
+                include_images=False,
+            )
+            if downloaded
+            else ''
+        )
+        return {
+            'url': url,
+            'status': 'ok' if text else 'empty',
+            'text': (text or '')[:7000],
+        }
     except Exception as exc:
         return {'url': url, 'status': f'error: {exc}', 'text': ''}
 
 
-def load_sources() -> list[dict[str, Any]]:
+def load_sources() -> List[Dict[str, Any]]:
     return json.loads((WORKSPACE / 'web_sources.json').read_text(encoding='utf-8')).get('sources', [])
 
 
 def main() -> int:
     raw_dir = WORKSPACE / 'research' / 'raw'
     raw_dir.mkdir(parents=True, exist_ok=True)
-    items: list[dict[str, Any]] = []
+    items: List[Dict[str, Any]] = []
     seen: set[str] = set()
 
+    # Collect candidate items from feeds
     for source in load_sources():
         feed = feedparser.parse(source['url'])
         for entry in feed.entries[:MAX_FEED_ITEMS]:
@@ -57,28 +77,46 @@ def main() -> int:
                 'summary': re.sub('<[^>]+>', '', entry.get('summary', ''))[:1400],
             })
 
-    notes: list[str] = []
-    manifest: list[dict[str, Any]] = []
-    for item in items[:MAX_ARTICLES]:
-        article = fetch_article(item['link'])
-        slug = slugify(item['title'])
-        path = raw_dir / f'{today_str()}-{slug}.md'
-        path.write_text(
-            (
-                f"# {item['title']}\n\n"
-                f"- Source: {item['source']}\n"
-                f"- Published: {item['published']}\n"
-                f"- URL: {item['link']}\n"
-                f"- Tags: {', '.join(item['tags'])}\n\n"
-                f"## Feed summary\n\n{item['summary']}\n\n"
-                f"## Extracted article text\n\n{article['text'] or 'No article text extracted.'}\n"
-            ),
-            encoding='utf-8',
-        )
-        notes.append(f"- {item['title']} ({item['source']})")
-        manifest.append({**item, **article, 'file': path.relative_to(WORKSPACE).as_posix()})
+    # Bound the number of articles this run will work on
+    batch = items[:MAX_ARTICLES]
 
-    append_text(raw_dir / f'RAW-INTEL-{today_str()}.md', f"# Raw intel refresh ({now_str()})\n\n## Items\n" + '\n'.join(notes))
+    notes: List[str] = []
+    manifest: List[Dict[str, Any]] = []
+
+    # Fetch articles in parallel with a bounded thread pool
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        future_to_item = {
+            executor.submit(fetch_article, item['link']): item for item in batch
+        }
+        for future in as_completed(future_to_item):
+            item = future_to_item[future]
+            try:
+                article = future.result()
+            except Exception as exc:  # Should be rare thanks to fetch_article guard
+                article = {'url': item['link'], 'status': f'error: {exc}', 'text': ''}
+
+            slug = slugify(item['title'])
+            path = raw_dir / f'{today_str()}-{slug}.md'
+            path.write_text(
+                (
+                    f"# {item['title']}\n\n"
+                    f"- Source: {item['source']}\n"
+                    f"- Published: {item['published']}\n"
+                    f"- URL: {item['link']}\n"
+                    f"- Tags: {', '.join(item['tags'])}\n\n"
+                    f"## Feed summary\n\n{item['summary']}\n\n"
+                    f"## Extracted article text\n\n{article['text'] or 'No article text extracted.'}\n"
+                ),
+                encoding='utf-8',
+            )
+            notes.append(f"- {item['title']} ({item['source']})")
+            manifest.append({**item, **article, 'file': path.relative_to(WORKSPACE).as_posix()})
+
+    if notes:
+        append_text(
+            raw_dir / f'RAW-INTEL-{today_str()}.md',
+            f"# Raw intel refresh ({now_str()})\n\n## Items\n" + '\n'.join(notes),
+        )
     dump_json(WORKSPACE / 'state' / f'research-manifest-{today_str()}.json', manifest)
     print(f'Fetched {len(manifest)} research items.')
     return 0
