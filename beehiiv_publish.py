@@ -25,7 +25,6 @@ Exit codes:
 import os
 import sys
 import json
-import re
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -34,6 +33,8 @@ try:
 except ImportError:
     print("[beehiiv] ERROR: 'requests' not installed. Run: pip install requests")
     sys.exit(1)
+
+from markdown_render import md_to_html
 
 # ---------------------------------------------------------------------------
 # Config
@@ -96,92 +97,11 @@ def parse_frontmatter(text: str) -> tuple[dict, str]:
     return meta, body
 
 
-def markdown_to_html(md: str) -> str:
-    """Minimal markdown-to-HTML converter sufficient for newsletter bodies."""
-    lines = md.split("\n")
-    html_lines: list[str] = []
-    in_ul = False
-    in_ol = False
-    ol_counter = 0
-
-    def close_lists() -> None:
-        nonlocal in_ul, in_ol, ol_counter
-        if in_ul:
-            html_lines.append("</ul>")
-            in_ul = False
-        if in_ol:
-            html_lines.append("</ol>")
-            in_ol = False
-            ol_counter = 0
-
-    def inline(text: str) -> str:
-        # bold
-        text = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", text)
-        text = re.sub(r"__(.+?)__", r"<strong>\1</strong>", text)
-        # italic
-        text = re.sub(r"\*(.+?)\*", r"<em>\1</em>", text)
-        text = re.sub(r"_(.+?)_", r"<em>\1</em>", text)
-        # code
-        text = re.sub(r"`(.+?)`", r"<code>\1</code>", text)
-        # links
-        text = re.sub(r"\[(.+?)\]\((.+?)\)", r'<a href="\2">\1</a>', text)
-        return text
-
-    for line in lines:
-        # Headings
-        m = re.match(r"^(#{1,6})\s+(.*)", line)
-        if m:
-            close_lists()
-            level = len(m.group(1))
-            html_lines.append(f"<h{level}>{inline(m.group(2))}</h{level}>")
-            continue
-
-        # HR
-        if re.match(r"^[-*_]{3,}\s*$", line):
-            close_lists()
-            html_lines.append("<hr>")
-            continue
-
-        # Unordered list
-        m = re.match(r"^[\-\*\+]\s+(.*)", line)
-        if m:
-            if not in_ul:
-                close_lists()
-                html_lines.append("<ul>")
-                in_ul = True
-            html_lines.append(f"<li>{inline(m.group(1))}</li>")
-            continue
-
-        # Ordered list
-        m = re.match(r"^\d+\.\s+(.*)", line)
-        if m:
-            if not in_ol:
-                close_lists()
-                html_lines.append("<ol>")
-                in_ol = True
-            ol_counter += 1
-            html_lines.append(f"<li>{inline(m.group(1))}</li>")
-            continue
-
-        # Blank line
-        if line.strip() == "":
-            close_lists()
-            html_lines.append("")
-            continue
-
-        # Normal paragraph line
-        close_lists()
-        html_lines.append(f"<p>{inline(line)}</p>")
-
-    close_lists()
-    return "\n".join(html_lines)
-
-
 def build_email_html(meta: dict, body_md: str, issue_date: str) -> str:
     # Match site URLs: publish_site.py writes per-issue pages at /{slug}/,
     # and for date-named files the slug is simply the YYYY-MM-DD string.
     web_url = f"{SITE_BASE_URL}/{issue_date}/"
-    body_html = markdown_to_html(body_md)
+    body_html = md_to_html(body_md)
     return f"""
 <div style="font-family:Georgia,serif;max-width:680px;margin:0 auto;color:#1a1a1a;">
   <p style="font-size:13px;color:#888;margin-bottom:24px;">
