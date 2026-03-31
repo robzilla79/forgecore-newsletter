@@ -1199,3 +1199,23 @@ UnboundLocalError: cannot access local variable 'thesis' where it is not associa
 ---
 
 [2026-03-31 14:14:26 UTC] [FAIL] editor: RuntimeError: Ollama request failed: 404 Client Error: Not Found for url: http://localhost:11434/api/generate
+
+
+---
+
+[2026-03-31 14:29:18 UTC] [FAIL] scout: RuntimeError: Ollama request failed: 404 Client Error: Not Found for url: http://localhost:11434/api/generate
+
+
+---
+
+[2026-03-31 14:29:26 UTC] [FAIL] analyst: RuntimeError: Ollama request failed: 404 Client Error: Not Found for url: http://localhost:11434/api/generate
+
+
+---
+
+[2026-03-31 14:29:33 UTC] [FAIL] author: RuntimeError: Ollama request failed: 404 Client Error: Not Found for url: http://localhost:11434/api/generate
+
+
+---
+
+[2026-03-31 14:29:41 UTC] [FAIL] editor: RuntimeError: Ollama request failed: 404 Client Error: Not Found for url: http://localhost:11434/api/generate
