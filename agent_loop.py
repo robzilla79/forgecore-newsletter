@@ -50,6 +50,10 @@ SYSTEMS = {
     "editor": EDITOR_SYSTEM,
 }
 
+# Module-level constants to avoid backslash-in-f-string (invalid in Python < 3.12)
+_OK_MARK = "\u2713"
+_FAIL_MARK = "\u2717"
+
 
 def progress(msg: str) -> None:
     print(f"[progress] {msg}", flush=True)
@@ -367,7 +371,10 @@ def run_deployer() -> dict[str, Any]:
 
 
 def heartbeat(results: list[dict[str, Any]]) -> None:
-    fired = ", ".join(f"{r['agent']}={'\u2713' if r['status'] == 'ok' else '\u2717'}" for r in results)
+    fired = ", ".join(
+        f"{r['agent']}={_OK_MARK if r['status'] == 'ok' else _FAIL_MARK}"
+        for r in results
+    )
     errors = [f"{r['agent']}: {r['summary']}" for r in results if r["status"] != "ok"]
     total_files = sum(int(r.get("files_updated", 0)) for r in results)
     duration = sum(float(r.get("duration_s", 0.0)) for r in results)
