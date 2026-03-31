@@ -35,7 +35,7 @@
   <div class="issue-eyebrow">
     <span>2026-03-30</span>
     <span>&bull;</span>
-    <span>1 min read</span>
+    <span>2 min read</span>
     <span>&bull;</span>
     <span class="issue-tag">DAILY RUNDOWN</span>
   </div>
@@ -55,25 +55,27 @@
 <h2>Hook</h2>
 <p>Today&#x27;s AI landscape continues to shift rapidly. Operators who build repeatable systems outperform those chasing individual tools.</p>
 <h2>Top Story</h2>
-<p>Local AI deployment is accelerating as teams look for privacy-preserving, cost-effective alternatives to cloud APIs. Ollama and similar runtimes are at the center of this shift.</p>
+<p>Local AI deployment is accelerating as teams look for privacy-preserving, cost-effective alternatives to cloud APIs. Ollama and similar runtimes are at the center of this shift. Ollama recently introduced several key improvements: compatibility with the Anthropic Messages API for Claude Code, image generation capabilities, and enhanced performance on Apple Silicon devices using MLX. These changes significantly impact developer workflows and business operations. For example, developers can now leverage Claude Code&#x27;s agentic coding capabilities locally, reducing reliance on external APIs and improving response times. The addition of image generation opens new avenues for creative projects, while MLX optimization boosts performance on Apple Silicon devices.  The <code>ollama launch</code> command simplifies setup, further accelerating adoption.  Businesses can now deploy AI agents locally, reducing costs and improving data security.  The shift to local models also allows for greater control over AI implementations and reduces vendor lock-in.</p>
 <h2>Why It Matters</h2>
 <ul>
-<li>Local models eliminate per-token cost and keep sensitive data on-premise.</li>
-<li>Reproducible pipelines matter more than raw model capability for most business tasks.</li>
-<li>Teams building internal tools with open-weight models are compounding faster.</li>
+<li>Local models eliminate per-token costs and key dependencies on external APIs.</li>
+<li>Image generation capabilities unlock new creative possibilities for marketing and design teams.</li>
+<li>Enhanced performance on Apple Silicon devices improves developer productivity and user experience.</li>
+<li>Simplified setup through <code>ollama launch</code> reduces the barrier to entry for AI adoption.</li>
+<li>Ethical and compliant AI use is crucial for building trust and maintaining a positive brand reputation.</li>
 </ul>
 <h2>Highlights</h2>
 <ul>
-<li>Llama 3 variants continue to lead open-weight benchmarks for instruction following.</li>
-<li>Claude and GPT-4o remain dominant for long-context reasoning tasks.</li>
-<li>Fine-tuned 7B models now match GPT-3.5 on many vertical-specific workflows.</li>
+<li><a href="https://ollama.com/blog/claude">Ollama Blog: Claude Code with Anthropic API</a> - Enables local use of Claude Code with open models.</li>
+<li><a href="https://ollama.com/blog/image-generation">Ollama Blog: Image Generation</a> - Introduces image generation capabilities on macOS.</li>
+<li><a href="https://ollama.com/blog/mlx">Ollama Blog: MLX Performance</a> - Highlights performance improvements on Apple Silicon devices.</li>
+<li><a href="https://ollama.com/blog/launch">Ollama Blog: ollama launch</a> - Simplifies the setup process for coding tools.</li>
+<li><a href="https://ollama.com/blog/codex">OpenAI Codex with Ollama</a> - Allows use of OpenAI&#x27;s Codex CLI with local models.</li>
 </ul>
 <h2>Tool of the Week</h2>
-<p>Ollama -- run Llama, Mistral, Gemma, and others locally with a single CLI command. Ideal for private inference, agent pipelines, and cost control.</p>
+<p><strong>Claude Code with Anthropic API compatibility</strong>: This tool provides a powerful agentic coding experience, offering flexibility in model selection and enhanced control over AI implementations.  Developers can now run Claude Code locally, leveraging its agentic capabilities without relying on external APIs.  To use it, install Claude Code (instructions available on the Ollama blog) and then run <code>claude --model gpt-oss:20b</code> within Ollama.</p>
 <h2>Workflow</h2>
-<p>Start by pulling a small model and testing it against a task you do manually today:</p>
-<p>ollama pull gemma3:12b ollama run gemma3:12b</p>
-<p>Measure time saved vs. your current process before expanding the workflow.</p>
+<p>1. Install Claude Code following the instructions on the Ollama blog. 2. Launch Ollama. 3. Run <code>claude --model gpt-oss:20b</code> in your terminal. 4. Define your coding task and interact with Claude Code.</p>
 <pre><code># 1) Pick one workflow that already exists
 ollama list
 
@@ -83,22 +85,24 @@ echo &quot;Measure time saved, error rate, and cycle time&quot;
 # 3) Pilot with one team and review results weekly
 echo &quot;Promote only if the workflow is repeatable&quot;</code></pre>
 <h2>CTA</h2>
-<p>Pick one local model this week, run it against a real task, and measure the output quality against your current tool.</p>
+<p>Explore the benefits of local AI deployment and ethical AI practices to enhance your business operations. Subscribe free: <a href="https://forgecore-newsletter.beehiiv.com/">ForgeCore Newsletter</a> Sponsor this issue: Want your tool, product, or service in front of AI-forward operators and founders? Email [sponsors@forgecore.co](mailto:sponsors@forgecore.co).</p>
 <h2>Sources</h2>
 <ul>
-<li>No live sources available for this run (offline CI mode).</li>
-<li><a href="https://ollama.com/blog/claude">Claude Code with Anthropic API compatibility</a></li>
-<li><a href="https://ollama.com/blog/image-generation">Image generation (experimental)</a></li>
-<li><a href="https://ollama.com/blog/launch">ollama launch</a></li>
+<li>https://ollama.com/blog/claude</li>
+<li>https://ollama.com/blog/image-generation</li>
+<li>https://ollama.com/blog/mlx</li>
+<li>https://ollama.com/blog/launch</li>
+<li>https://ollama.com/blog/codex</li>
 </ul>
   </div>
 
-  <div class='issue-cta'><h2>Get the next issue</h2><p>Practical AI workflows, tools, and ROI cases for operators. Free.</p><iframe src="https://subscribe-forms.beehiiv.com/8013321e-5f6c-4704-bf2f-e6497afe8e38" class="beehiiv-embed" data-test-id="beehiiv-embed" frameborder="0" scrolling="no" style="width: 560px; height: 290px; margin: 0; border-radius: 0px 0px 0px 0px !important; background-color: transparent; box-shadow: 0 0</div>
+  <div class='issue-cta'><h2>Get the next issue</h2><p>Practical AI workflows, tools, and ROI cases for operators. Free.</p><a class='btn btn-primary' href='https://forgecore-newsletter.beehiiv.com/'>Subscribe Free &rarr;</a></div>
 
   <div class="related-section">
     <div class="related-label">You might also like&hellip;</div>
     <ul class="related-list">
-      <li class='related-item'><div class='related-date'><span class='related-date-month'>MAR</span><span class='related-date-day'>14</span></div><div class='related-info'><div class='related-title'><a href='/2026-03-14/'>Unlocking ROI with AI: The New Wave of Productivity Tools — 2026-03-14</a></div><div class='related-read-time'>2 min read</div></div></li>
+      <li class='related-item'><div class='related-date'><span class='related-date-month'>MAR</span><span class='related-date-day'>31</span></div><div class='related-info'><div class='related-title'><a href='/2026-03-31/'>Local AI Deployment Accelerates with Ollama</a></div><div class='related-read-time'>2 min read</div></div></li>
+<li class='related-item'><div class='related-date'><span class='related-date-month'>MAR</span><span class='related-date-day'>14</span></div><div class='related-info'><div class='related-title'><a href='/2026-03-14/'>Unlocking ROI with AI: The New Wave of Productivity Tools — 2026-03-14</a></div><div class='related-read-time'>2 min read</div></div></li>
 <li class='related-item'><div class='related-date'><span class='related-date-month'>MAR</span><span class='related-date-day'>10</span></div><div class='related-info'><div class='related-title'><a href='/2026-03-10/'>AI for Operators: Boosting ROI with Ollama and Claude Code</a></div><div class='related-read-time'>3 min read</div></div></li>
 <li class='related-item'><div class='related-date'><span class='related-date-month'>MAR</span><span class='related-date-day'>9</span></div><div class='related-info'><div class='related-title'><a href='/2026-03-09/'>Unlocking ROI with AI: The New Wave of Productivity Tools — 2026-03-09 — 2026-03-09 — 2026-03-09</a></div><div class='related-read-time'>3 min read</div></div></li>
     </ul>
