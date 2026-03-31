@@ -17,10 +17,7 @@ jobs:
     runs-on: self-hosted
     timeout-minutes: 45
     env:
-      # OLLAMA_URL is intentionally NOT set here.
-      # The 'Ensure Ollama' step starts Ollama, confirms it is live,
-      # then writes OLLAMA_URL=http://172.27.0.1:11434 to $GITHUB_ENV.
-      # That value is then available to every subsequent step automatically.
+      OLLAMA_URL: ${{ secrets.OLLAMA_URL }}
       RESEARCH_MODEL: ${{ secrets.RESEARCH_MODEL || 'qwen2.5:14b-instruct' }}
       WRITER_MODEL: ${{ secrets.WRITER_MODEL || 'gemma3:12b' }}
       EDITOR_MODEL: ${{ secrets.EDITOR_MODEL || 'gemma3:12b' }}
@@ -74,56 +71,24 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Ensure Ollama is listening on all interfaces
+      - name: Check Ollama reachability
         run: |
-          OLLAMA_WIN_URL="http://172.27.0.1:11434"
-
-          echo "[ollama-restart] Killing any existing Ollama process..."
-          powershell.exe -Command "Stop-Process -Name 'ollama' -Force -ErrorAction SilentlyContinue"
-          sleep 2
-
-          echo "[ollama-restart] Starting Ollama with OLLAMA_HOST=0.0.0.0..."
-          powershell.exe -Command "\$env:OLLAMA_HOST='0.0.0.0'; Start-Process -FilePath 'ollama' -ArgumentList 'serve' -WindowStyle Hidden"
-          sleep 5
-
-          echo "[ollama-restart] Waiting for Ollama to be ready (up to 40s)..."
-          READY=false
-          for i in $(seq 1 8); do
-            if curl -sf --max-time 5 "$OLLAMA_WIN_URL/api/tags" > /dev/null 2>&1; then
-              READY=true
-              echo "[ollama-restart] Ollama is up at $OLLAMA_WIN_URL (attempt $i)"
-              break
-            fi
-            echo "[ollama-restart] Not ready yet ($i/8), waiting 5s..."
-            sleep 5
-          done
-
-          if [ "$READY" = "true" ]; then
-            echo "OLLAMA_URL=$OLLAMA_WIN_URL" >> $GITHUB_ENV
-            echo "[ollama-restart] OLLAMA_URL exported to GITHUB_ENV: $OLLAMA_WIN_URL"
-          else
-            echo "OLLAMA_URL=" >> $GITHUB_ENV
-            echo "::warning::Ollama did not come up at $OLLAMA_WIN_URL after 40s. Agents will be skipped."
+          if [ -z "${OLLAMA_URL:-}" ]; then
+            echo "::error::OLLAMA_URL secret is not set. Set it to your cloudflare tunnel URL."
+            exit 1
           fi
-
-      - name: Diagnose Ollama after restart
-        if: always()
-        run: |
-          echo "[ollama-diagnose] OLLAMA_URL=${OLLAMA_URL:-<empty>}"
-          if [ -n "${OLLAMA_URL:-}" ]; then
-            echo "[ollama-diagnose] Hitting $OLLAMA_URL/api/tags ..."
-            curl -sS --max-time 5 "$OLLAMA_URL/api/tags" || echo "[ollama-diagnose] curl failed — Ollama not responding"
+          echo "[ollama] Checking $OLLAMA_URL/api/tags ..."
+          if curl -sf --max-time 10 "$OLLAMA_URL/api/tags" > /dev/null 2>&1; then
+            echo "[ollama] Ollama is reachable at $OLLAMA_URL"
           else
-            echo "[ollama-diagnose] OLLAMA_URL is empty, skipping curl"
+            echo "::error::Ollama is not reachable at $OLLAMA_URL — is cloudflared running and is Ollama serving?"
+            exit 1
           fi
 
       - name: Check if Ollama is reachable
         id: ollama_check
         run: |
-          if [ -z "${OLLAMA_URL:-}" ]; then
-            echo "reachable=false" >> $GITHUB_OUTPUT
-            echo "::warning::OLLAMA_URL is empty — Ollama did not start successfully."
-          elif curl -sf --max-time 10 "$OLLAMA_URL/api/tags" > /dev/null 2>&1; then
+          if curl -sf --max-time 10 "$OLLAMA_URL/api/tags" > /dev/null 2>&1; then
             echo "reachable=true" >> $GITHUB_OUTPUT
             echo "[ollama] confirmed reachable at $OLLAMA_URL"
           else
