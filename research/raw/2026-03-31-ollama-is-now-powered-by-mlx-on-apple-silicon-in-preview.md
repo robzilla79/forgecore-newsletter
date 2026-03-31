@@ -24,7 +24,7 @@ Ollama on Apple silicon is now built on top of Apple’s machine learning framew
 This results in a large speedup of Ollama on all Apple Silicon devices. On Apple’s M5, M5 Pro and M5 Max chips, Ollama leverages the new GPU Neural Accelerators to accelerate both time to first token (TTFT) and generation speed (tokens per second).
 Prefill performance
 Decode performance
-Testing was conducted on March 29, 2026, using Alibaba’s Qwen3.5-35B-A3B model quantized to `NVFP4` and Ollama’s previous implementation quantized to `Q4_K_M` using Ollama 0.18. Ollama 0.19 will see even higher performance (1851 token/s prefill and 134 token/s decode when running with `int4`).
+Testing was conducted on March 29, 2026, using Alibaba’s Qwen3.5-35B-A3B model quantized to NVFP4 and Ollama’s previous implementation quantized to Q4_K_M using Ollama 0.18. Ollama 0.19 will see even higher performance (1851 token/s prefill and 134 token/s decode when running with int4 quantization).
 NVFP4 support: higher quality responses and production parity
 Ollama now leverages NVIDIA’s NVFP4 format to maintain model accuracy while reducing memory bandwidth and storage requirements for inference workloads.
 As more inference providers scale inference using NVFP4 format, this allows Ollama users to share the same results as they would in a production environment.
