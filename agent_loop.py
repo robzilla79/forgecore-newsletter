@@ -50,6 +50,9 @@ SYSTEMS = {
     "editor": EDITOR_SYSTEM,
 }
 
+# Models that emit <think> blocks before JSON — suppress on first call via API option
+_THINKING_MODEL_PREFIXES = ("qwen3", "qwq", "deepseek-r1", "deepseek-r2")
+
 # Module-level constants to avoid backslash-in-f-string (invalid in Python < 3.12)
 _OK_MARK = "\u2713"
 _FAIL_MARK = "\u2717"
@@ -71,6 +74,12 @@ def choose_model(agent: str) -> str:
     if agent == "editor":
         return EDITOR_MODEL
     return WRITER_MODEL
+
+
+def _is_thinking_model(model: str) -> bool:
+    """Return True if the model is known to emit <think> blocks by default."""
+    lower = model.lower()
+    return any(lower.startswith(p) for p in _THINKING_MODEL_PREFIXES)
 
 
 def gather_research_snippets() -> str:
@@ -111,7 +120,18 @@ def ollama_healthcheck() -> tuple[bool, str]:
         return False, f"{type(exc).__name__}: {exc}"
 
 
-def call_ollama(model: str, prompt: str) -> str:
+def call_ollama(model: str, prompt: str, *, suppress_thinking: bool = False) -> str:
+    """Call Ollama /api/generate.
+
+    suppress_thinking=True sets think=false in the options dict, which prevents
+    qwen3-family models from emitting a <think> block before the JSON response.
+    This eliminates the double-call pattern seen when the parser fails on the
+    think block and falls back to a retry.
+    """
+    options: dict[str, Any] = {"temperature": 0.15, "num_predict": 2600}
+    if suppress_thinking and _is_thinking_model(model):
+        options["think"] = False
+
     delay = 2.0
     last_err: Exception | None = None
     for attempt in range(1, OLLAMA_RETRIES + 1):
@@ -122,7 +142,7 @@ def call_ollama(model: str, prompt: str) -> str:
                     "model": model,
                     "prompt": prompt,
                     "stream": False,
-                    "options": {"temperature": 0.15, "num_predict": 2600},
+                    "options": options,
                 },
                 timeout=OLLAMA_TIMEOUT,
             )
@@ -272,24 +292,33 @@ def run_llm(agent: str) -> dict[str, Any]:
     raw = ""
     start = time.time()
     model = choose_model(agent)
-    print(f"[{agent}] Starting (model={model}, url={OLLAMA_URL})", flush=True)
+    # Suppress <think> blocks on first call for reasoning models (qwen3, qwq, deepseek-r1/r2).
+    # This avoids the double-call pattern where parse_json fails on the think block and
+    # wastes a full inference cycle before the fallback retry succeeds.
+    suppress = _is_thinking_model(model)
+    print(f"[{agent}] Starting (model={model}, url={OLLAMA_URL}, suppress_thinking={suppress})", flush=True)
     try:
         ok, msg = ollama_healthcheck()
         if not ok:
             print(f"[{agent}] FATAL: Ollama healthcheck failed: {msg}", flush=True)
             raise RuntimeError(f"Ollama healthcheck failed: {msg}")
         print(f"[{agent}] Ollama reachable, calling model...", flush=True)
-        raw = call_ollama(model, build_prompt(agent, build_context(agent)))
+        raw = call_ollama(model, build_prompt(agent, build_context(agent)), suppress_thinking=suppress)
         print(f"[{agent}] Model responded ({len(raw)} chars), parsing JSON...", flush=True)
         try:
             parsed = parse_json(raw)
         except Exception as parse_exc:
+            # First parse failed — retry with fallback model.
+            # If fallback == primary we still retry (temperature variation may help),
+            # but we always enforce no think blocks on the retry prompt.
             print(f"[{agent}] JSON parse failed ({parse_exc}), retrying with fallback model...", flush=True)
-            raw = call_ollama(
-                FALLBACK_MODEL,
-                "Your previous response was invalid. Return the same result as exactly one valid JSON object. "
-                "No prose. No code fences. No <think> tags.\n\nPrevious response:\n" + raw,
+            fallback_prompt = (
+                "Your previous response was invalid JSON. "
+                "Return the same result as exactly one valid JSON object. "
+                "No prose. No code fences. No <think> tags. No markdown.\n\n"
+                "Previous response:\n" + raw
             )
+            raw = call_ollama(FALLBACK_MODEL, fallback_prompt, suppress_thinking=True)
             parsed = parse_json(raw)
         result = coerce(agent, parsed)
         count = apply(agent, result)
