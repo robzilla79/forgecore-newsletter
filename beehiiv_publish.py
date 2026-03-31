@@ -204,8 +204,9 @@ def post_to_beehiiv(subject: str, html: str, issue_date: str) -> dict:
         "Accept": "application/json",
     }
     payload = {
+        "title": subject,          # required by Beehiiv API v2
         "subject_line": subject,
-        "preview_text": f"{NEWSLETTER_NAME} — {issue_date}",
+        "preview_text": f"{NEWSLETTER_NAME} \u2014 {issue_date}",
         "content_json": None,
         "content_html": html,
         "content_tags": ["auto-generated"],
@@ -256,8 +257,8 @@ def main():
     meta, body_md = parse_frontmatter(raw)
 
     # Build subject line
-    title = meta.get("title", f"{NEWSLETTER_NAME} — {issue_date}")
-    subject = title if title else f"{NEWSLETTER_NAME} — {issue_date}"
+    title = meta.get("title", f"{NEWSLETTER_NAME} \u2014 {issue_date}")
+    subject = title if title else f"{NEWSLETTER_NAME} \u2014 {issue_date}"
 
     # Build HTML body
     email_html = build_email_html(meta, body_md, issue_date)
@@ -268,7 +269,7 @@ def main():
     post_id = result.get("data", {}).get("id", result.get("id", "unknown"))
     post_url = result.get("data", {}).get("web_url", "")
 
-    log(f"SUCCESS — post_id={post_id}  url={post_url}")
+    log(f"SUCCESS \u2014 post_id={post_id}  url={post_url}")
 
     # Record in sent log so we never double-send
     sent_log[issue_date] = {
