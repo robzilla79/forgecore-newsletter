@@ -18,10 +18,10 @@ jobs:
     timeout-minutes: 45
     env:
       OLLAMA_URL: http://localhost:11434
-      RESEARCH_MODEL: ${{ secrets.RESEARCH_MODEL || 'qwen2.5:14b-instruct' }}
-      WRITER_MODEL: ${{ secrets.WRITER_MODEL || 'gemma3:12b' }}
-      EDITOR_MODEL: ${{ secrets.EDITOR_MODEL || 'gemma3:12b' }}
-      FALLBACK_MODEL: ${{ secrets.FALLBACK_MODEL || 'qwen3:8b' }}
+      RESEARCH_MODEL: ${{ secrets.RESEARCH_MODEL || 'qwen3:14b' }}
+      WRITER_MODEL: ${{ secrets.WRITER_MODEL || 'qwen3:14b' }}
+      EDITOR_MODEL: ${{ secrets.EDITOR_MODEL || 'qwen3:14b' }}
+      FALLBACK_MODEL: ${{ secrets.FALLBACK_MODEL || 'qwen3:14b' }}
       SITE_DOMAIN: news.forgecore.co
       SITE_BASE_URL: https://news.forgecore.co
       NEWSLETTER_NAME: ForgeCore AI Productivity Brief
