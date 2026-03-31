@@ -3,8 +3,8 @@
 beehiiv_publish.py
 
 Reads the latest generated issue from content/issues/ and publishes it
-directly to Beehiiv via the v2 API with status=confirmed so it sends
-automatically to all subscribers.
+ directly to Beehiiv via the v2 API with status=confirmed so it sends
+ automatically to all subscribers.
 
 Required env vars:
   BEEHIIV_API_KEY          - API key from Beehiiv Settings > API
@@ -26,7 +26,6 @@ import os
 import sys
 import json
 import re
-import glob
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -40,21 +39,25 @@ except ImportError:
 # Config
 # ---------------------------------------------------------------------------
 API_KEY = os.environ.get("BEEHIIV_API_KEY", "").strip()
-PUB_ID  = os.environ.get("BEEHIIV_PUBLICATION_ID", "").strip()
+PUB_ID = os.environ.get("BEEHIIV_PUBLICATION_ID", "").strip()
 SEND_MODE = os.environ.get("BEEHIIV_SEND_MODE", "confirmed").strip()  # confirmed | draft
-SITE_BASE_URL = os.environ.get("SITE_BASE_URL", os.environ.get("SITE_BASE_URL", "https://news.forgecore.co")).strip()
-NEWSLETTER_NAME = os.environ.get("NEWSLETTER_NAME", "ForgeCore AI Productivity Brief").strip()
+SITE_BASE_URL = os.environ.get(
+    "SITE_BASE_URL", os.environ.get("SITE_BASE_URL", "https://news.forgecore.co")
+).strip()
+NEWSLETTER_NAME = os.environ.get(
+    "NEWSLETTER_NAME", "ForgeCore AI Productivity Brief"
+).strip()
 
 API_BASE = "https://api.beehiiv.com/v2"
 STATE_DIR = Path("state")
-SENT_LOG  = STATE_DIR / "beehiiv_sent.json"
+SENT_LOG = STATE_DIR / "beehiiv_sent.json"
 ISSUES_DIR = Path("content/issues")
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-def log(msg: str):
+def log(msg: str) -> None:
     print(f"[beehiiv] {msg}", flush=True)
 
 
@@ -67,9 +70,9 @@ def load_sent_log() -> dict:
     return {}
 
 
-def save_sent_log(data: dict):
+def save_sent_log(data: dict) -> None:
     STATE_DIR.mkdir(parents=True, exist_ok=True)
-    SENT_LOG.write_text(json.dumps(data, indent=2))
+    SENT_LOG.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
 
 def find_latest_issue() -> Path | None:
@@ -79,7 +82,7 @@ def find_latest_issue() -> Path | None:
 
 def parse_frontmatter(text: str) -> tuple[dict, str]:
     """Returns (metadata dict, body markdown)."""
-    meta = {}
+    meta: dict = {}
     body = text
     if text.startswith("---"):
         parts = text.split("---", 2)
@@ -96,12 +99,12 @@ def parse_frontmatter(text: str) -> tuple[dict, str]:
 def markdown_to_html(md: str) -> str:
     """Minimal markdown-to-HTML converter sufficient for newsletter bodies."""
     lines = md.split("\n")
-    html_lines = []
+    html_lines: list[str] = []
     in_ul = False
     in_ol = False
     ol_counter = 0
 
-    def close_lists():
+    def close_lists() -> None:
         nonlocal in_ul, in_ol, ol_counter
         if in_ul:
             html_lines.append("</ul>")
@@ -175,7 +178,9 @@ def markdown_to_html(md: str) -> str:
 
 
 def build_email_html(meta: dict, body_md: str, issue_date: str) -> str:
-    web_url = f"{SITE_BASE_URL}/issues/{issue_date}"
+    # Match site URLs: publish_site.py writes per-issue pages at /{slug}/,
+    # and for date-named files the slug is simply the YYYY-MM-DD string.
+    web_url = f"{SITE_BASE_URL}/{issue_date}/"
     body_html = markdown_to_html(body_md)
     return f"""
 <div style="font-family:Georgia,serif;max-width:680px;margin:0 auto;color:#1a1a1a;">
@@ -204,15 +209,15 @@ def post_to_beehiiv(subject: str, html: str, issue_date: str) -> dict:
         "Accept": "application/json",
     }
     payload = {
-        "title": subject,          # required by Beehiiv API v2
+        "title": subject,  # required by Beehiiv API v2
         "subject_line": subject,
         "preview_text": f"{NEWSLETTER_NAME} \u2014 {issue_date}",
         "content_json": None,
         "content_html": html,
         "content_tags": ["auto-generated"],
         "status": SEND_MODE,  # 'confirmed' = send now, 'draft' = save as draft
-        "send_at": None,       # None = send immediately when status=confirmed
-        "audience": "free",    # free | premium | both
+        "send_at": None,  # None = send immediately when status=confirmed
+        "audience": "free",  # free | premium | both
         "email_reconfirmation": False,
     }
 
@@ -233,10 +238,12 @@ def post_to_beehiiv(subject: str, html: str, issue_date: str) -> dict:
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
-def main():
+def main() -> None:
     if not API_KEY or not PUB_ID:
-        log("SKIP: BEEHIIV_API_KEY and/or BEEHIIV_PUBLICATION_ID not set. "
-            "Add them as GitHub secrets to enable auto-send.")
+        log(
+            "SKIP: BEEHIIV_API_KEY and/or BEEHIIV_PUBLICATION_ID not set. "
+            "Add them as GitHub secrets to enable auto-send."
+        )
         sys.exit(0)  # Non-fatal: missing creds just skips the step
 
     issue_path = find_latest_issue()
@@ -250,7 +257,10 @@ def main():
     # Idempotency guard: don't re-send the same issue
     sent_log = load_sent_log()
     if issue_date in sent_log:
-        log(f"Issue {issue_date} already sent to Beehiiv (post_id={sent_log[issue_date].get('post_id')}). Skipping.")
+        log(
+            "Issue {issue_date} already sent to Beehiiv (post_id={sent_log[issue_date].get('post_id')}). "
+            "Skipping."
+        )
         sys.exit(3)
 
     raw = issue_path.read_text(encoding="utf-8")
