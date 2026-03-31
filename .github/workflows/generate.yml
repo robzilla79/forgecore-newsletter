@@ -82,6 +82,22 @@ jobs:
             echo "::warning::Ollama not reachable at $OLLAMA_URL — agents will be skipped, fallback stub will run"
           fi
 
+      - name: Ensure Ollama models are pulled
+        if: steps.ollama_check.outputs.reachable == 'true'
+        run: |
+          echo "[ollama] Pulling $RESEARCH_MODEL ..."
+          ollama pull "$RESEARCH_MODEL" || echo "::warning::Failed to pull $RESEARCH_MODEL — may already be present or name changed"
+          if [ "$WRITER_MODEL" != "$RESEARCH_MODEL" ]; then
+            echo "[ollama] Pulling $WRITER_MODEL ..."
+            ollama pull "$WRITER_MODEL" || echo "::warning::Failed to pull $WRITER_MODEL"
+          fi
+          if [ "$FALLBACK_MODEL" != "$RESEARCH_MODEL" ] && [ "$FALLBACK_MODEL" != "$WRITER_MODEL" ]; then
+            echo "[ollama] Pulling $FALLBACK_MODEL ..."
+            ollama pull "$FALLBACK_MODEL" || echo "::warning::Failed to pull $FALLBACK_MODEL"
+          fi
+          echo "[ollama] Model pull complete. Available models:"
+          ollama list
+
       - name: Run web research
         run: python web_research.py
         continue-on-error: true
