@@ -17,7 +17,10 @@ jobs:
     runs-on: self-hosted
     timeout-minutes: 45
     env:
-      OLLAMA_URL: ${{ secrets.OLLAMA_URL }}
+      # OLLAMA_URL is intentionally NOT set here.
+      # The 'Ensure Ollama' step starts Ollama, confirms it is live,
+      # then writes OLLAMA_URL=http://172.27.0.1:11434 to $GITHUB_ENV.
+      # That value is then available to every subsequent step automatically.
       RESEARCH_MODEL: ${{ secrets.RESEARCH_MODEL || 'qwen2.5:14b-instruct' }}
       WRITER_MODEL: ${{ secrets.WRITER_MODEL || 'gemma3:12b' }}
       EDITOR_MODEL: ${{ secrets.EDITOR_MODEL || 'gemma3:12b' }}
@@ -42,7 +45,6 @@ jobs:
       BEEHIIV_EMBED_HTML: ${{ secrets.BEEHIIV_EMBED_HTML }}
       MIN_IMPROVEMENT_INTERVAL_MINUTES: '0'
       MAX_ISSUES_TO_IMPROVE: '1'
-      # Beehiiv auto-send credentials (add these as GitHub secrets)
       BEEHIIV_API_KEY: ${{ secrets.BEEHIIV_API_KEY }}
       BEEHIIV_PUBLICATION_ID: ${{ secrets.BEEHIIV_PUBLICATION_ID }}
       BEEHIIV_SEND_MODE: 'confirmed'
@@ -74,6 +76,8 @@ jobs:
 
       - name: Ensure Ollama is listening on all interfaces
         run: |
+          OLLAMA_WIN_URL="http://172.27.0.1:11434"
+
           echo "[ollama-restart] Killing any existing Ollama process..."
           powershell.exe -Command "Stop-Process -Name 'ollama' -Force -ErrorAction SilentlyContinue"
           sleep 2
@@ -82,32 +86,49 @@ jobs:
           powershell.exe -Command "\$env:OLLAMA_HOST='0.0.0.0'; Start-Process -FilePath 'ollama' -ArgumentList 'serve' -WindowStyle Hidden"
           sleep 5
 
-          echo "[ollama-restart] Waiting for Ollama to be ready..."
-          OLLAMA_WIN_URL="http://172.27.0.1:11434"
-          for i in $(seq 1 6); do
+          echo "[ollama-restart] Waiting for Ollama to be ready (up to 40s)..."
+          READY=false
+          for i in $(seq 1 8); do
             if curl -sf --max-time 5 "$OLLAMA_WIN_URL/api/tags" > /dev/null 2>&1; then
-              echo "OLLAMA_URL=$OLLAMA_WIN_URL" >> $GITHUB_ENV
-              echo "[ollama-restart] Ollama is up at $OLLAMA_WIN_URL"
+              READY=true
+              echo "[ollama-restart] Ollama is up at $OLLAMA_WIN_URL (attempt $i)"
               break
             fi
-            echo "[ollama-restart] Not ready yet ($i/6)"
+            echo "[ollama-restart] Not ready yet ($i/8), waiting 5s..."
             sleep 5
           done
 
-          if ! curl -sf --max-time 10 "$OLLAMA_WIN_URL/api/tags" > /dev/null 2>&1; then
-            echo "::error::Ollama failed to start on $OLLAMA_WIN_URL"
-            exit 1
+          if [ "$READY" = "true" ]; then
+            echo "OLLAMA_URL=$OLLAMA_WIN_URL" >> $GITHUB_ENV
+            echo "[ollama-restart] OLLAMA_URL exported to GITHUB_ENV: $OLLAMA_WIN_URL"
+          else
+            echo "OLLAMA_URL=" >> $GITHUB_ENV
+            echo "::warning::Ollama did not come up at $OLLAMA_WIN_URL after 40s. Agents will be skipped."
+          fi
+
+      - name: Diagnose Ollama after restart
+        if: always()
+        run: |
+          echo "[ollama-diagnose] OLLAMA_URL=${OLLAMA_URL:-<empty>}"
+          if [ -n "${OLLAMA_URL:-}" ]; then
+            echo "[ollama-diagnose] Hitting $OLLAMA_URL/api/tags ..."
+            curl -sS --max-time 5 "$OLLAMA_URL/api/tags" || echo "[ollama-diagnose] curl failed — Ollama not responding"
+          else
+            echo "[ollama-diagnose] OLLAMA_URL is empty, skipping curl"
           fi
 
       - name: Check if Ollama is reachable
         id: ollama_check
         run: |
-          if curl -sf --max-time 10 "$OLLAMA_URL/api/tags" > /dev/null; then
+          if [ -z "${OLLAMA_URL:-}" ]; then
+            echo "reachable=false" >> $GITHUB_OUTPUT
+            echo "::warning::OLLAMA_URL is empty — Ollama did not start successfully."
+          elif curl -sf --max-time 10 "$OLLAMA_URL/api/tags" > /dev/null 2>&1; then
             echo "reachable=true" >> $GITHUB_OUTPUT
-            echo "[ollama] reachable at initial check"
+            echo "[ollama] confirmed reachable at $OLLAMA_URL"
           else
             echo "reachable=false" >> $GITHUB_OUTPUT
-            echo "::warning::Ollama not reachable at $OLLAMA_URL - will skip LLM steps"
+            echo "::warning::Ollama not reachable at $OLLAMA_URL — agents will be skipped"
           fi
 
       - name: Run web research
@@ -117,8 +138,8 @@ jobs:
       - name: Run scout agent
         if: steps.ollama_check.outputs.reachable == 'true'
         run: |
-          if ! curl -sf --max-time 10 "$OLLAMA_URL/api/tags" > /dev/null; then
-            echo "::error::Ollama dropped before scout agent - was reachable at job start but is gone now. Check if your PC slept, WSL reset, or the tunnel expired."
+          if ! curl -sf --max-time 10 "$OLLAMA_URL/api/tags" > /dev/null 2>&1; then
+            echo "::error::Ollama dropped before scout agent."
             exit 1
           fi
           python agent_loop.py scout
@@ -127,8 +148,8 @@ jobs:
       - name: Run analyst agent
         if: steps.ollama_check.outputs.reachable == 'true'
         run: |
-          if ! curl -sf --max-time 10 "$OLLAMA_URL/api/tags" > /dev/null; then
-            echo "::error::Ollama dropped before analyst agent - was reachable at job start but is gone now."
+          if ! curl -sf --max-time 10 "$OLLAMA_URL/api/tags" > /dev/null 2>&1; then
+            echo "::error::Ollama dropped before analyst agent."
             exit 1
           fi
           python agent_loop.py analyst
@@ -137,8 +158,8 @@ jobs:
       - name: Run author agent
         if: steps.ollama_check.outputs.reachable == 'true'
         run: |
-          if ! curl -sf --max-time 10 "$OLLAMA_URL/api/tags" > /dev/null; then
-            echo "::error::Ollama dropped before author agent - was reachable at job start but is gone now."
+          if ! curl -sf --max-time 10 "$OLLAMA_URL/api/tags" > /dev/null 2>&1; then
+            echo "::error::Ollama dropped before author agent."
             exit 1
           fi
           python agent_loop.py author
@@ -147,8 +168,8 @@ jobs:
       - name: Run editor agent
         if: steps.ollama_check.outputs.reachable == 'true'
         run: |
-          if ! curl -sf --max-time 10 "$OLLAMA_URL/api/tags" > /dev/null; then
-            echo "::error::Ollama dropped before editor agent - was reachable at job start but is gone now."
+          if ! curl -sf --max-time 10 "$OLLAMA_URL/api/tags" > /dev/null 2>&1; then
+            echo "::error::Ollama dropped before editor agent."
             exit 1
           fi
           python agent_loop.py editor
