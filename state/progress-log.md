@@ -1139,3 +1139,23 @@ UnboundLocalError: cannot access local variable 'thesis' where it is not associa
 ---
 
 [2026-03-31 02:33:25 UTC] editor: Rewrote the issue to improve clarity, originality, flow, and publishability while removing internal planning language and placeholder content. Focused on the practical benefits of Ollama and Claude Code for business operators. (files=1, duration=35.83s, model=gemma3:12b)
+
+
+---
+
+[2026-03-31 13:49:44 UTC] [FAIL] scout: RuntimeError: Ollama request failed: 404 Client Error: Not Found for url: http://localhost:11434/api/generate
+
+
+---
+
+[2026-03-31 13:49:51 UTC] [FAIL] analyst: RuntimeError: Ollama request failed: 404 Client Error: Not Found for url: http://localhost:11434/api/generate
+
+
+---
+
+[2026-03-31 13:49:59 UTC] [FAIL] author: RuntimeError: Ollama request failed: 404 Client Error: Not Found for url: http://localhost:11434/api/generate
+
+
+---
+
+[2026-03-31 13:50:07 UTC] [FAIL] editor: RuntimeError: Ollama request failed: 404 Client Error: Not Found for url: http://localhost:11434/api/generate
