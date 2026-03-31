@@ -48,6 +48,9 @@ MIN_IMPROVEMENT_INTERVAL_MINUTES = int(
     os.getenv("MIN_IMPROVEMENT_INTERVAL_MINUTES", "30")
 )
 
+# Label for where this improvement loop was triggered from (generate vs improve)
+IMPROVEMENT_ORIGIN = os.getenv("IMPROVEMENT_ORIGIN", "improve").strip() or "improve"
+
 STATE_DIR = WORKSPACE / "state"
 IMPROVE_LOG = STATE_DIR / "improvement-log.md"
 IMPROVE_LOCK = STATE_DIR / "improvement-lock.json"
@@ -206,7 +209,8 @@ def main() -> int:
 
     for issue_path in issues:
         key = issue_path.name
-        last_improved = lock.get(key, {}).get("last_improved", "")
+        last_entry = lock.get(key, {})
+        last_improved = last_entry.get("last_improved", "")
         mins_ago = minutes_since(last_improved)
 
         if mins_ago < MIN_IMPROVEMENT_INTERVAL_MINUTES:
@@ -221,13 +225,14 @@ def main() -> int:
             improved_count += 1
             lock[key] = {
                 "last_improved": datetime.now(timezone.utc).isoformat(),
-                "pass": lock.get(key, {}).get("pass", 0) + 1,
+                "pass": int(last_entry.get("pass", 0)) + 1,
+                "origin": IMPROVEMENT_ORIGIN,
             }
             save_lock(lock)
 
     log(
         f"Improvement pass complete: {improved_count}/{len(issues)} issues updated "
-        f"(model={EDITOR_MODEL})"
+        f"(model={EDITOR_MODEL}, origin={IMPROVEMENT_ORIGIN})"
     )
     return 0
 
