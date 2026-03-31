@@ -1,0 +1,18 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# Virtual environments and local tooling
+.venv/
+
+# Local environment configuration (use .env.example in git)
+.env
+
+# Build artifacts and archives
+forgecore_newsletter.zip
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# VS Code and editor settings
+.vscode/
+*.swp

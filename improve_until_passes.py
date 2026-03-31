@@ -9,7 +9,6 @@ Exits 1 if the gate still fails after MAX_ITERATIONS (blocking publish/deploy).
 from __future__ import annotations
 
 import json
-import re
 import subprocess
 import sys
 from pathlib import Path
@@ -50,11 +49,14 @@ def run_quality_gate() -> dict:
 
 def run_improvement() -> int:
     """Run improvement_loop.py, bypassing the time-lock for in-pipeline use."""
+    import os
+
     env_override = {
         "MIN_IMPROVEMENT_INTERVAL_MINUTES": "0",
         "MAX_ISSUES_TO_IMPROVE": "1",
+        # Mark these improvements as coming from the generate pipeline
+        "IMPROVEMENT_ORIGIN": "generate",
     }
-    import os
     env = {**os.environ, **env_override}
     result = subprocess.run(
         [sys.executable, "improvement_loop.py"],
@@ -77,14 +79,18 @@ def summarise(gate: dict, iteration: int) -> None:
 
 
 def main() -> int:
-    print(f"[improve_until_passes] Starting aggressive improvement loop (max {MAX_ITERATIONS} passes)")
+    print(
+        f"[improve_until_passes] Starting aggressive improvement loop (max {MAX_ITERATIONS} passes)"
+    )
 
     for i in range(1, MAX_ITERATIONS + 1):
         gate = run_quality_gate()
         summarise(gate, i)
 
         if gate.get("passed"):
-            print(f"[improve_until_passes] Quality gate PASSED on pass {i}. Proceeding to publish.")
+            print(
+                f"[improve_until_passes] Quality gate PASSED on pass {i}. Proceeding to publish."
+            )
             return 0
 
         if i == MAX_ITERATIONS:
@@ -94,10 +100,14 @@ def main() -> int:
             )
             return 1
 
-        print(f"[improve_until_passes] Running improvement agent (pass {i}/{MAX_ITERATIONS - 1} remaining)...")
+        print(
+            f"[improve_until_passes] Running improvement agent (pass {i}/{MAX_ITERATIONS - 1} remaining)..."
+        )
         rc = run_improvement()
         if rc != 0:
-            print(f"[improve_until_passes] improvement_loop.py exited with code {rc} — continuing to re-check quality.")
+            print(
+                f"[improve_until_passes] improvement_loop.py exited with code {rc} — continuing to re-check quality."
+            )
 
     return 1
 
