@@ -30,7 +30,7 @@ OLLAMA_TIMEOUT = int(os.getenv("OLLAMA_TIMEOUT", "300"))
 OLLAMA_RETRIES = int(os.getenv("OLLAMA_RETRIES", "3"))
 AUTO_REPAIR_PATHS = os.getenv("AUTO_REPAIR_PATHS", "1") == "1"
 
-ALLOWED = ("scout", "analyst", "author", "editor", "publisher", "deployer", "all")
+ALLOWED = ("scout", "analyst", "author", "editor", "publisher", "deployer", "all", "pipeline")
 AGENT_PREFIXES = {
     "scout": ["research/raw/", "state/"],
     "analyst": ["research/briefs/", "state/"],
@@ -57,13 +57,16 @@ _THINKING_MODEL_PREFIXES = ("qwen3", "qwq", "deepseek-r1", "deepseek-r2")
 _OK_MARK = "\u2713"
 _FAIL_MARK = "\u2717"
 
+
 def progress(msg: str) -> None:
     print(f"[progress] {msg}", flush=True)
     append_text(WORKSPACE / "state" / "progress-log.md", f"[{now_str()}] {msg}")
 
+
 def error(agent: str, msg: str) -> None:
     print(f"[error:{agent}] {msg}", file=sys.stderr, flush=True)
     append_text(WORKSPACE / "state" / "errors.log", f"[{now_str()}] {agent}: {msg}")
+
 
 def choose_model(agent: str) -> str:
     if agent in {"scout", "analyst"}:
@@ -72,10 +75,12 @@ def choose_model(agent: str) -> str:
         return EDITOR_MODEL
     return WRITER_MODEL
 
+
 def _is_thinking_model(model: str) -> bool:
     """Return True if the model is known to emit <think> blocks by default."""
     lower = model.lower()
     return any(lower.startswith(p) for p in _THINKING_MODEL_PREFIXES)
+
 
 def gather_research_snippets() -> str:
     blocks: list[str] = []
@@ -86,6 +91,7 @@ def gather_research_snippets() -> str:
         if latest.exists():
             blocks.append(f"## {latest.name}\n{load_text(latest)[:4000]}")
     return "\n\n".join(blocks)
+
 
 def build_context(agent: str) -> str:
     raw_path = latest_raw_intel_path()
@@ -104,6 +110,7 @@ def build_context(agent: str) -> str:
     ]
     return "\n\n".join(parts)[:MAX_CONTEXT_CHARS]
 
+
 def ollama_healthcheck() -> tuple[bool, str]:
     try:
         resp = requests.get(f"{OLLAMA_URL}/api/tags", timeout=10)
@@ -112,15 +119,20 @@ def ollama_healthcheck() -> tuple[bool, str]:
     except Exception as exc:
         return False, f"{type(exc).__name__}: {exc}"
 
+
 def call_ollama(model: str, prompt: str, *, suppress_thinking: bool = False) -> str:
     """Call Ollama /api/generate.
-    suppress_thinking=True sets think=false in the options dict, which prevents qwen3-family models from emitting a block before the JSON response. 
-    This eliminates the double-call pattern seen when the parser fails on the think block and falls back to a retry.
+
+    suppress_thinking=True sets think=false in the options dict, which prevents
+    qwen3-family models from emitting a block before the JSON response.
+    This eliminates the double-call pattern seen when the parser fails on the
+    think block and falls back to a retry.
     """
     options: dict[str, Any] = {"temperature": 0.15, "num_predict": 2600}
-    
-    # Use the /no_think suffix in the prompt as it is the most reliable way 
-    # to suppress thinking for Qwen3 in some Ollama versions, alongside the options key.
+
+    # Use the /no_think suffix in the prompt as it is the most reliable way
+    # to suppress thinking for Qwen3 in some Ollama versions, alongside the
+    # options key.
     final_prompt = prompt
     if suppress_thinking and _is_thinking_model(model):
         options["think"] = False
@@ -155,14 +167,15 @@ def call_ollama(model: str, prompt: str, *, suppress_thinking: bool = False) -> 
             break
     raise RuntimeError(f"Ollama request failed: {last_err}")
 
+
 def extract_json(raw: str) -> str:
     raw = raw.strip()
     if not raw:
         raise ValueError("No JSON object found in model output")
-    
+
     # Strip <think>...</think> block if present (qwen3 reasoning models)
     raw = re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL | re.IGNORECASE).strip()
-    
+
     blocks = re.findall(r"```(?:json)?\s*(\{.*?\})\s*```", raw, flags=re.DOTALL)
     if blocks:
         return blocks[0]
@@ -172,11 +185,13 @@ def extract_json(raw: str) -> str:
         return raw[start : end + 1]
     raise ValueError("No JSON object found in model output")
 
+
 def parse_json(raw: str) -> dict[str, Any]:
     candidate = extract_json(raw)
     candidate = candidate.replace("\u201c", '"').replace("\u201d", '"').replace("\u2019", "'")
     candidate = re.sub(r",(\s*[}\]])", r"\1", candidate)
     return json.loads(candidate)
+
 
 def repair_path(agent: str, proposed: str) -> str:
     name = Path(proposed).name or f"{agent}-{today_str()}.md"
@@ -187,6 +202,7 @@ def repair_path(agent: str, proposed: str) -> str:
     if name.endswith(".py"):
         return f"content/blueprints/{name}"
     return f"content/issues/{name}"
+
 
 def validate_path(agent: str, proposed: str) -> Path:
     rel = (proposed or DEFAULT_PATHS[agent].format(date=today_str())).replace("\\", "/").strip()
@@ -207,6 +223,7 @@ def validate_path(agent: str, proposed: str) -> Path:
         progress(f"{agent}: auto-repaired disallowed path {rel_posix!r} -> {repaired!r}")
         final = (WORKSPACE / repaired).resolve()
     return final
+
 
 def build_prompt(agent: str, context: str) -> str:
     allowed = "\n".join(f"- {p}" for p in AGENT_PREFIXES[agent])
@@ -233,6 +250,7 @@ def build_prompt(agent: str, context: str) -> str:
         + json.dumps(schema, indent=2)
         + f"\n\nAllowed path prefixes:\n{allowed}\n\ Task hint:\n{hints[agent]}\n\nContext:\n{context}"
     )
+
 
 def coerce(agent: str, result: dict[str, Any]) -> dict[str, Any]:
     files: list[dict[str, str]] = []
@@ -265,6 +283,7 @@ def coerce(agent: str, result: dict[str, Any]) -> dict[str, Any]:
         "memory_update": str(result.get("memory_update", "")).strip(),
     }
 
+
 def apply(agent: str, result: dict[str, Any]) -> int:
     count = 0
     for item in result["files"]:
@@ -278,13 +297,14 @@ def apply(agent: str, result: dict[str, Any]) -> int:
         write_text(WORKSPACE / "agents" / agent / "MEMORY.md", result["memory_update"] + "\n")
     return count
 
+
 def run_llm(agent: str) -> dict[str, Any]:
     raw = ""
     start = time.time()
     model = choose_model(agent)
-    
+
     # Suppress blocks on first call for reasoning models (qwen3, qwq, deepseek-r1/r2).
-    # This avoids the double-call pattern where parse_json fails on the think block and 
+    # This avoids the double-call pattern where parse_json fails on the think block and
     # wastes a full inference cycle before the fallback retry succeeds.
     suppress = _is_thinking_model(model)
     print(f"[{agent}] Starting (model={model}, url={OLLAMA_URL}, suppress_thinking={suppress})", flush=True)
@@ -298,7 +318,7 @@ def run_llm(agent: str) -> dict[str, Any]:
         print(f"[{agent}] Ollama reachable, calling model...", flush=True)
         raw = call_ollama(model, build_prompt(agent, build_context(agent)), suppress_thinking=suppress)
         print(f"[{agent}] Model responded ({len(raw)} chars), parsing JSON...", flush=True)
-        
+
         try:
             parsed = parse_json(raw)
         except Exception as parse_exc:
@@ -342,6 +362,7 @@ def run_llm(agent: str) -> dict[str, Any]:
             "summary": str(exc),
         }
 
+
 def run_script(name: str, script_name: str) -> dict[str, Any]:
     start = time.time()
     print(f"[{name}] Running {script_name}...", flush=True)
@@ -357,7 +378,7 @@ def run_script(name: str, script_name: str) -> dict[str, Any]:
         if cp.returncode != 0:
             print(f"[{name}] FAILED (exit {cp.returncode}):\n{cp.stdout}\n{cp.stderr}", flush=True)
             raise RuntimeError((cp.stdout or "") + (cp.stderr or ""))
-        
+
         duration = time.time() - start
         progress(f"{name}: ok (duration={duration:.2f}s)")
         output = (cp.stdout or "").strip()
@@ -381,6 +402,7 @@ def run_script(name: str, script_name: str) -> dict[str, Any]:
             "summary": str(exc),
         }
 
+
 def run_deployer() -> dict[str, Any]:
     if os.getenv("ENABLE_CLOUDFLARE_DEPLOY", "0") != "1":
         return {
@@ -392,6 +414,7 @@ def run_deployer() -> dict[str, Any]:
         }
     return run_script("deployer", "deploy_cloudflare.py")
 
+
 def heartbeat(results: list[dict[str, Any]]) -> None:
     fired = ", ".join(
         f"{r['agent']}={_OK_MARK if r['status'] == 'ok' else _FAIL_MARK}" for r in results
@@ -399,7 +422,7 @@ def heartbeat(results: list[dict[str, Any]]) -> None:
     errors = [f"{r['agent']}: {r['summary']}" for r in results if r["status"] != "ok"]
     total_files = sum(int(r.get("files_updated", 0)) for r in results)
     duration = sum(float(r.get("duration_s", 0.0)) for r in results)
-    
+
     write_text(
         WORKSPACE / "HEARTBEAT.md",
         "\n".join(
@@ -413,6 +436,7 @@ def heartbeat(results: list[dict[str, Any]]) -> None:
             ]
         ) + "\n",
     )
+
 
 def run_all() -> int:
     ok, msg = ollama_healthcheck()
@@ -435,10 +459,10 @@ def run_all() -> int:
 
     results: list[dict[str, Any]] = []
     results.append(run_script("research", "web_research.py"))
-    
+
     for agent in ["scout", "analyst", "author", "editor"]:
         results.append(run_llm(agent))
-    
+
     try:
         ensure_issue_contract(latest_issue_path())
     except Exception as exc:
@@ -455,7 +479,7 @@ def run_all() -> int:
 
     quality_result = run_script("quality-gate", "quality_gate.py")
     results.append(quality_result)
-    
+
     if quality_result["status"] == "ok":
         results.append(run_script("publisher", "publish_site.py"))
         results.append(run_deployer())
@@ -482,24 +506,125 @@ def run_all() -> int:
     heartbeat(results)
     return 0 if all(r["status"] == "ok" for r in results) else 1
 
+
+def run_pipeline() -> int:
+    """High-level pipeline that mirrors the GitHub Actions generate.yml flow.
+
+    - Always refreshes web research.
+    - If Ollama is reachable, runs all four agents, enforces the issue
+      contract, then uses improve_until_passes.py as the quality controller
+      before publishing, deploying, and sending via Beehiiv.
+    - If Ollama is not reachable, creates a fallback stub issue, runs the
+      quality gate in best-effort mode, then still publishes site + Beehiiv
+      so subscribers get something instead of nothing.
+    """
+    results: list[dict[str, Any]] = []
+
+    # Always refresh raw intel
+    results.append(run_script("research", "web_research.py"))
+
+    ollama_ok, msg = ollama_healthcheck()
+
+    if ollama_ok:
+        # Run the four core agents
+        for agent in ["scout", "analyst", "author", "editor"]:
+            results.append(run_llm(agent))
+
+        # Enforce contract on the latest issue before quality/improvement
+        try:
+            ensure_issue_contract(latest_issue_path())
+        except Exception as exc:
+            error("contract", f"{type(exc).__name__}: {exc}")
+            results.append(
+                {
+                    "status": "error",
+                    "agent": "contract",
+                    "files_updated": 0,
+                    "duration_s": 0.0,
+                    "summary": str(exc),
+                }
+            )
+
+        # Aggressive improvement loop that wraps the quality gate
+        qc = run_script("improve-controller", "improve_until_passes.py")
+        results.append(qc)
+
+        if qc["status"] == "ok":
+            results.append(run_script("publisher", "publish_site.py"))
+            results.append(run_deployer())
+            results.append(run_script("beehiiv", "beehiiv_publish.py"))
+        else:
+            results.append(
+                {
+                    "status": "error",
+                    "agent": "publisher",
+                    "files_updated": 0,
+                    "duration_s": 0.0,
+                    "summary": "publish blocked by quality controller",
+                }
+            )
+            results.append(
+                {
+                    "status": "error",
+                    "agent": "deployer",
+                    "files_updated": 0,
+                    "duration_s": 0.0,
+                    "summary": "deploy blocked by quality controller",
+                }
+            )
+            results.append(
+                {
+                    "status": "error",
+                    "agent": "beehiiv",
+                    "files_updated": 0,
+                    "duration_s": 0.0,
+                    "summary": "beehiiv send blocked by quality controller",
+                }
+            )
+    else:
+        # Ollama offline — fall back to a stub issue but still ship something
+        error("ollama", f"Healthcheck failed in pipeline: {msg}")
+        results.append(
+            {
+                "status": "error",
+                "agent": "ollama",
+                "files_updated": 0,
+                "duration_s": 0.0,
+                "summary": f"Healthcheck failed: {msg}",
+            }
+        )
+
+        results.append(run_script("stub", "create_stub_issue.py"))
+        results.append(run_script("quality-gate", "quality_gate.py"))
+        results.append(run_script("publisher", "publish_site.py"))
+        results.append(run_deployer())
+        results.append(run_script("beehiiv", "beehiiv_publish.py"))
+
+    heartbeat(results)
+    return 0 if all(r["status"] == "ok" for r in results) else 1
+
+
 def main() -> int:
     if len(sys.argv) < 2 or sys.argv[1] not in ALLOWED:
-        print("Usage: python agent_loop.py [scout|analyst|author|editor|publisher|deployer|all]")
+        print("Usage: python agent_loop.py [scout|analyst|author|editor|publisher|deployer|all|pipeline]")
         return 1
-    
+
     target = sys.argv[1]
     if target == "all":
         return run_all()
-    
+    if target == "pipeline":
+        return run_pipeline()
+
     if target == "publisher":
         result = run_script("publisher", "publish_site.py")
     elif target == "deployer":
         result = run_deployer()
     else:
         result = run_llm(target)
-    
+
     heartbeat([result])
     return 0 if result["status"] == "ok" else 1
+
 
 if __name__ == "__main__":
     raise SystemExit(main())
