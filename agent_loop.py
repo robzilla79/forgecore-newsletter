@@ -37,11 +37,14 @@ AGENT_PREFIXES = {
     "author": ["content/issues/", "content/blueprints/", "state/"],
     "editor": ["content/issues/", "state/"],
 }
+# Canonical naming: YYYY-MM-DD.md — no ISSUE- prefix, no slug suffix.
+# issue_contract.list_issue_files() also matches legacy ISSUE-*.md files for
+# backward compatibility, but all new writes use this format.
 DEFAULT_PATHS = {
     "scout": "research/raw/RAW-INTEL-{date}.md",
     "analyst": "research/briefs/EDITORIAL-BRIEF-{date}.md",
-    "author": "content/issues/ISSUE-{date}.md",
-    "editor": "content/issues/ISSUE-{date}.md",
+    "author": "content/issues/{date}.md",
+    "editor": "content/issues/{date}.md",
 }
 SYSTEMS = {
     "scout": SCOUT_SYSTEM,
@@ -222,7 +225,7 @@ def parse_json(raw: str) -> dict[str, Any]:
 
 
 def repair_path(agent: str, proposed: str) -> str:
-    name = Path(proposed).name or f"{agent}-{today_str()}.md"
+    name = Path(proposed).name or f"{today_str()}.md"
     if agent == "scout":
         return f"research/raw/{name}"
     if agent == "analyst":
@@ -272,11 +275,18 @@ def build_prompt(agent: str, context: str) -> str:
         "author": "Write a complete public-facing issue that uses the exact required headings: Hook, Top Story, Why It Matters, Highlights, Tool of the Week, Workflow, CTA, Sources. Use only real source links.",
         "editor": "Rewrite the issue to improve clarity, originality, flow, tone, and publishability while preserving the exact required headings and removing placeholders or fake links.",
     }
+    # Remind author/editor of the canonical file naming so they don't invent ISSUE- prefixes
+    path_hint = (
+        f"\n\nIMPORTANT: Issue files must be written to content/issues/{today_str()}.md "
+        "(plain YYYY-MM-DD.md, no 'ISSUE-' prefix, no slug suffix)."
+        if agent in {"author", "editor"}
+        else ""
+    )
     return (
         SYSTEMS[agent]
         + "\n\nReturn ONLY valid JSON matching this schema:\n"
         + json.dumps(schema, indent=2)
-        + f"\n\nAllowed path prefixes:\n{allowed}\n\nTask hint:\n{hints[agent]}\n\nContext:\n{context}"
+        + f"\n\nAllowed path prefixes:\n{allowed}\n\nTask hint:\n{hints[agent]}{path_hint}\n\nContext:\n{context}"
     )
 
 
@@ -352,8 +362,6 @@ def run_llm(agent: str) -> dict[str, Any]:
             parsed = parse_json(raw)
         except Exception as parse_exc:
             # First parse failed — retry with fallback model.
-            # If fallback == primary we still retry (temperature variation may help),
-            # but we always enforce no think blocks on the retry prompt.
             print(f"[{agent}] JSON parse failed ({parse_exc}), retrying with fallback model...", flush=True)
             fallback_prompt = (
                 "Your previous response was invalid JSON. "
@@ -365,8 +373,6 @@ def run_llm(agent: str) -> dict[str, Any]:
             try:
                 parsed = parse_json(raw)
             except Exception as second_exc:
-                # Both parses failed; fall back to writing raw content so the
-                # pipeline still has something concrete to work with.
                 print(
                     f"[{agent}] Fallback parse failed as well ({second_exc}); "
                     "writing raw model output as plain markdown.",
@@ -622,33 +628,16 @@ def run_pipeline() -> int:
             results.append(run_deployer())
             results.append(run_script("beehiiv", "beehiiv_publish.py"))
         else:
-            results.append(
-                {
-                    "status": "error",
-                    "agent": "publisher",
-                    "files_updated": 0,
-                    "duration_s": 0.0,
-                    "summary": "publish blocked by quality controller",
-                }
-            )
-            results.append(
-                {
-                    "status": "error",
-                    "agent": "deployer",
-                    "files_updated": 0,
-                    "duration_s": 0.0,
-                    "summary": "deploy blocked by quality controller",
-                }
-            )
-            results.append(
-                {
-                    "status": "error",
-                    "agent": "beehiiv",
-                    "files_updated": 0,
-                    "duration_s": 0.0,
-                    "summary": "beehiiv send blocked by quality controller",
-                }
-            )
+            for blocked in ("publisher", "deployer", "beehiiv"):
+                results.append(
+                    {
+                        "status": "error",
+                        "agent": blocked,
+                        "files_updated": 0,
+                        "duration_s": 0.0,
+                        "summary": f"{blocked} blocked by quality controller",
+                    }
+                )
     else:
         # Ollama offline — fall back to a stub issue but still ship something
         error("ollama", f"Healthcheck failed in pipeline: {msg}")
@@ -669,7 +658,7 @@ def run_pipeline() -> int:
         results.append(run_script("beehiiv", "beehiiv_publish.py"))
 
     heartbeat(results)
-    return 0 if all(r["status"] == "ok" for r in results) else 1
+    return 0 if all(r["status"] == "ok" else r["status"] == "ok" for r in results) else 1
 
 
 def main() -> int:

@@ -43,16 +43,38 @@ BANNED_TOKENS = [
 
 
 def list_issue_files() -> list[Path]:
+    """Return all issue markdown files regardless of naming convention.
+
+    Supports two historical patterns:
+      - YYYY-MM-DD.md          (current canonical format)
+      - ISSUE-YYYY-MM-DD.md   (legacy prefix format)
+      - YYYY-MM-DD-slug.md     (legacy slug suffix format)
+
+    All patterns are de-duplicated and sorted by filename.
+    """
     root = WORKSPACE / 'content' / 'issues'
-    files = [p for p in root.glob('20[0-9][0-9]-[0-9][0-9]-[0-9][0-9].md') if p.is_file()]
-    return sorted({p.resolve() for p in files if p.is_file()})
+    patterns = [
+        '20[0-9][0-9]-[0-9][0-9]-[0-9][0-9].md',
+        '20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]-*.md',
+        'ISSUE-20[0-9][0-9]-[0-9][0-9]-[0-9][0-9].md',
+    ]
+    files: set[Path] = set()
+    for pattern in patterns:
+        files.update(p.resolve() for p in root.glob(pattern) if p.is_file())
+    return sorted(files, key=lambda p: p.name)
 
 
 def latest_issue_path() -> Path:
     files = list_issue_files()
     if files:
-        return sorted(files, key=lambda p: p.name)[-1]
-    return WORKSPACE / 'content' / 'issues' / f'ISSUE-{today_str()}.md'
+        # Sort by the date extracted from filename so slug-suffixed files
+        # don't accidentally sort ahead of plain YYYY-MM-DD.md files.
+        def _date_key(p: Path) -> str:
+            m = re.search(r'(\d{4}-\d{2}-\d{2})', p.name)
+            # secondary key is full name so ties within same date are stable
+            return (m.group(1) if m else '0000-00-00') + '|' + p.name
+        return sorted(files, key=_date_key)[-1]
+    return WORKSPACE / 'content' / 'issues' / f'{today_str()}.md'
 
 
 def latest_brief_path() -> Path:
