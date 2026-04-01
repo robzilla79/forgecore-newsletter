@@ -21,10 +21,18 @@ from utils import WORKSPACE, append_text, load_text, now_str, today_str, write_t
 load_dotenv(WORKSPACE / ".env")
 
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434").rstrip("/")
-RESEARCH_MODEL = os.getenv("RESEARCH_MODEL", "qwen3:14b")
-WRITER_MODEL = os.getenv("WRITER_MODEL", "qwen3:14b")
+
+# Default model: mistral:7b
+# - Fast (~15-30s per agent on CPU+GPU hybrid)
+# - Highly instruction-following — reliably outputs valid JSON when asked
+# - No <think> blocks or reasoning preamble to strip
+# - 7B fits in 8GB VRAM; also runs well on CPU-only runners
+# Override via RESEARCH_MODEL / WRITER_MODEL / EDITOR_MODEL / FALLBACK_MODEL secrets
+# or env vars if you want a larger model (e.g. mistral:latest, llama3.1:8b, qwen3:14b).
+RESEARCH_MODEL = os.getenv("RESEARCH_MODEL", "mistral:7b")
+WRITER_MODEL = os.getenv("WRITER_MODEL", "mistral:7b")
 EDITOR_MODEL = os.getenv("EDITOR_MODEL", WRITER_MODEL)
-FALLBACK_MODEL = os.getenv("FALLBACK_MODEL", "qwen3:8b")
+FALLBACK_MODEL = os.getenv("FALLBACK_MODEL", "mistral:7b")
 MAX_CONTEXT_CHARS = int(os.getenv("MAX_CONTEXT_CHARS", "22000"))
 OLLAMA_TIMEOUT = int(os.getenv("OLLAMA_TIMEOUT", "300"))
 OLLAMA_RETRIES = int(os.getenv("OLLAMA_RETRIES", "3"))
@@ -37,9 +45,6 @@ AGENT_PREFIXES = {
     "author": ["content/issues/", "content/blueprints/", "state/"],
     "editor": ["content/issues/", "state/"],
 }
-# Canonical naming: YYYY-MM-DD.md — no ISSUE- prefix, no slug suffix.
-# issue_contract.list_issue_files() also matches legacy ISSUE-*.md files for
-# backward compatibility, but all new writes use this format.
 DEFAULT_PATHS = {
     "scout": "research/raw/RAW-INTEL-{date}.md",
     "analyst": "research/briefs/EDITORIAL-BRIEF-{date}.md",
@@ -56,14 +61,9 @@ SYSTEMS = {
 # Models that emit <think> blocks before JSON — suppress on first call via API option
 _THINKING_MODEL_PREFIXES = ("qwen3", "qwq", "deepseek-r1", "deepseek-r2")
 
-# Module-level constants to avoid backslash-in-f-string (invalid in Python < 3.12)
 _OK_MARK = "\u2713"
 _FAIL_MARK = "\u2717"
 
-# Token budget for model responses.
-# 2600 was too low — the scout/author JSON content fields routinely exceed that,
-# causing Ollama to truncate mid-JSON and break parse_json.
-# 8192 gives headroom for a full newsletter issue in a single response.
 _NUM_PREDICT = int(os.getenv("OLLAMA_NUM_PREDICT", "8192"))
 
 
@@ -86,7 +86,6 @@ def choose_model(agent: str) -> str:
 
 
 def _is_thinking_model(model: str) -> bool:
-    """Return True if the model is known to emit <think> blocks by default."""
     lower = model.lower()
     return any(lower.startswith(p) for p in _THINKING_MODEL_PREFIXES)
 
@@ -142,10 +141,7 @@ def model_exists(model: str) -> bool:
 
 
 def ensure_model_available(model: str) -> None:
-    """Ensure the requested model is present locally, pulling it if needed.
-
-    This prevents repeated /api/generate failures when a model tag is missing.
-    """
+    """Pull the model if it is not already present locally."""
     if model_exists(model):
         return
     progress(f"ollama: model {model!r} missing, pulling now")
@@ -158,22 +154,9 @@ def ensure_model_available(model: str) -> None:
 
 
 def call_ollama(model: str, prompt: str, *, suppress_thinking: bool = False) -> str:
-    """Call Ollama /api/generate.
-
-    suppress_thinking=True sets think=false in the options dict, which prevents
-    qwen3-family models from emitting a block before the JSON response.
-    This eliminates the double-call pattern seen when the parser fails on the
-    think block and falls back to a retry.
-
-    num_predict is set to _NUM_PREDICT (default 8192) so that long JSON
-    responses — particularly the scout and author content fields — are never
-    truncated mid-object, which would cause parse_json to fail.
-    """
+    """Call Ollama /api/generate and return the raw response string."""
     options: dict[str, Any] = {"temperature": 0.15, "num_predict": _NUM_PREDICT}
 
-    # Use the /no_think suffix in the prompt as it is the most reliable way
-    # to suppress thinking for Qwen3 in some Ollama versions, alongside the
-    # options key.
     final_prompt = prompt
     if suppress_thinking and _is_thinking_model(model):
         options["think"] = False
@@ -210,25 +193,61 @@ def call_ollama(model: str, prompt: str, *, suppress_thinking: bool = False) -> 
 
 
 def extract_json(raw: str) -> str:
+    """Extract the first complete JSON object from raw model output.
+
+    Handles:
+    - Pure JSON (most reliable models)
+    - ```json ... ``` fenced blocks
+    - ``` ... ``` fenced blocks without language tag
+    - JSON preceded by prose or <think> blocks (reasoning models)
+    - Trailing text after the closing brace
+    """
     raw = raw.strip()
     if not raw:
-        raise ValueError("No JSON object found in model output")
+        raise ValueError("Empty model output — no JSON to extract")
 
-    # Strip <think>...</think> block if present (qwen3 reasoning models)
+    # Strip <think>...</think> blocks (qwen3, deepseek-r1)
     raw = re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL | re.IGNORECASE).strip()
 
-    blocks = re.findall(r"```(?:json)?\s*(\{.*?\})\s*```", raw, flags=re.DOTALL)
-    if blocks:
-        return blocks[0]
-    start = raw.find("{")
-    end = raw.rfind("}")
-    if start != -1 and end != -1 and end > start:
-        return raw[start : end + 1]
-    raise ValueError("No JSON object found in model output")
+    # 1. Prefer an explicit ```json ... ``` fence
+    fenced = re.findall(r"```(?:json)?\s*(\{.*?\})\s*```", raw, flags=re.DOTALL)
+    if fenced:
+        return fenced[0]
+
+    # 2. Walk character-by-character to find the first balanced { ... } block.
+    # This correctly handles JSON that is preceded by prose, model preamble,
+    # or a partial <think> block that was not closed.
+    depth = 0
+    start = -1
+    in_string = False
+    escape_next = False
+    for i, ch in enumerate(raw):
+        if escape_next:
+            escape_next = False
+            continue
+        if ch == "\\" and in_string:
+            escape_next = True
+            continue
+        if ch == '"':
+            in_string = not in_string
+            continue
+        if in_string:
+            continue
+        if ch == "{":
+            if depth == 0:
+                start = i
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0 and start != -1:
+                return raw[start : i + 1]
+
+    raise ValueError("No balanced JSON object found in model output")
 
 
 def parse_json(raw: str) -> dict[str, Any]:
     candidate = extract_json(raw)
+    # Normalize smart quotes and trailing commas
     candidate = candidate.replace("\u201c", '"').replace("\u201d", '"').replace("\u2019", "'")
     candidate = re.sub(r",(\s*[}\]])", r"\1", candidate)
     return json.loads(candidate)
@@ -267,6 +286,13 @@ def validate_path(agent: str, proposed: str) -> Path:
 
 
 def build_prompt(agent: str, context: str) -> str:
+    """Build the full prompt for an agent.
+
+    IMPORTANT: The system prompt (from system_prompts.py) defines ROLE and STYLE only.
+    This function appends the JSON output contract so the format instruction appears
+    exactly once, immediately before the schema — preventing the model from receiving
+    contradictory "write Markdown" and "return JSON" instructions.
+    """
     allowed = "\n".join(f"- {p}" for p in AGENT_PREFIXES[agent])
     schema = {
         "summary": "Short description of action taken",
@@ -282,21 +308,34 @@ def build_prompt(agent: str, context: str) -> str:
     hints = {
         "scout": "Write a high-signal raw intel synthesis from the research files. Rank promising angles and identify one strong Tool of the Week candidate.",
         "analyst": "Write a strong editorial brief with audience, thesis, why now, section plan, SEO title ideas, CTA direction, and distribution angles.",
-        "author": "Write a complete public-facing issue that uses the exact required headings: Hook, Top Story, Why It Matters, Highlights, Tool of the Week, Workflow, CTA, Sources. Use only real source links.",
-        "editor": "Rewrite the issue to improve clarity, originality, flow, tone, and publishability while preserving the exact required headings and removing placeholders or fake links.",
+        "author": "Write a COMPLETE, FULL-LENGTH newsletter issue using ALL required sections. Minimum 600 words. Do NOT truncate or summarize — write the full content in the 'content' field.",
+        "editor": "Edit the issue draft. Return the COMPLETE edited Markdown in the 'content' field. Do NOT truncate. Keep ALL required sections. Minimum 600 words.",
     }
-    # Remind author/editor of the canonical file naming so they don't invent ISSUE- prefixes
     path_hint = (
         f"\n\nIMPORTANT: Issue files must be written to content/issues/{today_str()}.md "
-        "(plain YYYY-MM-DD.md, no 'ISSUE-' prefix, no slug suffix)."
+        "(plain YYYY-MM-DD.md, no 'ISSUE-' prefix, no slug suffix). Mode must be 'overwrite'."
         if agent in {"author", "editor"}
         else ""
     )
+
+    # The JSON instruction block is placed HERE — after the system role, before the context.
+    # This ensures the model sees one clear format contract rather than two conflicting ones.
+    json_contract = (
+        "\n\nYou MUST respond with ONLY a single valid JSON object. "
+        "No prose before or after it. No markdown fences. No explanation. "
+        "Start your response with { and end it with }. "
+        "All newsletter content goes inside the JSON 'content' field as a JSON string value "
+        "(escape any quotes or newlines inside it). "
+        "Schema:\n"
+        + json.dumps(schema, indent=2)
+    )
+
     return (
         SYSTEMS[agent]
-        + "\n\nReturn ONLY valid JSON matching this schema:\n"
-        + json.dumps(schema, indent=2)
-        + f"\n\nAllowed path prefixes:\n{allowed}\n\nTask hint:\n{hints[agent]}{path_hint}\n\nContext:\n{context}"
+        + json_contract
+        + f"\n\nAllowed path prefixes:\n{allowed}"
+        + f"\n\nTask:\n{hints[agent]}{path_hint}"
+        + f"\n\nContext:\n{context}"
     )
 
 
@@ -350,10 +389,6 @@ def run_llm(agent: str) -> dict[str, Any]:
     raw = ""
     start = time.time()
     model = choose_model(agent)
-
-    # Suppress blocks on first call for reasoning models (qwen3, qwq, deepseek-r1/r2).
-    # This avoids the double-call pattern where parse_json fails on the think block and
-    # wastes a full inference cycle before the fallback retry succeeds.
     suppress = _is_thinking_model(model)
     print(f"[{agent}] Starting (model={model}, url={OLLAMA_URL}, suppress_thinking={suppress})", flush=True)
 
@@ -371,66 +406,49 @@ def run_llm(agent: str) -> dict[str, Any]:
         try:
             parsed = parse_json(raw)
         except Exception as parse_exc:
-            # First parse failed — retry with fallback model.
             print(f"[{agent}] JSON parse failed ({parse_exc}), retrying with fallback model...", flush=True)
             fallback_prompt = (
-                "Your previous response was invalid JSON. "
-                "Return the same result as exactly one valid JSON object. "
-                "No prose. No code fences. No tags. No markdown.\n\n"
-                "Previous response:\n" + raw
+                "The following text is a model response that failed JSON parsing. "
+                "Convert it into a single valid JSON object with this schema:\n"
+                + json.dumps({
+                    "summary": "Short description",
+                    "files": [{"path": DEFAULT_PATHS[agent].format(date=today_str()), "mode": "overwrite", "content": "<full content here>"}],
+                    "memory_update": ""
+                }, indent=2)
+                + "\n\nRespond with ONLY the JSON object. No prose. No fences.\n\nText to convert:\n"
+                + raw
             )
             raw = call_ollama(FALLBACK_MODEL, fallback_prompt, suppress_thinking=True)
             try:
                 parsed = parse_json(raw)
             except Exception as second_exc:
                 print(
-                    f"[{agent}] Fallback parse failed as well ({second_exc}); "
-                    "writing raw model output as plain markdown.",
+                    f"[{agent}] Fallback parse failed ({second_exc}); writing raw output as markdown.",
                     flush=True,
                 )
                 fallback_result = {
-                    "summary": "Completed one action (fallback from raw after JSON parse failures).",
-                    "files": [
-                        {
-                            "path": DEFAULT_PATHS[agent].format(date=today_str()),
-                            "mode": "append",
-                            "content": f"# {agent.title()} update\n\n{raw.strip()}\n",
-                        }
-                    ],
+                    "summary": "Completed (fallback raw dump after JSON parse failures).",
+                    "files": [{
+                        "path": DEFAULT_PATHS[agent].format(date=today_str()),
+                        "mode": "append",
+                        "content": f"# {agent.title()} update\n\n{raw.strip()}\n",
+                    }],
                     "memory_update": "",
                 }
                 result = coerce(agent, fallback_result)
                 count = apply(agent, result)
                 duration = time.time() - start
-                print(
-                    f"[{agent}] Done via raw fallback: {result['summary']} "
-                    f"(files={count}, duration={duration:.2f}s)",
-                    flush=True,
-                )
-                progress(
-                    f"{agent}: {result['summary']} "
-                    f"(files={count}, duration={duration:.2f}s, model={model})",
-                )
-                return {
-                    "status": "ok",
-                    "agent": agent,
-                    "files_updated": count,
-                    "duration_s": duration,
-                    "summary": result["summary"],
-                }
+                print(f"[{agent}] Done via raw fallback (files={count}, duration={duration:.2f}s)", flush=True)
+                progress(f"{agent}: {result['summary']} (files={count}, duration={duration:.2f}s, model={model})")
+                return {"status": "ok", "agent": agent, "files_updated": count, "duration_s": duration, "summary": result["summary"]}
 
         result = coerce(agent, parsed)
         count = apply(agent, result)
         duration = time.time() - start
         print(f"[{agent}] Done: {result['summary']} (files={count}, duration={duration:.2f}s)", flush=True)
         progress(f"{agent}: {result['summary']} (files={count}, duration={duration:.2f}s, model={model})")
-        return {
-            "status": "ok",
-            "agent": agent,
-            "files_updated": count,
-            "duration_s": duration,
-            "summary": result["summary"],
-        }
+        return {"status": "ok", "agent": agent, "files_updated": count, "duration_s": duration, "summary": result["summary"]}
+
     except Exception as exc:
         duration = time.time() - start
         tb = traceback.format_exc()
@@ -438,13 +456,7 @@ def run_llm(agent: str) -> dict[str, Any]:
         print(f"[{agent}] Traceback:\n{tb}", flush=True)
         error(agent, f"{type(exc).__name__}: {exc}\n\nTraceback:\n{tb}\n\nRaw model output:\n{raw or '[EMPTY RESPONSE]'}\n")
         progress(f"[FAIL] {agent}: {type(exc).__name__}: {exc}")
-        return {
-            "status": "error",
-            "agent": agent,
-            "files_updated": 0,
-            "duration_s": duration,
-            "summary": str(exc),
-        }
+        return {"status": "error", "agent": agent, "files_updated": 0, "duration_s": duration, "summary": str(exc)}
 
 
 def run_script(name: str, script_name: str) -> dict[str, Any]:
@@ -462,63 +474,39 @@ def run_script(name: str, script_name: str) -> dict[str, Any]:
         if cp.returncode != 0:
             print(f"[{name}] FAILED (exit {cp.returncode}):\n{cp.stdout}\n{cp.stderr}", flush=True)
             raise RuntimeError((cp.stdout or "") + (cp.stderr or ""))
-
         duration = time.time() - start
         progress(f"{name}: ok (duration={duration:.2f}s)")
         output = (cp.stdout or "").strip()
         print(f"[{name}] OK ({duration:.2f}s)", flush=True)
-        return {
-            "status": "ok",
-            "agent": name,
-            "files_updated": 1,
-            "duration_s": duration,
-            "summary": output or "ok",
-        }
+        return {"status": "ok", "agent": name, "files_updated": 1, "duration_s": duration, "summary": output or "ok"}
     except Exception as exc:
         duration = time.time() - start
         error(name, f"{type(exc).__name__}: {exc}\n\nTraceback:\n{traceback.format_exc()}")
         progress(f"[FAIL] {name}: {type(exc).__name__}: {exc}")
-        return {
-            "status": "error",
-            "agent": name,
-            "files_updated": 0,
-            "duration_s": duration,
-            "summary": str(exc),
-        }
+        return {"status": "error", "agent": name, "files_updated": 0, "duration_s": duration, "summary": str(exc)}
 
 
 def run_deployer() -> dict[str, Any]:
     if os.getenv("ENABLE_CLOUDFLARE_DEPLOY", "0") != "1":
-        return {
-            "status": "ok",
-            "agent": "deployer",
-            "files_updated": 0,
-            "duration_s": 0.0,
-            "summary": "deploy skipped (ENABLE_CLOUDFLARE_DEPLOY=0)",
-        }
+        return {"status": "ok", "agent": "deployer", "files_updated": 0, "duration_s": 0.0, "summary": "deploy skipped (ENABLE_CLOUDFLARE_DEPLOY=0)"}
     return run_script("deployer", "deploy_cloudflare.py")
 
 
 def heartbeat(results: list[dict[str, Any]]) -> None:
-    fired = ", ".join(
-        f"{r['agent']}={_OK_MARK if r['status'] == 'ok' else _FAIL_MARK}" for r in results
-    )
+    fired = ", ".join(f"{r['agent']}={_OK_MARK if r['status'] == 'ok' else _FAIL_MARK}" for r in results)
     errors = [f"{r['agent']}: {r['summary']}" for r in results if r["status"] != "ok"]
     total_files = sum(int(r.get("files_updated", 0)) for r in results)
     duration = sum(float(r.get("duration_s", 0.0)) for r in results)
-
     write_text(
         WORKSPACE / "HEARTBEAT.md",
-        "\n".join(
-            [
-                f"# Last Run Status: {now_str()}",
-                f"- Agents fired: {fired}",
-                f"- Files updated: {total_files}",
-                f"- Errors: {'None' if not errors else '; '.join(errors[:5])}",
-                f"- Duration: {duration:.2f}s",
-                f"- Models: research={RESEARCH_MODEL}, writer={WRITER_MODEL}, editor={EDITOR_MODEL}, fallback={FALLBACK_MODEL}",
-            ]
-        ) + "\n",
+        "\n".join([
+            f"# Last Run Status: {now_str()}",
+            f"- Agents fired: {fired}",
+            f"- Files updated: {total_files}",
+            f"- Errors: {'None' if not errors else '; '.join(errors[:5])}",
+            f"- Duration: {duration:.2f}s",
+            f"- Models: research={RESEARCH_MODEL}, writer={WRITER_MODEL}, editor={EDITOR_MODEL}, fallback={FALLBACK_MODEL}",
+        ]) + "\n",
     )
 
 
@@ -528,139 +516,58 @@ def run_all() -> int:
         print(f"[run_all] FATAL: Ollama healthcheck failed at start: {msg}", flush=True)
         error("ollama", f"Healthcheck failed at start of run_all: {msg}")
         progress(f"[FAIL] ollama: healthcheck failed: {msg}")
-        heartbeat(
-            [
-                {
-                    "status": "error",
-                    "agent": "ollama",
-                    "files_updated": 0,
-                    "duration_s": 0.0,
-                    "summary": f"Healthcheck failed: {msg}",
-                }
-            ]
-        )
+        heartbeat([{"status": "error", "agent": "ollama", "files_updated": 0, "duration_s": 0.0, "summary": f"Healthcheck failed: {msg}"}])
         return 1
 
     results: list[dict[str, Any]] = []
     results.append(run_script("research", "web_research.py"))
-
     for agent in ["scout", "analyst", "author", "editor"]:
         results.append(run_llm(agent))
-
     try:
         ensure_issue_contract(latest_issue_path())
     except Exception as exc:
         error("contract", f"{type(exc).__name__}: {exc}")
-        results.append(
-            {
-                "status": "error",
-                "agent": "contract",
-                "files_updated": 0,
-                "duration_s": 0.0,
-                "summary": str(exc),
-            }
-        )
+        results.append({"status": "error", "agent": "contract", "files_updated": 0, "duration_s": 0.0, "summary": str(exc)})
 
     quality_result = run_script("quality-gate", "quality_gate.py")
     results.append(quality_result)
-
     if quality_result["status"] == "ok":
         results.append(run_script("publisher", "publish_site.py"))
         results.append(run_deployer())
     else:
-        results.append(
-            {
-                "status": "error",
-                "agent": "publisher",
-                "files_updated": 0,
-                "duration_s": 0.0,
-                "summary": "publish blocked by quality gate",
-            }
-        )
-        results.append(
-            {
-                "status": "error",
-                "agent": "deployer",
-                "files_updated": 0,
-                "duration_s": 0.0,
-                "summary": "deploy blocked by quality gate",
-            }
-        )
+        for blocked in ("publisher", "deployer"):
+            results.append({"status": "error", "agent": blocked, "files_updated": 0, "duration_s": 0.0, "summary": f"{blocked} blocked by quality gate"})
 
     heartbeat(results)
     return 0 if all(r["status"] == "ok" for r in results) else 1
 
 
 def run_pipeline() -> int:
-    """High-level pipeline that mirrors the GitHub Actions generate.yml flow.
-
-    - Always refreshes web research.
-    - If Ollama is reachable, runs all four agents, enforces the issue
-      contract, then uses improve_until_passes.py as the quality controller
-      before publishing, deploying, and sending via Beehiiv.
-    - If Ollama is not reachable, creates a fallback stub issue, runs the
-      quality gate in best-effort mode, then still publishes site + Beehiiv
-      so subscribers get something instead of nothing.
-    """
     results: list[dict[str, Any]] = []
-
-    # Always refresh raw intel
     results.append(run_script("research", "web_research.py"))
 
     ollama_ok, msg = ollama_healthcheck()
-
     if ollama_ok:
-        # Run the four core agents
         for agent in ["scout", "analyst", "author", "editor"]:
             results.append(run_llm(agent))
-
-        # Enforce contract on the latest issue before quality/improvement
         try:
             ensure_issue_contract(latest_issue_path())
         except Exception as exc:
             error("contract", f"{type(exc).__name__}: {exc}")
-            results.append(
-                {
-                    "status": "error",
-                    "agent": "contract",
-                    "files_updated": 0,
-                    "duration_s": 0.0,
-                    "summary": str(exc),
-                }
-            )
+            results.append({"status": "error", "agent": "contract", "files_updated": 0, "duration_s": 0.0, "summary": str(exc)})
 
-        # Aggressive improvement loop that wraps the quality gate
         qc = run_script("improve-controller", "improve_until_passes.py")
         results.append(qc)
-
         if qc["status"] == "ok":
             results.append(run_script("publisher", "publish_site.py"))
             results.append(run_deployer())
             results.append(run_script("beehiiv", "beehiiv_publish.py"))
         else:
             for blocked in ("publisher", "deployer", "beehiiv"):
-                results.append(
-                    {
-                        "status": "error",
-                        "agent": blocked,
-                        "files_updated": 0,
-                        "duration_s": 0.0,
-                        "summary": f"{blocked} blocked by quality controller",
-                    }
-                )
+                results.append({"status": "error", "agent": blocked, "files_updated": 0, "duration_s": 0.0, "summary": f"{blocked} blocked by quality controller"})
     else:
-        # Ollama offline — fall back to a stub issue but still ship something
         error("ollama", f"Healthcheck failed in pipeline: {msg}")
-        results.append(
-            {
-                "status": "error",
-                "agent": "ollama",
-                "files_updated": 0,
-                "duration_s": 0.0,
-                "summary": f"Healthcheck failed: {msg}",
-            }
-        )
-
+        results.append({"status": "error", "agent": "ollama", "files_updated": 0, "duration_s": 0.0, "summary": f"Healthcheck failed: {msg}"})
         results.append(run_script("stub", "create_stub_issue.py"))
         results.append(run_script("quality-gate", "quality_gate.py"))
         results.append(run_script("publisher", "publish_site.py"))
@@ -668,8 +575,6 @@ def run_pipeline() -> int:
         results.append(run_script("beehiiv", "beehiiv_publish.py"))
 
     heartbeat(results)
-    # Fixed: was `all(r["status"] == "ok" else r["status"] == "ok" for r in results)`
-    # which is a malformed ternary-inside-generator that always evaluates truthy.
     return 0 if all(r["status"] == "ok" for r in results) else 1
 
 
@@ -677,20 +582,17 @@ def main() -> int:
     if len(sys.argv) < 2 or sys.argv[1] not in ALLOWED:
         print("Usage: python agent_loop.py [scout|analyst|author|editor|publisher|deployer|all|pipeline]")
         return 1
-
     target = sys.argv[1]
     if target == "all":
         return run_all()
     if target == "pipeline":
         return run_pipeline()
-
     if target == "publisher":
         result = run_script("publisher", "publish_site.py")
     elif target == "deployer":
         result = run_deployer()
     else:
         result = run_llm(target)
-
     heartbeat([result])
     return 0 if result["status"] == "ok" else 1
 
