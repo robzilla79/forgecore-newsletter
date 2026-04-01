@@ -61,7 +61,8 @@ jobs:
         run: |
           git fetch origin main
           git reset --hard origin/main
-          git clean -fd
+          # Exclude .venv from clean so pip cache is preserved between runs
+          git clean -fd --exclude='.venv'
           echo "Workspace synced to $(git rev-parse --short HEAD)"
 
       - name: Set up Python
@@ -73,7 +74,14 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          # Recreate venv only if it is missing or broken
+          if [ ! -f ".venv/bin/python" ] && [ ! -f ".venv/Scripts/python.exe" ]; then
+            echo "[venv] Creating fresh .venv"
+            python -m venv .venv
+          fi
+          # Always reinstall deps to pick up requirements.txt changes
+          .venv/bin/pip install -r requirements.txt 2>/dev/null || \
+            .venv/Scripts/pip install -r requirements.txt
 
       - name: Check if Ollama is reachable
         id: ollama_check
@@ -107,8 +115,20 @@ jobs:
           echo "[ollama] Model pull complete. Available models:"
           ollama list
 
+      - name: Warm up Ollama model (ensure it is loaded into memory)
+        if: steps.ollama_check.outputs.reachable == 'true'
+        run: |
+          echo "[ollama] Warming up $RESEARCH_MODEL ..."
+          curl -sf --max-time 120 "$OLLAMA_URL/api/generate" \
+            -d "{\"model\":\"$RESEARCH_MODEL\",\"prompt\":\"hi\",\"stream\":false,\"options\":{\"num_predict\":1}}" \
+            > /dev/null && echo "[ollama] Warm-up OK" || echo "::warning::Warm-up request failed — proceeding anyway"
+          # Give Ollama a moment to settle after loading the model
+          sleep 5
+
       - name: Run web research
-        run: python web_research.py
+        run: |
+          .venv/bin/python web_research.py 2>/dev/null || \
+            .venv/Scripts/python web_research.py
         continue-on-error: true
 
       - name: Run scout agent
@@ -118,7 +138,8 @@ jobs:
             echo "::error::Ollama dropped before scout agent."
             exit 1
           fi
-          python agent_loop.py scout
+          .venv/bin/python agent_loop.py scout 2>/dev/null || \
+            .venv/Scripts/python agent_loop.py scout
         continue-on-error: true
 
       - name: Run analyst agent
@@ -128,7 +149,8 @@ jobs:
             echo "::error::Ollama dropped before analyst agent."
             exit 1
           fi
-          python agent_loop.py analyst
+          .venv/bin/python agent_loop.py analyst 2>/dev/null || \
+            .venv/Scripts/python agent_loop.py analyst
         continue-on-error: true
 
       - name: Run author agent
@@ -138,7 +160,8 @@ jobs:
             echo "::error::Ollama dropped before author agent."
             exit 1
           fi
-          python agent_loop.py author
+          .venv/bin/python agent_loop.py author 2>/dev/null || \
+            .venv/Scripts/python agent_loop.py author
         continue-on-error: true
 
       - name: Run editor agent
@@ -148,30 +171,41 @@ jobs:
             echo "::error::Ollama dropped before editor agent."
             exit 1
           fi
-          python agent_loop.py editor
+          .venv/bin/python agent_loop.py editor 2>/dev/null || \
+            .venv/Scripts/python agent_loop.py editor
         continue-on-error: true
 
       - name: Create fallback stub issue (Ollama offline)
         if: steps.ollama_check.outputs.reachable != 'true'
-        run: python create_stub_issue.py
+        run: |
+          .venv/bin/python create_stub_issue.py 2>/dev/null || \
+            .venv/Scripts/python create_stub_issue.py
 
       - name: Improve issue until quality gate passes (max 5 passes)
         if: steps.ollama_check.outputs.reachable == 'true'
-        run: python improve_until_passes.py
+        run: |
+          .venv/bin/python improve_until_passes.py 2>/dev/null || \
+            .venv/Scripts/python improve_until_passes.py
 
       - name: Run quality gate (final check)
         if: steps.ollama_check.outputs.reachable != 'true'
-        run: python quality_gate.py
+        run: |
+          .venv/bin/python quality_gate.py 2>/dev/null || \
+            .venv/Scripts/python quality_gate.py
         continue-on-error: true
 
       - name: Publish site (render HTML)
         if: success()
-        run: python publish_site.py
+        run: |
+          .venv/bin/python publish_site.py 2>/dev/null || \
+            .venv/Scripts/python publish_site.py
         continue-on-error: false
 
       - name: Publish to Beehiiv (auto-send to subscribers)
         if: success()
-        run: python beehiiv_publish.py
+        run: |
+          .venv/bin/python beehiiv_publish.py 2>/dev/null || \
+            .venv/Scripts/python beehiiv_publish.py
         continue-on-error: true
 
       - name: Commit generated content
