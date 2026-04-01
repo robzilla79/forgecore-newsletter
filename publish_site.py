@@ -8,7 +8,6 @@ import re
 from datetime import datetime
 from pathlib import Path
 
-from dotenv import load_dotenv
 from jinja2 import Template
 
 from issue_contract import (
@@ -18,9 +17,9 @@ from issue_contract import (
     list_issue_files,
     slugify,
 )
-from utils import WORKSPACE, load_text, write_text
+from utils import WORKSPACE, load_project_env, load_text, write_text
 
-load_dotenv(WORKSPACE / ".env")
+load_project_env()
 
 SITE_BASE_URL = os.getenv("SITE_BASE_URL", "https://news.forgecore.co").rstrip("/")
 NEWSLETTER_NAME = os.getenv("NEWSLETTER_NAME", "ForgeCore")
@@ -356,9 +355,7 @@ def main() -> int:
         issues.append(issue_meta(path, text))
 
     for meta in issues:
-        related_html = "\n".join(
-            related_item_html(other) for other in issues if other["slug"] != meta["slug"]
-        )
+        related_html = "\n".join(related_item_html(other) for other in issues if other["slug"] != meta["slug"])
         out_dir = dist / meta["slug"]
         out_dir.mkdir(parents=True, exist_ok=True)
         write_text(
@@ -371,53 +368,29 @@ def main() -> int:
             ),
         )
 
-    write_text(
-        dist / "index.html",
-        render(NEWSLETTER_NAME, TAGLINE, f"{SITE_BASE_URL}/", build_home(issues)),
-    )
+    write_text(dist / "index.html", render(NEWSLETTER_NAME, TAGLINE, f"{SITE_BASE_URL}/", build_home(issues)))
 
     (dist / "archive").mkdir(exist_ok=True)
     write_text(
         dist / "archive" / "index.html",
-        render(
-            f"Archive — {NEWSLETTER_NAME}",
-            f"Browse every issue of {NEWSLETTER_NAME}.",
-            f"{SITE_BASE_URL}/archive/",
-            build_archive(issues),
-        ),
+        render(f"Archive — {NEWSLETTER_NAME}", f"Browse every issue of {NEWSLETTER_NAME}.", f"{SITE_BASE_URL}/archive/", build_archive(issues)),
     )
 
     (dist / "about").mkdir(exist_ok=True)
     write_text(
         dist / "about" / "index.html",
-        render(
-            f"About — {NEWSLETTER_NAME}",
-            f"About {NEWSLETTER_NAME}.",
-            f"{SITE_BASE_URL}/about/",
-            build_about(),
-        ),
+        render(f"About — {NEWSLETTER_NAME}", f"About {NEWSLETTER_NAME}.", f"{SITE_BASE_URL}/about/", build_about()),
     )
 
     (dist / "advertise").mkdir(exist_ok=True)
     write_text(
         dist / "advertise" / "index.html",
-        render(
-            f"Advertise — {NEWSLETTER_NAME}",
-            f"Sponsor {NEWSLETTER_NAME}.",
-            f"{SITE_BASE_URL}/advertise/",
-            build_advertise(),
-        ),
+        render(f"Advertise — {NEWSLETTER_NAME}", f"Sponsor {NEWSLETTER_NAME}.", f"{SITE_BASE_URL}/advertise/", build_advertise()),
     )
 
     write_text(dist / "style.css", load_text(WORKSPACE / "static" / "style.css"))
-    write_text(
-        dist / "_headers",
-        "/*\n  X-Content-Type-Options: nosniff\n  X-Frame-Options: DENY\n  Referrer-Policy: strict-origin-when-cross-origin\n",
-    )
-    write_text(
-        dist / "_redirects",
-        "/archive /archive/ 301\n/about /about/ 301\n/advertise /advertise/ 301\n",
-    )
+    write_text(dist / "_headers", "/*\n  X-Content-Type-Options: nosniff\n  X-Frame-Options: DENY\n  Referrer-Policy: strict-origin-when-cross-origin\n")
+    write_text(dist / "_redirects", "/archive /archive/ 301\n/about /about/ 301\n/advertise /advertise/ 301\n")
 
     print(f"Published {len(issues)} issue(s) to {dist}")
     return 0

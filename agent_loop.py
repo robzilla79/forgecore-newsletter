@@ -12,23 +12,15 @@ from pathlib import Path
 from typing import Any
 
 import requests
-from dotenv import load_dotenv
 
 from templates.system_prompts import ANALYST_SYSTEM, AUTHOR_SYSTEM, EDITOR_SYSTEM, SCOUT_SYSTEM
 from issue_contract import ensure_issue_contract, latest_brief_path, latest_issue_path, latest_raw_intel_path
-from utils import WORKSPACE, append_text, load_text, now_str, today_str, write_text
+from utils import WORKSPACE, append_text, load_project_env, load_text, now_str, today_str, write_text
 
-load_dotenv(WORKSPACE / ".env")
+load_project_env()
 
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434").rstrip("/")
 
-# Default model: mistral:7b
-# - Fast (~15-30s per agent on CPU+GPU hybrid)
-# - Highly instruction-following — reliably outputs valid JSON when asked
-# - No <think> blocks or reasoning preamble to strip
-# - 7B fits in 8GB VRAM; also runs well on CPU-only runners
-# Override via RESEARCH_MODEL / WRITER_MODEL / EDITOR_MODEL / FALLBACK_MODEL secrets
-# or env vars if you want a larger model (e.g. mistral:latest, llama3.1:8b, qwen3:14b).
 RESEARCH_MODEL = os.getenv("RESEARCH_MODEL", "mistral:7b")
 WRITER_MODEL = os.getenv("WRITER_MODEL", "mistral:7b")
 EDITOR_MODEL = os.getenv("EDITOR_MODEL", WRITER_MODEL)
@@ -58,7 +50,6 @@ SYSTEMS = {
     "editor": EDITOR_SYSTEM,
 }
 
-# Models that emit <think> blocks before JSON — suppress on first call via API option
 _THINKING_MODEL_PREFIXES = ("qwen3", "qwq", "deepseek-r1", "deepseek-r2")
 
 _OK_MARK = "\u2713"
@@ -129,7 +120,6 @@ def ollama_healthcheck() -> tuple[bool, str]:
 
 
 def model_exists(model: str) -> bool:
-    """Return True if the given model appears in Ollama's local tag list."""
     try:
         resp = requests.get(f"{OLLAMA_URL}/api/tags", timeout=10)
         resp.raise_for_status()
@@ -141,7 +131,6 @@ def model_exists(model: str) -> bool:
 
 
 def ensure_model_available(model: str) -> None:
-    """Pull the model if it is not already present locally."""
     if model_exists(model):
         return
     progress(f"ollama: model {model!r} missing, pulling now")
@@ -154,7 +143,6 @@ def ensure_model_available(model: str) -> None:
 
 
 def call_ollama(model: str, prompt: str, *, suppress_thinking: bool = False) -> str:
-    """Call Ollama /api/generate and return the raw response string."""
     options: dict[str, Any] = {"temperature": 0.15, "num_predict": _NUM_PREDICT}
 
     final_prompt = prompt
@@ -193,30 +181,16 @@ def call_ollama(model: str, prompt: str, *, suppress_thinking: bool = False) -> 
 
 
 def extract_json(raw: str) -> str:
-    """Extract the first complete JSON object from raw model output.
-
-    Handles:
-    - Pure JSON (most reliable models)
-    - ```json ... ``` fenced blocks
-    - ``` ... ``` fenced blocks without language tag
-    - JSON preceded by prose or <think> blocks (reasoning models)
-    - Trailing text after the closing brace
-    """
     raw = raw.strip()
     if not raw:
         raise ValueError("Empty model output — no JSON to extract")
 
-    # Strip <think>...</think> blocks (qwen3, deepseek-r1)
     raw = re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL | re.IGNORECASE).strip()
 
-    # 1. Prefer an explicit ```json ... ``` fence
     fenced = re.findall(r"```(?:json)?\s*(\{.*?\})\s*```", raw, flags=re.DOTALL)
     if fenced:
         return fenced[0]
 
-    # 2. Walk character-by-character to find the first balanced { ... } block.
-    # This correctly handles JSON that is preceded by prose, model preamble,
-    # or a partial <think> block that was not closed.
     depth = 0
     start = -1
     in_string = False
@@ -247,7 +221,6 @@ def extract_json(raw: str) -> str:
 
 def parse_json(raw: str) -> dict[str, Any]:
     candidate = extract_json(raw)
-    # Normalize smart quotes and trailing commas
     candidate = candidate.replace("\u201c", '"').replace("\u201d", '"').replace("\u2019", "'")
     candidate = re.sub(r",(\s*[}\]])", r"\1", candidate)
     return json.loads(candidate)
@@ -286,13 +259,6 @@ def validate_path(agent: str, proposed: str) -> Path:
 
 
 def build_prompt(agent: str, context: str) -> str:
-    """Build the full prompt for an agent.
-
-    IMPORTANT: The system prompt (from system_prompts.py) defines ROLE and STYLE only.
-    This function appends the JSON output contract so the format instruction appears
-    exactly once, immediately before the schema — preventing the model from receiving
-    contradictory "write Markdown" and "return JSON" instructions.
-    """
     allowed = "\n".join(f"- {p}" for p in AGENT_PREFIXES[agent])
     schema = {
         "summary": "Short description of action taken",
@@ -318,8 +284,6 @@ def build_prompt(agent: str, context: str) -> str:
         else ""
     )
 
-    # The JSON instruction block is placed HERE — after the system role, before the context.
-    # This ensures the model sees one clear format contract rather than two conflicting ones.
     json_contract = (
         "\n\nYou MUST respond with ONLY a single valid JSON object. "
         "No prose before or after it. No markdown fences. No explanation. "
@@ -422,10 +386,7 @@ def run_llm(agent: str) -> dict[str, Any]:
             try:
                 parsed = parse_json(raw)
             except Exception as second_exc:
-                print(
-                    f"[{agent}] Fallback parse failed ({second_exc}); writing raw output as markdown.",
-                    flush=True,
-                )
+                print(f"[{agent}] Fallback parse failed ({second_exc}); writing raw output as markdown.", flush=True)
                 fallback_result = {
                     "summary": "Completed (fallback raw dump after JSON parse failures).",
                     "files": [{

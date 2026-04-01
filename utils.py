@@ -6,7 +6,40 @@ import os
 from pathlib import Path
 from typing import Any
 
+from dotenv import dotenv_values
+
 WORKSPACE = Path(os.environ.get('AGENT_WORKSPACE', '.')).resolve()
+
+
+def load_project_env() -> list[str]:
+    """Load safe project defaults and then local overrides.
+
+    Precedence:
+    1. existing process environment
+    2. local .env
+    3. committed .env.defaults (or .env.example fallback)
+    """
+    loaded: list[str] = []
+    existing_keys = set(os.environ.keys())
+
+    defaults_path = WORKSPACE / '.env.defaults'
+    example_path = WORKSPACE / '.env.example'
+    real_path = WORKSPACE / '.env'
+
+    source_default = defaults_path if defaults_path.exists() else example_path if example_path.exists() else None
+    if source_default and source_default.exists():
+        for key, value in dotenv_values(source_default).items():
+            if value is not None:
+                os.environ.setdefault(key, value)
+        loaded.append(source_default.name)
+
+    if real_path.exists():
+        for key, value in dotenv_values(real_path).items():
+            if value is not None and key not in existing_keys:
+                os.environ[key] = value
+        loaded.append(real_path.name)
+
+    return loaded
 
 
 def utc_now() -> dt.datetime:

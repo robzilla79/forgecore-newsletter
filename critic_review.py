@@ -10,13 +10,12 @@ from pathlib import Path
 from typing import Any
 
 import requests
-from dotenv import load_dotenv
 
 from issue_contract import ensure_issue_contract, latest_issue_path
 from templates.system_prompts import CRITIC_SYSTEM
-from utils import WORKSPACE, dump_json, load_text
+from utils import WORKSPACE, dump_json, load_project_env, load_text
 
-load_dotenv(WORKSPACE / ".env")
+load_project_env()
 
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434").rstrip("/")
 CRITIC_MODEL = os.getenv("CRITIC_MODEL", os.getenv("EDITOR_MODEL", os.getenv("WRITER_MODEL", "gemma3:12b")))
