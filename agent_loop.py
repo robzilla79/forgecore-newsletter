@@ -60,6 +60,12 @@ _THINKING_MODEL_PREFIXES = ("qwen3", "qwq", "deepseek-r1", "deepseek-r2")
 _OK_MARK = "\u2713"
 _FAIL_MARK = "\u2717"
 
+# Token budget for model responses.
+# 2600 was too low — the scout/author JSON content fields routinely exceed that,
+# causing Ollama to truncate mid-JSON and break parse_json.
+# 8192 gives headroom for a full newsletter issue in a single response.
+_NUM_PREDICT = int(os.getenv("OLLAMA_NUM_PREDICT", "8192"))
+
 
 def progress(msg: str) -> None:
     print(f"[progress] {msg}", flush=True)
@@ -158,8 +164,12 @@ def call_ollama(model: str, prompt: str, *, suppress_thinking: bool = False) -> 
     qwen3-family models from emitting a block before the JSON response.
     This eliminates the double-call pattern seen when the parser fails on the
     think block and falls back to a retry.
+
+    num_predict is set to _NUM_PREDICT (default 8192) so that long JSON
+    responses — particularly the scout and author content fields — are never
+    truncated mid-object, which would cause parse_json to fail.
     """
-    options: dict[str, Any] = {"temperature": 0.15, "num_predict": 2600}
+    options: dict[str, Any] = {"temperature": 0.15, "num_predict": _NUM_PREDICT}
 
     # Use the /no_think suffix in the prompt as it is the most reliable way
     # to suppress thinking for Qwen3 in some Ollama versions, alongside the
@@ -658,7 +668,9 @@ def run_pipeline() -> int:
         results.append(run_script("beehiiv", "beehiiv_publish.py"))
 
     heartbeat(results)
-    return 0 if all(r["status"] == "ok" else r["status"] == "ok" for r in results) else 1
+    # Fixed: was `all(r["status"] == "ok" else r["status"] == "ok" for r in results)`
+    # which is a malformed ternary-inside-generator that always evaluates truthy.
+    return 0 if all(r["status"] == "ok" for r in results) else 1
 
 
 def main() -> int:
