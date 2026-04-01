@@ -1,35 +1,26 @@
 #!/usr/bin/env python3
-"""improvement_loop.py - Continuous quality improvement pass for ForgeCore newsletter.
+"""improvement_loop.py - Targeted quality improvement pass for ForgeCore newsletter.
 
-Runs on the 10-minute cadence (via GitHub Actions improve.yml).
-Picks the most recent issue file, sends it through the editor agent
-for a targeted improvement pass, checks quality, and optionally
-runs fresh research to keep source signals warm.
-
-Designed to be idempotent: if nothing meaningful has changed, it
-writes nothing new and the git diff will be empty.
+Runs on the 10-minute cadence (via GitHub Actions improve.yml) and inside the
+generate pipeline. It reads the latest critic review, asks the editor to fix the
+specific weak points, then re-normalizes the issue.
 """
 from __future__ import annotations
 
 import json
 import os
 import re
-import sys
 import time
-import traceback
-from pathlib import Path
 from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
 
 import requests
 from dotenv import load_dotenv
 
-from issue_contract import (
-    ensure_issue_contract,
-    latest_issue_path,
-    list_issue_files,
-)
-from utils import WORKSPACE, append_text, load_text, now_str, today_str, write_text
+from issue_contract import ensure_issue_contract, list_issue_files
 from templates.system_prompts import EDITOR_SYSTEM
+from utils import WORKSPACE, append_text, load_text, now_str, write_text
 
 load_dotenv(WORKSPACE / ".env")
 
@@ -40,20 +31,15 @@ OLLAMA_TIMEOUT = int(os.getenv("OLLAMA_TIMEOUT", "240"))
 OLLAMA_RETRIES = int(os.getenv("OLLAMA_RETRIES", "2"))
 MAX_CONTEXT_CHARS = int(os.getenv("MAX_CONTEXT_CHARS", "22000"))
 
-# How many issues to cycle through for improvement (most-recent first)
 MAX_ISSUES_TO_IMPROVE = int(os.getenv("MAX_ISSUES_TO_IMPROVE", "3"))
-
-# Minimum minutes between improvement passes on the same issue
-MIN_IMPROVEMENT_INTERVAL_MINUTES = int(
-    os.getenv("MIN_IMPROVEMENT_INTERVAL_MINUTES", "30")
-)
-
-# Label for where this improvement loop was triggered from (generate vs improve)
+MIN_IMPROVEMENT_INTERVAL_MINUTES = int(os.getenv("MIN_IMPROVEMENT_INTERVAL_MINUTES", "30"))
 IMPROVEMENT_ORIGIN = os.getenv("IMPROVEMENT_ORIGIN", "improve").strip() or "improve"
+MAX_TARGETED_REWRITE_ITEMS = int(os.getenv("MAX_TARGETED_REWRITE_ITEMS", "6"))
 
 STATE_DIR = WORKSPACE / "state"
 IMPROVE_LOG = STATE_DIR / "improvement-log.md"
 IMPROVE_LOCK = STATE_DIR / "improvement-lock.json"
+_THINKING_MODEL_PREFIXES = ("qwen3", "qwq", "deepseek-r1", "deepseek-r2")
 
 
 def log(msg: str) -> None:
@@ -74,19 +60,23 @@ def ollama_ok() -> bool:
         return False
 
 
+def _is_thinking_model(model: str) -> bool:
+    lower = model.lower()
+    return any(lower.startswith(p) for p in _THINKING_MODEL_PREFIXES)
+
+
 def call_ollama(model: str, prompt: str) -> str:
     delay = 2.0
     last_exc: Exception | None = None
+    options: dict[str, Any] = {"temperature": 0.1, "num_predict": 3500}
+    if _is_thinking_model(model):
+        options["think"] = False
+        prompt = prompt.strip() + "\n\n/no_think"
     for attempt in range(1, OLLAMA_RETRIES + 1):
         try:
             resp = requests.post(
                 f"{OLLAMA_URL}/api/generate",
-                json={
-                    "model": model,
-                    "prompt": prompt,
-                    "stream": False,
-                    "options": {"temperature": 0.1, "num_predict": 3000},
-                },
+                json={"model": model, "prompt": prompt, "stream": False, "options": options},
                 timeout=OLLAMA_TIMEOUT,
             )
             resp.raise_for_status()
@@ -124,57 +114,98 @@ def minutes_since(iso_str: str) -> float:
         return 9999.0
 
 
-def build_improvement_prompt(issue_text: str, issue_name: str) -> str:
+def load_critic(issue_path: Path) -> dict | None:
+    date_match = re.search(r"(\d{4}-\d{2}-\d{2})", issue_path.stem)
+    suffix = date_match.group(1) if date_match else "latest"
+    candidate = STATE_DIR / f"critic-review-{suffix}.json"
+    if candidate.exists():
+        try:
+            return json.loads(candidate.read_text(encoding="utf-8"))
+        except Exception:
+            return None
+    return None
+
+
+def build_improvement_prompt(issue_text: str, issue_name: str, critic: dict | None) -> str:
     goals = load_text(WORKSPACE / "GOALS.md")
-    context = f"""# IMPROVEMENT TASK
-You are the Forgecore editor. Your job is to improve the quality of an existing newsletter issue.
+    rewrite_plan = []
+    must_fix = []
+    weak_categories = []
+    summary = ""
+    if critic:
+        rewrite_plan = [str(item).strip() for item in critic.get("rewrite_plan", []) if str(item).strip()][:MAX_TARGETED_REWRITE_ITEMS]
+        must_fix = [str(item).strip() for item in critic.get("must_fix", []) if str(item).strip()][:MAX_TARGETED_REWRITE_ITEMS]
+        weak_categories = [str(item).strip() for item in critic.get("weak_categories", []) if str(item).strip()]
+        summary = str(critic.get("summary", "")).strip()
+
+    plan_lines = rewrite_plan or must_fix or [
+        "Strengthen the headline and hook so they read like a publication, not a summary bot.",
+        "Replace generic claims with specific, source-backed details and real consequences.",
+        "Cut repetition, filler, and soft transitions.",
+        "Make the CTA concrete and useful.",
+    ]
+    critic_block = "\n".join(f"- {item}" for item in plan_lines)
+    must_fix_block = "\n".join(f"- {item}" for item in must_fix) or "- None provided by critic."
+    weak_block = ", ".join(weak_categories) or "none"
+
+    context = f"""# TARGETED IMPROVEMENT TASK
+You are the ForgeCore editor. Rewrite the issue below so it is publishable.
 
 ## GOALS
 {goals[:2000]}
 
-## ISSUE FILE: {issue_name}
-{issue_text[:MAX_CONTEXT_CHARS - 3000]}
+## ISSUE FILE
+{issue_name}
 
-## IMPROVEMENT INSTRUCTIONS
-Review the issue above and make targeted improvements:
-1. Fix any awkward phrasing, passive voice, or weak topic sentences.
-2. Strengthen the Hook if it is generic or cliched.
-3. Ensure the "Why It Matters" section delivers a concrete business/ROI angle.
-4. Remove any AI meta-phrases ("delve", "it's worth noting", "in conclusion", "As an AI").
-5. Verify all section headings are present: Hook, Top Story, Why It Matters, Highlights, Tool of the Week, Workflow, CTA, Sources.
-6. Tighten CTAs - make sure the Beehiiv subscribe link is present and the sponsor email is mentioned.
-7. Improve any bullet lists that are vague or redundant.
-8. Do NOT change the fundamental topic, date, or slug.
-9. Return ONLY the improved full issue as Markdown - no commentary, no code fences."""
+## CRITIC SUMMARY
+{summary or "No summary provided."}
+
+## WEAK CATEGORIES
+{weak_block}
+
+## MUST-FIX ITEMS
+{must_fix_block}
+
+## TARGETED REWRITE PLAN
+{critic_block}
+
+## ISSUE CONTENT
+{issue_text[:MAX_CONTEXT_CHARS - 3500]}
+
+## REQUIREMENTS
+1. Fix the targeted issues above first. Do not ignore them.
+2. Keep the same core topic, date, and source links unless a sentence is unsupported.
+3. Make the writing feel publication-grade: sharper hook, stronger sentences, less repetition, more specificity.
+4. Preserve all required sections: Hook, Top Story, Why It Matters, Highlights, Tool of the Week, Workflow, CTA, Sources.
+5. Keep the Beehiiv subscribe URL and sponsor email in the CTA.
+6. Return ONLY the improved full issue as Markdown. No commentary. No fences."""
     return EDITOR_SYSTEM + "\n\n" + context
 
 
 def improve_issue(issue_path: Path) -> bool:
-    """Attempt to improve a single issue. Returns True if content was updated."""
     original = load_text(issue_path)
     if not original.strip():
         log(f"Skipping {issue_path.name}: empty")
         return False
 
-    log(f"Improving {issue_path.name} ...")
+    critic = load_critic(issue_path)
+    log(f"Improving {issue_path.name} using targeted critic guidance ...")
     try:
         improved = call_ollama(
             EDITOR_MODEL,
-            build_improvement_prompt(original, issue_path.name),
+            build_improvement_prompt(original, issue_path.name, critic),
         )
     except RuntimeError as exc:
         err(f"Editor model failed on {issue_path.name}: {exc}")
-        # Try fallback
         try:
             improved = call_ollama(
                 FALLBACK_MODEL,
-                build_improvement_prompt(original, issue_path.name),
+                build_improvement_prompt(original, issue_path.name, critic),
             )
         except RuntimeError as exc2:
             err(f"Fallback model also failed: {exc2}")
             return False
 
-    # Only write if there's a meaningful change (>50 chars difference or >1% change)
     if not improved or improved == original:
         log(f"No improvement detected for {issue_path.name}")
         return False
@@ -214,10 +245,7 @@ def main() -> int:
         mins_ago = minutes_since(last_improved)
 
         if mins_ago < MIN_IMPROVEMENT_INTERVAL_MINUTES:
-            log(
-                f"Skipping {key}: improved {mins_ago:.1f}m ago "
-                f"(min interval {MIN_IMPROVEMENT_INTERVAL_MINUTES}m)"
-            )
+            log(f"Skipping {key}: improved {mins_ago:.1f}m ago (min interval {MIN_IMPROVEMENT_INTERVAL_MINUTES}m)")
             continue
 
         changed = improve_issue(issue_path)

@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""improve_until_passes.py - Aggressive quality improvement controller.
+"""improve_until_passes.py - Critic-driven quality improvement controller.
 
-Runs inside generate.yml after the editor agent. Loops up to MAX_ITERATIONS
-times: checks quality gate, and if it fails, runs improvement_loop.py to
-self-improve the latest issue. Exits 0 only when the gate passes.
-Exits 1 if the gate still fails after MAX_ITERATIONS (blocking publish/deploy).
+Runs inside generate.yml after the editor agent. Loops up to MAX_ITERATIONS:
+1. runs the critic review
+2. runs the quality gate
+3. if either fails, runs targeted improvement_loop.py
+Exits 0 only when the critic and quality gate both pass.
 """
 from __future__ import annotations
 
@@ -17,97 +18,80 @@ MAX_ITERATIONS = 5
 STATE_DIR = Path("state")
 
 
-def find_latest_quality_json() -> Path | None:
-    """Return the most recently written quality-gate JSON file."""
-    files = sorted(STATE_DIR.glob("quality-gate-*.json"), reverse=True)
+def find_latest_json(prefix: str) -> Path | None:
+    files = sorted(STATE_DIR.glob(f"{prefix}-*.json"), reverse=True)
     return files[0] if files else None
 
 
-def run_quality_gate() -> dict:
-    """Run quality_gate.py and return the parsed JSON result."""
+def run_json_script(script_name: str, prefix: str) -> dict:
     STATE_DIR.mkdir(parents=True, exist_ok=True)
-    result = subprocess.run(
-        [sys.executable, "quality_gate.py"],
-        capture_output=True,
-        text=True,
-    )
-    # quality_gate.py prints JSON to stdout
+    result = subprocess.run([sys.executable, script_name], capture_output=True, text=True)
     try:
-        data = json.loads(result.stdout)
-        return data
+        return json.loads(result.stdout)
     except (json.JSONDecodeError, ValueError):
         pass
-    # fallback: read from file
-    path = find_latest_quality_json()
+    path = find_latest_json(prefix)
     if path and path.exists():
         try:
             return json.loads(path.read_text(encoding="utf-8"))
         except Exception:
             pass
-    return {"passed": False, "errors": ["quality_gate.py produced no parseable output"]}
+    return {"passed": False, "errors": [f"{script_name} produced no parseable output"]}
 
 
 def run_improvement() -> int:
-    """Run improvement_loop.py, bypassing the time-lock for in-pipeline use."""
     import os
 
     env_override = {
         "MIN_IMPROVEMENT_INTERVAL_MINUTES": "0",
         "MAX_ISSUES_TO_IMPROVE": "1",
-        # Mark these improvements as coming from the generate pipeline
         "IMPROVEMENT_ORIGIN": "generate",
     }
     env = {**os.environ, **env_override}
-    result = subprocess.run(
-        [sys.executable, "improvement_loop.py"],
-        env=env,
-    )
+    result = subprocess.run([sys.executable, "improvement_loop.py"], env=env)
     return result.returncode
 
 
-def summarise(gate: dict, iteration: int) -> None:
+def summarise(critic: dict, gate: dict, iteration: int) -> None:
     checks = gate.get("checks", {})
-    errors = gate.get("errors") or checks.get("errors", [])
-    wc = checks.get("word_count", "?")
-    passed = gate.get("passed", False)
+    gate_errors = gate.get("errors") or checks.get("errors", [])
+    critic_score = critic.get("overall_score", "?")
+    critic_weak = critic.get("weak_categories", [])
+    critic_passed = critic.get("passed", False)
+    gate_passed = gate.get("passed", False)
     print(
-        f"[improve_until_passes] Pass {iteration}/{MAX_ITERATIONS} "
-        f"| passed={passed} | word_count={wc} | errors={len(errors)}"
+        f"[improve_until_passes] Pass {iteration}/{MAX_ITERATIONS} | "
+        f"critic_passed={critic_passed} | critic_score={critic_score} | "
+        f"gate_passed={gate_passed} | gate_errors={len(gate_errors)}"
     )
-    for e in errors:
-        print(f"  - {e}")
+    for item in critic.get("must_fix", [])[:4]:
+        print(f"  critic must-fix: {item}")
+    for item in critic_weak[:4]:
+        print(f"  critic weak category: {item}")
+    for item in gate_errors[:4]:
+        print(f"  gate error: {item}")
 
 
 def main() -> int:
-    print(
-        f"[improve_until_passes] Starting aggressive improvement loop (max {MAX_ITERATIONS} passes)"
-    )
+    print(f"[improve_until_passes] Starting critic-driven improvement loop (max {MAX_ITERATIONS} passes)")
 
     for i in range(1, MAX_ITERATIONS + 1):
-        gate = run_quality_gate()
-        summarise(gate, i)
+        critic = run_json_script("critic_review.py", "critic-review")
+        gate = run_json_script("quality_gate.py", "quality-gate")
+        summarise(critic, gate, i)
 
-        if gate.get("passed"):
-            print(
-                f"[improve_until_passes] Quality gate PASSED on pass {i}. Proceeding to publish."
-            )
+        if critic.get("passed") and gate.get("passed"):
+            print(f"[improve_until_passes] Critic and quality gate PASSED on pass {i}. Proceeding to publish.")
             return 0
 
         if i == MAX_ITERATIONS:
-            print(
-                f"[improve_until_passes] Quality gate FAILED after {MAX_ITERATIONS} passes. "
-                "Blocking publish and deploy."
-            )
+            print(f"[improve_until_passes] Still failing after {MAX_ITERATIONS} passes. Blocking publish and deploy.")
             return 1
 
-        print(
-            f"[improve_until_passes] Running improvement agent (pass {i}/{MAX_ITERATIONS - 1} remaining)..."
-        )
+        print(f"[improve_until_passes] Running targeted improvement agent (pass {i}/{MAX_ITERATIONS - 1} remaining)...")
         rc = run_improvement()
         if rc != 0:
-            print(
-                f"[improve_until_passes] improvement_loop.py exited with code {rc} — continuing to re-check quality."
-            )
+            print(f"[improve_until_passes] improvement_loop.py exited with code {rc} — continuing to re-check quality.")
 
     return 1
 

@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+import os
 import re
+from pathlib import Path
 
 from issue_contract import BANNED_TOKENS, REQUIRED_SECTIONS, ensure_issue_contract, latest_issue_path
 from utils import WORKSPACE, dump_json, load_text
@@ -12,6 +14,7 @@ MIN_WORDS = 500
 MIN_SOURCE_LINKS = 3
 REQUIRED_CTA_URL = "https://forgecore-newsletter.beehiiv.com/"
 REQUIRED_SPONSOR_EMAIL = "sponsors@forgecore.co"
+MIN_CRITIC_OVERALL = float(os.getenv("MIN_CRITIC_OVERALL", "8.0"))
 
 LEAKED_PHRASE_PATTERNS: list[str] = [
     r"\baudience\s+focus\b",
@@ -61,7 +64,22 @@ def find_duplicate_paragraphs(text: str) -> list[str]:
     return [key[:80] + "..." for key, count in seen.items() if count > 1]
 
 
-def collect_errors(text: str) -> list[str]:
+def load_latest_critic(issue_path: Path) -> dict | None:
+    date_match = re.search(r"(\d{4}-\d{2}-\d{2})", issue_path.stem)
+    suffix = date_match.group(1) if date_match else "latest"
+    candidate = WORKSPACE / "state" / f"critic-review-{suffix}.json"
+    if not candidate.exists():
+        files = sorted((WORKSPACE / "state").glob("critic-review-*.json"), reverse=True)
+        candidate = files[0] if files else candidate
+    if candidate.exists():
+        try:
+            return json.loads(candidate.read_text(encoding="utf-8"))
+        except Exception:
+            return None
+    return None
+
+
+def collect_errors(text: str, critic: dict | None = None) -> list[str]:
     errors: list[str] = []
 
     for header in REQUIRED_SECTIONS:
@@ -85,9 +103,7 @@ def collect_errors(text: str) -> list[str]:
     urls = [u.rstrip(").,") for u in re.findall(r"https?://\S+", text)]
     unique_urls = list(dict.fromkeys(urls))
     if len(unique_urls) < MIN_SOURCE_LINKS:
-        errors.append(
-            f"Not enough real URLs: found {len(unique_urls)}, need at least {MIN_SOURCE_LINKS}"
-        )
+        errors.append(f"Not enough real URLs: found {len(unique_urls)}, need at least {MIN_SOURCE_LINKS}")
     if any("example.com" in url.lower() for url in unique_urls):
         errors.append("example.com URL found in issue content")
 
@@ -136,6 +152,20 @@ def collect_errors(text: str) -> list[str]:
         if len(source_lines) < MIN_SOURCE_LINKS:
             errors.append(f"Sources section is too short: {len(source_lines)} entries")
 
+    if critic:
+        overall = float(critic.get("overall_score", 0.0) or 0.0)
+        if overall < MIN_CRITIC_OVERALL:
+            errors.append(f"Critic overall score too low: {overall:.2f} < {MIN_CRITIC_OVERALL:.2f}")
+        weak_categories = critic.get("weak_categories", [])
+        if weak_categories:
+            errors.append("Critic flagged weak categories: " + ", ".join(weak_categories))
+        must_fix = critic.get("must_fix", [])
+        if must_fix:
+            errors.append("Critic must-fix items remain: " + "; ".join(str(item) for item in must_fix[:4]))
+        verdict = str(critic.get("verdict", "")).strip().lower()
+        if verdict == "reject":
+            errors.append("Critic verdict is reject")
+
     return errors
 
 
@@ -146,7 +176,8 @@ def main() -> int:
     leaked = find_matching_patterns(text, LEAKED_PHRASE_PATTERNS)
     missing = find_matching_patterns(text, MISSING_CONTENT_PATTERNS)
     dupes = find_duplicate_paragraphs(text)
-    errors = collect_errors(text)
+    critic = load_latest_critic(path)
+    errors = collect_errors(text, critic)
 
     checks = {
         "exists": path.exists(),
@@ -159,6 +190,7 @@ def main() -> int:
         "leaked_phrases": leaked,
         "placeholder_language": missing,
         "duplicate_paragraphs": dupes,
+        "critic_review": critic or {},
         "errors": errors,
     }
     result = {"passed": not errors, "checks": checks, "issue": path.as_posix()}
