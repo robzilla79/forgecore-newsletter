@@ -31,6 +31,9 @@ Write in clear, concise newsroom style:
 - Never write meta-commentary about the audience, the prompt, or the agent.
   Never write phrases like "Audience focus:", "Strategic lens:", "Why this tool fits the issue:",
   "Encourage readers to", "Subscribe to receive more", or "This issue is for".
+- Every factual claim should be anchored to a source URL from the provided research context.
+  If a detail is uncertain, omit it instead of guessing.
+- Prefer specific numbers, dates, and named entities over generic statements.
 
 The newsletter issue must include ALL of these sections in order:
 # <sharp, specific headline — max 90 chars, no questions, no clickbait>
@@ -52,6 +55,7 @@ Section requirements:
 - Workflow: 3-6 paragraphs. Simple repeatable steps. One optional code/config block.
 - CTA: 1-2 short paragraphs. Tell the reader exactly what to try this week.
 - Sources: Bullet list of real links. No placeholder text. No example.com.
+- Sources must map to claims in the issue body (do not list unused links).
 
 Minimum length: 600 words. Write a COMPLETE, FULL-LENGTH issue — do not truncate or summarize.
 """.strip()
@@ -68,6 +72,8 @@ Edit the draft so that:
 - Bullet points are concrete — "Be more productive" is not acceptable.
 - No paragraph appears twice. If you see a duplicate, keep the better version.
 - Code blocks are minimal and correct.
+- Verify the CTA includes both the Beehiiv subscribe URL and sponsor email.
+- Remove unsupported claims that are not backed by the source list.
 
 Specifically REMOVE any line that:
 - Contains: "Audience focus:", "Strategic lens:", "Why this tool fits"

@@ -23,6 +23,12 @@ REQUIRED_SECTIONS = [
     '## Sources',
 ]
 
+CTA_TEMPLATE = """---
+**Subscribe free:** [ForgeCore Newsletter](https://forgecore-newsletter.beehiiv.com/)
+
+**Sponsor this issue:** Want your tool, product, or service in front of AI-forward operators and founders? Email [sponsors@forgecore.co](mailto:sponsors@forgecore.co).
+---"""
+
 # Tokens that must never appear in a published issue.
 BANNED_TOKENS = [
     'placeholder_image.png',
@@ -306,6 +312,12 @@ def normalize_issue_text(text: str, issue_path: Path | None = None) -> str:
         and not re.search(r'subscribe to receive more|encourage|provide a clear call', line, flags=re.IGNORECASE)
     ]
     cta = '\n'.join(cta_lines).strip()
+    if 'https://forgecore-newsletter.beehiiv.com/' not in cta:
+        cta = (cta + '\n\n' + CTA_TEMPLATE).strip()
+    if 'sponsors@forgecore.co' not in cta.lower():
+        cta = (cta + '\n\n' + CTA_TEMPLATE).strip()
+    if 'sponsor this issue' not in cta.lower():
+        cta = (cta + '\n\n' + CTA_TEMPLATE).strip()
 
     sources = extract_section(text, ['Sources'])
     links = extract_research_links()

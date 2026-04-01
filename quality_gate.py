@@ -11,6 +11,8 @@ from utils import WORKSPACE, dump_json, load_text
 MIN_WORDS = 500
 # Require at least 3 real source URLs to match AGENTS.md quality rules
 MIN_SOURCE_LINKS = 3
+REQUIRED_CTA_URL = "https://forgecore-newsletter.beehiiv.com/"
+REQUIRED_SPONSOR_EMAIL = "sponsors@forgecore.co"
 
 # Regex patterns that indicate leaked AI meta-instructions in final output.
 # These are in addition to BANNED_TOKENS (which are exact-string checks).
@@ -101,6 +103,14 @@ def collect_errors(text: str) -> list[str]:
     cta_match = re.search(r"^## CTA\n(.+?)(?=^## |\Z)", text, flags=re.MULTILINE | re.DOTALL)
     if not cta_match or len(cta_match.group(1).split()) < 8:
         errors.append("CTA section is missing or too short (need 8+ words)")
+    else:
+        cta_text = cta_match.group(1)
+        if REQUIRED_CTA_URL not in cta_text:
+            errors.append("CTA section missing required Beehiiv subscribe URL")
+        if REQUIRED_SPONSOR_EMAIL not in cta_text:
+            errors.append("CTA section missing required sponsor email")
+        if "sponsor this issue" not in cta_text.lower():
+            errors.append("CTA section missing 'sponsor this issue' invite")
 
     return errors
 
