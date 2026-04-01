@@ -16,13 +16,12 @@ from pathlib import Path
 from typing import Any
 
 import requests
-from dotenv import load_dotenv
 
 from issue_contract import ensure_issue_contract, list_issue_files
 from templates.system_prompts import EDITOR_SYSTEM
-from utils import WORKSPACE, append_text, load_text, now_str, write_text
+from utils import WORKSPACE, append_text, load_project_env, load_text, now_str, write_text
 
-load_dotenv(WORKSPACE / ".env")
+load_project_env()
 
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434").rstrip("/")
 EDITOR_MODEL = os.getenv("EDITOR_MODEL", os.getenv("WRITER_MODEL", "gemma3:12b"))
@@ -191,17 +190,11 @@ def improve_issue(issue_path: Path) -> bool:
     critic = load_critic(issue_path)
     log(f"Improving {issue_path.name} using targeted critic guidance ...")
     try:
-        improved = call_ollama(
-            EDITOR_MODEL,
-            build_improvement_prompt(original, issue_path.name, critic),
-        )
+        improved = call_ollama(EDITOR_MODEL, build_improvement_prompt(original, issue_path.name, critic))
     except RuntimeError as exc:
         err(f"Editor model failed on {issue_path.name}: {exc}")
         try:
-            improved = call_ollama(
-                FALLBACK_MODEL,
-                build_improvement_prompt(original, issue_path.name, critic),
-            )
+            improved = call_ollama(FALLBACK_MODEL, build_improvement_prompt(original, issue_path.name, critic))
         except RuntimeError as exc2:
             err(f"Fallback model also failed: {exc2}")
             return False
@@ -258,10 +251,7 @@ def main() -> int:
             }
             save_lock(lock)
 
-    log(
-        f"Improvement pass complete: {improved_count}/{len(issues)} issues updated "
-        f"(model={EDITOR_MODEL}, origin={IMPROVEMENT_ORIGIN})"
-    )
+    log(f"Improvement pass complete: {improved_count}/{len(issues)} issues updated (model={EDITOR_MODEL}, origin={IMPROVEMENT_ORIGIN})")
     return 0
 
 
