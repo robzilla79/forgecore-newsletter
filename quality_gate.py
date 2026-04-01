@@ -67,7 +67,7 @@ def collect_errors(text: str) -> list[str]:
 
     # Leaked AI meta-phrases (regex)
     for pattern in find_leaked_phrases(text):
-    errors.append(f"Leaked meta-phrase pattern found: {pattern}")
+        errors.append(f"Leaked meta-phrase pattern found: {pattern}")
 
     # Duplicate paragraphs
     dupes = find_duplicate_paragraphs(text)

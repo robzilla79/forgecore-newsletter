@@ -248,7 +248,7 @@ def build_prompt(agent: str, context: str) -> str:
         SYSTEMS[agent]
         + "\n\nReturn ONLY valid JSON matching this schema:\n"
         + json.dumps(schema, indent=2)
-        + f"\n\nAllowed path prefixes:\n{allowed}\n\ Task hint:\n{hints[agent]}\n\nContext:\n{context}"
+        + f"\n\nAllowed path prefixes:\n{allowed}\n\nTask hint:\n{hints[agent]}\n\nContext:\n{context}"
     )
 
 
@@ -333,7 +333,46 @@ def run_llm(agent: str) -> dict[str, Any]:
                 "Previous response:\n" + raw
             )
             raw = call_ollama(FALLBACK_MODEL, fallback_prompt, suppress_thinking=True)
-            parsed = parse_json(raw)
+            try:
+                parsed = parse_json(raw)
+            except Exception as second_exc:
+                # Both parses failed; fall back to writing raw content so the
+                # pipeline still has something concrete to work with.
+                print(
+                    f"[{agent}] Fallback parse failed as well ({second_exc}); "
+                    "writing raw model output as plain markdown.",
+                    flush=True,
+                )
+                fallback_result = {
+                    "summary": "Completed one action (fallback from raw after JSON parse failures).",
+                    "files": [
+                        {
+                            "path": DEFAULT_PATHS[agent].format(date=today_str()),
+                            "mode": "append",
+                            "content": f"# {agent.title()} update\n\n{raw.strip()}\n",
+                        }
+                    ],
+                    "memory_update": "",
+                }
+                result = coerce(agent, fallback_result)
+                count = apply(agent, result)
+                duration = time.time() - start
+                print(
+                    f"[{agent}] Done via raw fallback: {result['summary']} "
+                    f"(files={count}, duration={duration:.2f}s)",
+                    flush=True,
+                )
+                progress(
+                    f"{agent}: {result['summary']} "
+                    f"(files={count}, duration={duration:.2f}s, model={model})",
+                )
+                return {
+                    "status": "ok",
+                    "agent": agent,
+                    "files_updated": count,
+                    "duration_s": duration,
+                    "summary": result["summary"],
+                }
 
         result = coerce(agent, parsed)
         count = apply(agent, result)
