@@ -402,8 +402,6 @@ def run_llm(agent: str) -> dict[str, Any]:
         }
 
 
-# ... rest of the file unchanged ...
-
 def run_script(name: str, script_name: str) -> dict[str, Any]:
     start = time.time()
     print(f"[{name}] Running {script_name}...", flush=True)
@@ -444,5 +442,228 @@ def run_script(name: str, script_name: str) -> dict[str, Any]:
         }
 
 
-# (remaining helper functions run_deployer, heartbeat, run_all, run_pipeline, main)
-# are unchanged from previous version.
+def run_deployer() -> dict[str, Any]:
+    if os.getenv("ENABLE_CLOUDFLARE_DEPLOY", "0") != "1":
+        return {
+            "status": "ok",
+            "agent": "deployer",
+            "files_updated": 0,
+            "duration_s": 0.0,
+            "summary": "deploy skipped (ENABLE_CLOUDFLARE_DEPLOY=0)",
+        }
+    return run_script("deployer", "deploy_cloudflare.py")
+
+
+def heartbeat(results: list[dict[str, Any]]) -> None:
+    fired = ", ".join(
+        f"{r['agent']}={_OK_MARK if r['status'] == 'ok' else _FAIL_MARK}" for r in results
+    )
+    errors = [f"{r['agent']}: {r['summary']}" for r in results if r["status"] != "ok"]
+    total_files = sum(int(r.get("files_updated", 0)) for r in results)
+    duration = sum(float(r.get("duration_s", 0.0)) for r in results)
+
+    write_text(
+        WORKSPACE / "HEARTBEAT.md",
+        "\n".join(
+            [
+                f"# Last Run Status: {now_str()}",
+                f"- Agents fired: {fired}",
+                f"- Files updated: {total_files}",
+                f"- Errors: {'None' if not errors else '; '.join(errors[:5])}",
+                f"- Duration: {duration:.2f}s",
+                f"- Models: research={RESEARCH_MODEL}, writer={WRITER_MODEL}, editor={EDITOR_MODEL}, fallback={FALLBACK_MODEL}",
+            ]
+        ) + "\n",
+    )
+
+
+def run_all() -> int:
+    ok, msg = ollama_healthcheck()
+    if not ok:
+        print(f"[run_all] FATAL: Ollama healthcheck failed at start: {msg}", flush=True)
+        error("ollama", f"Healthcheck failed at start of run_all: {msg}")
+        progress(f"[FAIL] ollama: healthcheck failed: {msg}")
+        heartbeat(
+            [
+                {
+                    "status": "error",
+                    "agent": "ollama",
+                    "files_updated": 0,
+                    "duration_s": 0.0,
+                    "summary": f"Healthcheck failed: {msg}",
+                }
+            ]
+        )
+        return 1
+
+    results: list[dict[str, Any]] = []
+    results.append(run_script("research", "web_research.py"))
+
+    for agent in ["scout", "analyst", "author", "editor"]:
+        results.append(run_llm(agent))
+
+    try:
+        ensure_issue_contract(latest_issue_path())
+    except Exception as exc:
+        error("contract", f"{type(exc).__name__}: {exc}")
+        results.append(
+            {
+                "status": "error",
+                "agent": "contract",
+                "files_updated": 0,
+                "duration_s": 0.0,
+                "summary": str(exc),
+            }
+        )
+
+    quality_result = run_script("quality-gate", "quality_gate.py")
+    results.append(quality_result)
+
+    if quality_result["status"] == "ok":
+        results.append(run_script("publisher", "publish_site.py"))
+        results.append(run_deployer())
+    else:
+        results.append(
+            {
+                "status": "error",
+                "agent": "publisher",
+                "files_updated": 0,
+                "duration_s": 0.0,
+                "summary": "publish blocked by quality gate",
+            }
+        )
+        results.append(
+            {
+                "status": "error",
+                "agent": "deployer",
+                "files_updated": 0,
+                "duration_s": 0.0,
+                "summary": "deploy blocked by quality gate",
+            }
+        )
+
+    heartbeat(results)
+    return 0 if all(r["status"] == "ok" for r in results) else 1
+
+
+def run_pipeline() -> int:
+    """High-level pipeline that mirrors the GitHub Actions generate.yml flow.
+
+    - Always refreshes web research.
+    - If Ollama is reachable, runs all four agents, enforces the issue
+      contract, then uses improve_until_passes.py as the quality controller
+      before publishing, deploying, and sending via Beehiiv.
+    - If Ollama is not reachable, creates a fallback stub issue, runs the
+      quality gate in best-effort mode, then still publishes site + Beehiiv
+      so subscribers get something instead of nothing.
+    """
+    results: list[dict[str, Any]] = []
+
+    # Always refresh raw intel
+    results.append(run_script("research", "web_research.py"))
+
+    ollama_ok, msg = ollama_healthcheck()
+
+    if ollama_ok:
+        # Run the four core agents
+        for agent in ["scout", "analyst", "author", "editor"]:
+            results.append(run_llm(agent))
+
+        # Enforce contract on the latest issue before quality/improvement
+        try:
+            ensure_issue_contract(latest_issue_path())
+        except Exception as exc:
+            error("contract", f"{type(exc).__name__}: {exc}")
+            results.append(
+                {
+                    "status": "error",
+                    "agent": "contract",
+                    "files_updated": 0,
+                    "duration_s": 0.0,
+                    "summary": str(exc),
+                }
+            )
+
+        # Aggressive improvement loop that wraps the quality gate
+        qc = run_script("improve-controller", "improve_until_passes.py")
+        results.append(qc)
+
+        if qc["status"] == "ok":
+            results.append(run_script("publisher", "publish_site.py"))
+            results.append(run_deployer())
+            results.append(run_script("beehiiv", "beehiiv_publish.py"))
+        else:
+            results.append(
+                {
+                    "status": "error",
+                    "agent": "publisher",
+                    "files_updated": 0,
+                    "duration_s": 0.0,
+                    "summary": "publish blocked by quality controller",
+                }
+            )
+            results.append(
+                {
+                    "status": "error",
+                    "agent": "deployer",
+                    "files_updated": 0,
+                    "duration_s": 0.0,
+                    "summary": "deploy blocked by quality controller",
+                }
+            )
+            results.append(
+                {
+                    "status": "error",
+                    "agent": "beehiiv",
+                    "files_updated": 0,
+                    "duration_s": 0.0,
+                    "summary": "beehiiv send blocked by quality controller",
+                }
+            )
+    else:
+        # Ollama offline — fall back to a stub issue but still ship something
+        error("ollama", f"Healthcheck failed in pipeline: {msg}")
+        results.append(
+            {
+                "status": "error",
+                "agent": "ollama",
+                "files_updated": 0,
+                "duration_s": 0.0,
+                "summary": f"Healthcheck failed: {msg}",
+            }
+        )
+
+        results.append(run_script("stub", "create_stub_issue.py"))
+        results.append(run_script("quality-gate", "quality_gate.py"))
+        results.append(run_script("publisher", "publish_site.py"))
+        results.append(run_deployer())
+        results.append(run_script("beehiiv", "beehiiv_publish.py"))
+
+    heartbeat(results)
+    return 0 if all(r["status"] == "ok" for r in results) else 1
+
+
+def main() -> int:
+    if len(sys.argv) < 2 or sys.argv[1] not in ALLOWED:
+        print("Usage: python agent_loop.py [scout|analyst|author|editor|publisher|deployer|all|pipeline]")
+        return 1
+
+    target = sys.argv[1]
+    if target == "all":
+        return run_all()
+    if target == "pipeline":
+        return run_pipeline()
+
+    if target == "publisher":
+        result = run_script("publisher", "publish_site.py")
+    elif target == "deployer":
+        result = run_deployer()
+    else:
+        result = run_llm(target)
+
+    heartbeat([result])
+    return 0 if result["status"] == "ok" else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
