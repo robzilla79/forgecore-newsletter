@@ -1,0 +1,1 @@
+Although not a blog post, it seems that Ollama supports running models on NVIDIA DGX systems, which are high-performance AI computing platforms designed to accelerate deep learning workloads. This could be beneficial for users with more than 300GB of VRAM who want to run larger models locally.

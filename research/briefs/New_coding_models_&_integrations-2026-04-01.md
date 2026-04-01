@@ -1,0 +1,1 @@
+This post talks about the availability of GLM-4.6 and Qwen3-coder-480B on Ollama's cloud service with easy integrations to familiar tools. It also mentions an updated version of Qwen3-Coder-30B for faster, more reliable tool calling in Ollama's new engine.

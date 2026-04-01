@@ -1,0 +1,1 @@
+This post discusses Ollama's experimental feature for generating images locally on macOS, with support for Windows and Linux coming soon. The article mentions Z-Image Turbo, a 6 billion parameter text-to-image model from Alibaba's Tongyi Lab, capable of producing photorealistic images and handling bilingual text rendering in both English and Chinese.

@@ -3,7 +3,7 @@
   "checks": {
     "exists": true,
     "issue_path": "/mnt/c/Users/RKSFAMILY/Documents/forgecore_newsletter/actions-runner/_work/forgecore-newsletter/forgecore-newsletter/content/issues/ISSUE-2026-04-01.md",
-    "word_count": 977,
+    "word_count": 920,
     "required_sections_present": [
       "## Hook",
       "## Top Story",
@@ -16,16 +16,17 @@
     ],
     "url_count": 7,
     "source_links": [
-      "https://forgecore-newsletter.beehiiv.com/",
-      "https://ollama.com/blog/claude",
-      "https://ollama.com/blog/image-generation",
       "https://ollama.com/blog/mlx",
       "https://ollama.com/blog/launch",
+      "https://ollama.com/blog/claude",
       "https://ollama.com/blog/codex",
+      "https://ollama.com/blog/image-generation",
+      "https://forgecore-newsletter.beehiiv.com/",
       "https://ollama.com/blog/nvidia-spark-performance"
     ],
     "has_code_block": true,
     "leaked_phrases": [],
+    "placeholder_language": [],
     "duplicate_paragraphs": [],
     "errors": []
   },

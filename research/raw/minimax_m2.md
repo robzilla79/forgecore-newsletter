@@ -1,0 +1,1 @@
+This post introduces MiniMax M2, a model built for coding and agentic workflows available on Ollama's cloud. The model demonstrates high intelligence across various domains, excels at coding tasks, and is designed for efficient use in interactive agents and batched sampling.

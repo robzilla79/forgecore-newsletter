@@ -1,0 +1,1 @@
+This post discusses the experimental feature of generating images locally with Ollama on macOS, with Windows and Linux support coming soon. The post mentions Z-Image Turbo as one of the models used for image generation.
