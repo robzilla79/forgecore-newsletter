@@ -9,13 +9,10 @@ from issue_contract import BANNED_TOKENS, REQUIRED_SECTIONS, ensure_issue_contra
 from utils import WORKSPACE, dump_json, load_text
 
 MIN_WORDS = 500
-# Require at least 3 real source URLs to match AGENTS.md quality rules
 MIN_SOURCE_LINKS = 3
 REQUIRED_CTA_URL = "https://forgecore-newsletter.beehiiv.com/"
 REQUIRED_SPONSOR_EMAIL = "sponsors@forgecore.co"
 
-# Regex patterns that indicate leaked AI meta-instructions in final output.
-# These are in addition to BANNED_TOKENS (which are exact-string checks).
 LEAKED_PHRASE_PATTERNS: list[str] = [
     r"\baudience\s+focus\b",
     r"\bstrategic\s+lens\b",
@@ -24,9 +21,20 @@ LEAKED_PHRASE_PATTERNS: list[str] = [
     r"\bprovide\s+a\s+clear\s+call\s+to\s+action\b",
     r"\bthis\s+issue\s+is\s+for\b",
     r"\buse\s+this\s+starting\s+workflow\b",
-    r"\bsubscribe\s+to\s+receive\s+more\s+practical\b",
+    r"\bsubscribe\s+to\s+receive\s+more\b",
+    r'^\s*\{',
+    r'^\s*"summary":',
+    r'^\s*"files":',
+    r'^\s*"memory_update":',
+    r"^#\s+Title:",
     r"^\*\*Date:\*\*",
     r"^\*\*Edition:\*\*",
+]
+
+MISSING_CONTENT_PATTERNS: list[str] = [
+    r"\bmissing content\b",
+    r"\bno concrete content returned\b",
+    r"\bdescription incomplete in provided content\b",
 ]
 
 
@@ -34,72 +42,80 @@ def word_count(text: str) -> int:
     return len(re.findall(r"\b\w+\b", text))
 
 
-def find_leaked_phrases(text: str) -> list[str]:
+def find_matching_patterns(text: str, patterns: list[str]) -> list[str]:
     found: list[str] = []
-    for pattern in LEAKED_PHRASE_PATTERNS:
+    for pattern in patterns:
         if re.search(pattern, text, flags=re.IGNORECASE | re.MULTILINE):
             found.append(pattern)
     return found
 
 
 def find_duplicate_paragraphs(text: str) -> list[str]:
-    """Return list of paragraphs that appear more than once (normalized)."""
     paras = re.split(r"\n{2,}", text.strip())
     seen: dict[str, int] = {}
-    for p in paras:
-        key = " ".join(p.lower().split())
-        if len(key) < 40:  # skip very short fragments
+    for para in paras:
+        key = " ".join(para.lower().split())
+        if len(key) < 40:
             continue
         seen[key] = seen.get(key, 0) + 1
-    return [k[:80] + "..." for k, count in seen.items() if count > 1]
+    return [key[:80] + "..." for key, count in seen.items() if count > 1]
 
 
 def collect_errors(text: str) -> list[str]:
     errors: list[str] = []
 
-    # Required sections
     for header in REQUIRED_SECTIONS:
         if header not in text:
             errors.append(f"Missing required section: {header}")
 
-    # Banned tokens (exact string)
     for token in BANNED_TOKENS:
         if token.lower() in text.lower():
-            errors.append(f"Banned token found: \"{token}\"")
+            errors.append(f'Banned token found: "{token}"')
 
-    # Leaked AI meta-phrases (regex)
-    for pattern in find_leaked_phrases(text):
+    for pattern in find_matching_patterns(text, LEAKED_PHRASE_PATTERNS):
         errors.append(f"Leaked meta-phrase pattern found: {pattern}")
 
-    # Duplicate paragraphs
-    dupes = find_duplicate_paragraphs(text)
-    for d in dupes:
-        errors.append(f"Duplicate paragraph detected: \"{d}\"")
+    for pattern in find_matching_patterns(text, MISSING_CONTENT_PATTERNS):
+        errors.append(f"Placeholder language found: {pattern}")
 
-    # URLs
-    urls = re.findall(r"https?://\S+", text)
-    if len(urls) < MIN_SOURCE_LINKS:
+    dupes = find_duplicate_paragraphs(text)
+    for para in dupes:
+        errors.append(f'Duplicate paragraph detected: "{para}"')
+
+    urls = [u.rstrip(").,") for u in re.findall(r"https?://\S+", text)]
+    unique_urls = list(dict.fromkeys(urls))
+    if len(unique_urls) < MIN_SOURCE_LINKS:
         errors.append(
-            f"Not enough real URLs: found {len(urls)}, need at least {MIN_SOURCE_LINKS}"
+            f"Not enough real URLs: found {len(unique_urls)}, need at least {MIN_SOURCE_LINKS}"
         )
-    if any("example.com" in url.lower() for url in urls):
+    if any("example.com" in url.lower() for url in unique_urls):
         errors.append("example.com URL found in issue content")
 
-    # Code block
     if "```" not in text:
         errors.append("Workflow code block is missing")
 
-    # Word count
     wc = word_count(text)
     if wc < MIN_WORDS:
         errors.append(f"Issue too short: {wc} words (need {MIN_WORDS})")
 
-    # Hook length
+    title_match = re.search(r"^#\s+(.+)$", text, flags=re.MULTILINE)
+    if not title_match:
+        errors.append("Issue title is missing")
+    else:
+        title = title_match.group(1).strip()
+        if title.lower().startswith("title:"):
+            errors.append("Issue title still contains 'Title:' prefix")
+        if title.lower().startswith("author update"):
+            errors.append("Issue title still contains generic author-update placeholder")
+
     hook_match = re.search(r"^## Hook\n(.+?)(?=^## |\Z)", text, flags=re.MULTILINE | re.DOTALL)
     if not hook_match or len(hook_match.group(1).split()) < 12:
         errors.append("Hook section is missing or too short (need 12+ words)")
 
-    # CTA length
+    top_story_match = re.search(r"^## Top Story\n(.+?)(?=^## |\Z)", text, flags=re.MULTILINE | re.DOTALL)
+    if not top_story_match or len(top_story_match.group(1).split()) < 80:
+        errors.append("Top Story section is too thin (need 80+ words)")
+
     cta_match = re.search(r"^## CTA\n(.+?)(?=^## |\Z)", text, flags=re.MULTILINE | re.DOTALL)
     if not cta_match or len(cta_match.group(1).split()) < 8:
         errors.append("CTA section is missing or too short (need 8+ words)")
@@ -110,7 +126,15 @@ def collect_errors(text: str) -> list[str]:
         if REQUIRED_SPONSOR_EMAIL not in cta_text:
             errors.append("CTA section missing required sponsor email")
         if "sponsor this issue" not in cta_text.lower():
-            errors.append("CTA section missing 'sponsor this issue' invite")
+            errors.append("CTA section missing 'Sponsor this issue' invite")
+
+    sources_match = re.search(r"^## Sources\n(.+?)(?=^## |\Z)", text, flags=re.MULTILINE | re.DOTALL)
+    if not sources_match:
+        errors.append("Sources section is missing")
+    else:
+        source_lines = [line for line in sources_match.group(1).splitlines() if line.strip()]
+        if len(source_lines) < MIN_SOURCE_LINKS:
+            errors.append(f"Sources section is too short: {len(source_lines)} entries")
 
     return errors
 
@@ -118,20 +142,22 @@ def collect_errors(text: str) -> list[str]:
 def main() -> int:
     path = ensure_issue_contract(latest_issue_path())
     text = load_text(path)
-    urls = re.findall(r"https?://\S+", text)
-    errors = collect_errors(text)
-    leaked = find_leaked_phrases(text)
+    urls = [u.rstrip(").,") for u in re.findall(r"https?://\S+", text)]
+    leaked = find_matching_patterns(text, LEAKED_PHRASE_PATTERNS)
+    missing = find_matching_patterns(text, MISSING_CONTENT_PATTERNS)
     dupes = find_duplicate_paragraphs(text)
+    errors = collect_errors(text)
 
     checks = {
         "exists": path.exists(),
         "issue_path": path.as_posix(),
         "word_count": word_count(text),
         "required_sections_present": [h for h in REQUIRED_SECTIONS if h in text],
-        "url_count": len(urls),
-        "source_links": [u.rstrip(").,") for u in urls],
+        "url_count": len(list(dict.fromkeys(urls))),
+        "source_links": list(dict.fromkeys(urls)),
         "has_code_block": "```" in text,
         "leaked_phrases": leaked,
+        "placeholder_language": missing,
         "duplicate_paragraphs": dupes,
         "errors": errors,
     }
