@@ -149,3 +149,38 @@
 ---
 
 [2026-04-01 22:30:06 UTC] Improvement pass complete: 1/3 issues updated (model=mistral:7b, origin=improve)
+
+
+---
+
+[2026-04-01 23:06:38 UTC] Improving ISSUE-2026-04-01.md using targeted critic guidance ...
+
+
+---
+
+[2026-04-01 23:06:55 UTC] Improved ISSUE-2026-04-01.md (7286 -> 5632 chars)
+
+
+---
+
+[2026-04-01 23:06:55 UTC] Improving ISSUE-2026-03-31.md using targeted critic guidance ...
+
+
+---
+
+[2026-04-01 23:07:06 UTC] Improved ISSUE-2026-03-31.md (6168 -> 5920 chars)
+
+
+---
+
+[2026-04-01 23:07:06 UTC] Improving ISSUE-2026-03-14.md using targeted critic guidance ...
+
+
+---
+
+[2026-04-01 23:07:18 UTC] Improved ISSUE-2026-03-14.md (6408 -> 6255 chars)
+
+
+---
+
+[2026-04-01 23:07:18 UTC] Improvement pass complete: 3/3 issues updated (model=mistral:7b, origin=improve)
