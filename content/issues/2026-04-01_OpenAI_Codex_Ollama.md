@@ -1,0 +1,1 @@
+OpenAI Codex with Ollama: This post explains how open models can be used with OpenAI's Codex CLI through Ollama, allowing for the reading, modification, and execution of code in your working directory using various models.

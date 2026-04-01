@@ -1,0 +1,1 @@
+This blog post introduces `ollama launch`, a command that sets up and runs coding tools like Claude Code, OpenCode, and Codex with local or cloud models, without the need for environment variables or config files.

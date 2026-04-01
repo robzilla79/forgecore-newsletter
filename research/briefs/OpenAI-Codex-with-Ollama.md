@@ -1,0 +1,1 @@
+This post explains how open models can be used with OpenAI's Codex CLI through Ollama. It mentions that Codex can read, modify, and execute code in your working directory using models such as gpt-oss:20b, gpt-oss:120b, or other open-weight alternatives.
