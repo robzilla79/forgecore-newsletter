@@ -2916,3 +2916,44 @@ RuntimeError: Ollama request failed: 404 Client Error: Not Found for url: http:/
 
 Raw model output:
 [EMPTY RESPONSE]
+
+
+---
+
+[2026-04-01 11:58:33 UTC] scout: JSONDecodeError: Expecting ',' delimiter: line 1 column 3145 (char 3144)
+
+Traceback:
+Traceback (most recent call last):
+  File "/mnt/c/Users/RKSFAMILY/Documents/forgecore_newsletter/actions-runner/_work/forgecore-newsletter/forgecore-newsletter/agent_loop.py", line 323, in run_llm
+    parsed = parse_json(raw)
+             ^^^^^^^^^^^^^^^
+  File "/mnt/c/Users/RKSFAMILY/Documents/forgecore_newsletter/actions-runner/_work/forgecore-newsletter/forgecore-newsletter/agent_loop.py", line 190, in parse_json
+    candidate = extract_json(raw)
+                ^^^^^^^^^^^^^^^^^
+  File "/mnt/c/Users/RKSFAMILY/Documents/forgecore_newsletter/actions-runner/_work/forgecore-newsletter/forgecore-newsletter/agent_loop.py", line 186, in extract_json
+    raise ValueError("No JSON object found in model output")
+ValueError: No JSON object found in model output
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/mnt/c/Users/RKSFAMILY/Documents/forgecore_newsletter/actions-runner/_work/forgecore-newsletter/forgecore-newsletter/agent_loop.py", line 336, in run_llm
+    parsed = parse_json(raw)
+             ^^^^^^^^^^^^^^^
+  File "/mnt/c/Users/RKSFAMILY/Documents/forgecore_newsletter/actions-runner/_work/forgecore-newsletter/forgecore-newsletter/agent_loop.py", line 193, in parse_json
+    return json.loads(candidate)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/c/Users/RKSFAMILY/Documents/forgecore_newsletter/actions-runner/_work/_tool/Python/3.11.15/x64/lib/python3.11/json/__init__.py", line 346, in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/c/Users/RKSFAMILY/Documents/forgecore_newsletter/actions-runner/_work/_tool/Python/3.11.15/x64/lib/python3.11/json/decoder.py", line 337, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/c/Users/RKSFAMILY/Documents/forgecore_newsletter/actions-runner/_work/_tool/Python/3.11.15/x64/lib/python3.11/json/decoder.py", line 353, in raw_decode
+    obj, end = self.scan_once(s, idx)
+               ^^^^^^^^^^^^^^^^^^^^^^
+json.decoder.JSONDecodeError: Expecting ',' delimiter: line 1 column 3145 (char 3144)
+
+
+Raw model output:
+{"title":"Local AI Deployment Accelerates with Ollama","date":"April 1, 2026","subscribe":"https://forgecore-newsletter.beehiiv.com/","sponsor":"mailto:sponsors@forgecore.co","hook":"Teams are rapidly adopting local AI deployment to gain control over costs, privacy, and latency—and the latest updates to Ollama are making it easier than ever.","topStory":"Local AI deployment is accelerating as teams seek privacy-preserving, cost-effective alternatives to cloud APIs. Ollama and similar runtimes are at the center of this shift. Recent updates include: - Anthropic API compatibility for Claude Code. - Image generation capabilities. - Enhanced performance on Apple Silicon devices with MLX. - Simplified setup via ollama launch. - OpenAI Codex integration for code generation.","whyItMatters":["Cost & Privacy: Local AI reduces reliance on external services, cutting latency and data transfer costs.","Creativity: Image generation unlocks new possibilities for marketing and design teams.","Speed: Tools like ollama launch streamline integration, accelerating time-to-value.","Control: Hybrid deployments offer flexibility for privacy-sensitive use cases."],"highlights":[{"title":"Claude Code with Anthropic API","link":"https://ollama.com/blog/claude"},{"title":"Image Generation","link":"https://ollama.com/blog/image-generation"},{"title":"Apple Silicon Performance","link":"https://ollama.com/blog/mlx"},{"title":"Simplified Setup","link":"https://ollama.com/blog/launch"},{"title":"OpenAI Codex Integration","link":"https://ollama.com/blog/codex"}],"toolOfTheWeek":{"title":"Claude Code with Anthropic API","description":"This tool provides a powerful agentic coding experience, offering flexibility in model selection and enhanced control over AI implementations.","gettingStarted":[{"step":"Install Claude Code","code":"curl -fsSL https://claude.ai/install.sh | bash  # macOS/Linux"},{"step":"Configure Ollama","code":"export ANTHROPIC_AUTH_TOKEN=ollama\nexport ANTHROPIC_BASE_URL=http://localhost:11434"},{"step":"Run with a local model","code":"claude --model gpt-oss:20b"}],"workflow":[{"step":"List available models","code":"ollama list"},{"step":"Define success metrics","code":"echo \"Measure time saved, error rate, and cycle time\""},{"step":"Pilot with one team","code":"echo \"Promote only if the workflow is repeatable\""}],"cta":"Join 10,000+ operators and founders leveraging local AI for efficiency and innovation. [Subscribe to ForgeCore](https://forgecore-newsletter.beehiiv.com/)","sources":["https://ollama.com/blog/claude","https://ollama.com/blog/image-generation","https://ollama.com/blog/mlx","https://ollama.com/blog/launch","https://ollama.com/blog/codex"],"footer":{"newsletter":"ForgeCore | Empowering AI-Forward Operators","links":{"archive":"https://forgecore.co/newsletter","twitter":"https://twitter.com/forgecore","linkedin":"https://linkedin.com/company/forgecore"},"note":"This newsletter is brought to you by ForgeCore, a community-driven platform for AI operators and founders. [Sponsor](mailto:sponsors@forgecore.co) or [Subscribe](https://forgecore-newsletter.beehiiv.com/) to stay in the loop."}}
