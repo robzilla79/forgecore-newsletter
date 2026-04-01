@@ -15,10 +15,12 @@ Ollama is now powered by MLX on Apple Silicon in preview
 March 30, 2026
 Today, we’re previewing the fastest way to run Ollama on Apple silicon, powered by MLX, Apple’s machine learning framework.
 This unlocks new performance to accelerate your most demanding work on macOS:
-- Personal assistants like OpenClaw
-- Coding agents like Claude Code, OpenCode, or Codex
+Personal assistants like OpenClaw
+-
+Coding agents like Claude Code, OpenCode, or Codex
 Accelerate coding agents like Pi or Claude Code
 OpenClaw now responds much faster
+-
 Fastest performance on Apple silicon, powered by MLX
 Ollama on Apple silicon is now built on top of Apple’s machine learning framework, MLX, to take advantage of its unified memory architecture.
 This results in a large speedup of Ollama on all Apple Silicon devices. On Apple’s M5, M5 Pro and M5 Max chips, Ollama leverages the new GPU Neural Accelerators to accelerate both time to first token (TTFT) and generation speed (tokens per second).
@@ -35,6 +37,7 @@ Lower memory utilization: Ollama will now reuse its cache across conversations, 
 Intelligent checkpoints: Ollama will now store snapshots of its cache at intelligent locations in the prompt, resulting in less prompt processing and faster responses.
 Smarter eviction: shared prefixes survive longer even when older branches are dropped.
 Get started
+Download Ollama 0.19
 This preview release of Ollama accelerates the new Qwen3.5-35B-A3B model, with sampling parameters tuned for coding tasks.
 Please make sure you have a Mac with more than 32GB of unified memory.
 Claude Code:
@@ -47,7 +50,11 @@ Future models
 We are actively working to support future models. For users with custom models fine-tuned on supported architectures, we will introduce an easier way to import models into Ollama. In the meantime, we will expand the list of supported architectures.
 Acknowledgments
 Thank you to:
-- The MLX contributor team who built an incredible acceleration framework
-- NVIDIA contributors to NVFP4 quantization, NVFP4 model optimizer, MLX CUDA support, Ollama optimizations and testing
-- The GGML & llama.cpp team who built a thriving local framework and community
-- The Alibaba Qwen team for open-sourcing excellent models and their collaboration
+The MLX contributor team who built an incredible acceleration framework
+-
+NVIDIA contributors to NVFP4 quantization, NVFP4 model optimizer, MLX CUDA support, Ollama optimizations and testing
+-
+The GGML & llama.cpp team who built a thriving local framework and community
+-
+The Alibaba Qwen team for open-sourcing excellent models and their collaboration
+-

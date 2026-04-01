@@ -16,9 +16,12 @@ February 23, 2026
 OpenClaw is a personal AI assistant that can clear your inbox, send emails, manage your calendar, and complete other tasks via messaging apps like WhatsApp, Telegram, iMessage, or any chat app you already use.
 It all runs on your own hardware, and with Ollama 0.17, it’s now a single command to get started.
 What you’ll need
-- Ollama 0.17 or later
-- Node.js (npm is used to install OpenClaw)
-- Mac or Linux system (Windows users can install OpenClaw via WSL - Windows Subsystem for Linux)
+Ollama 0.17 or later
+-
+Node.js (npm is used to install OpenClaw)
+-
+Mac or Linux system (Windows users can install OpenClaw via WSL - Windows Subsystem for Linux)
+-
 Step 1: Run the command
 Open a terminal, and type in:
 ollama launch openclaw --model kimi-k2.5:cloud
@@ -43,16 +46,16 @@ Selecting a model
 Ollama shows a model selector with recommended and available models. Agents work best with at least 64k context length.
 Ollama’s cloud models have full context length, which provide the best experience with agents like OpenClaw.
 Cloud models:
-| Model | Description |
-|---|---|
-| kimi-k2.5:cloud | Multimodal reasoning with subagents |
-| minimax-m2.5:cloud | Fast, efficient coding and real-world productivity |
-| glm-5:cloud | Reasoning and code generation |
+Model | Description |
+---|---|
+kimi-k2.5:cloud | Multimodal reasoning with subagents |
+minimax-m2.5:cloud | Fast, efficient coding and real-world productivity |
+glm-5:cloud | Reasoning and code generation |
 Local models (requires GPU VRAM):
-| Model | VRAM | Description |
-|---|---|---|
-| glm-4.7-flash | ~25 GB | Reasoning and code generation |
-| qwen3-coder | ~25 GB | Efficient all-purpose assistant |
+Model | VRAM | Description |
+---|---|---|
+glm-4.7-flash | ~25 GB | Reasoning and code generation |
+qwen3-coder | ~25 GB | Efficient all-purpose assistant |
 Running securely
 OpenClaw has the ability to read files and execute actions when tools are enabled. Ensure that you run OpenClaw in an isolated environment and are aware of the risks with giving OpenClaw access to your system.
 See the OpenClaw security documentation for more details.

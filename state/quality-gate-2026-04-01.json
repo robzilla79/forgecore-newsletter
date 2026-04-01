@@ -1,0 +1,31 @@
+{
+  "passed": true,
+  "checks": {
+    "exists": true,
+    "issue_path": "/mnt/c/Users/RKSFAMILY/Documents/forgecore_newsletter/actions-runner/_work/forgecore-newsletter/forgecore-newsletter/content/issues/ISSUE-2026-04-01.md",
+    "word_count": 932,
+    "required_sections_present": [
+      "## Hook",
+      "## Top Story",
+      "## Why It Matters",
+      "## Highlights",
+      "## Tool of the Week",
+      "## Workflow",
+      "## CTA",
+      "## Sources"
+    ],
+    "url_count": 5,
+    "source_links": [
+      "https://ollama.com/blog/claude",
+      "https://ollama.com/blog/image-generation",
+      "https://ollama.com/blog/mlx",
+      "https://ollama.com/blog/launch",
+      "https://ollama.com/blog/codex"
+    ],
+    "has_code_block": true,
+    "leaked_phrases": [],
+    "duplicate_paragraphs": [],
+    "errors": []
+  },
+  "issue": "/mnt/c/Users/RKSFAMILY/Documents/forgecore_newsletter/actions-runner/_work/forgecore-newsletter/forgecore-newsletter/content/issues/ISSUE-2026-04-01.md"
+}

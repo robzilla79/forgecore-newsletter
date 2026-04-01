@@ -28,10 +28,14 @@ OpenCode:
 ollama launch opencode
 This will guide you to select models and launch your chosen integration. No environment variables or config files needed.
 Supported integrations
-- Claude Code
-- OpenCode
-- Codex
-- Droid
+Claude Code
+-
+OpenCode
+-
+Codex
+-
+Droid
+-
 Recommended models for coding
 Note: Coding tools work best with a full context length. Update the context length in Ollama’s settings to at least 64000 tokens. See the context length documentation on how to make changes.
 Local models:

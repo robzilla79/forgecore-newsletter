@@ -102,12 +102,18 @@ if block.type == 'tool_use':
 print(f'Tool: {block.name}')
 print(f'Input: {block.input}')
 Supported features
-- Messages and multi-turn conversations
-- Streaming
-- System prompts
-- Tool calling / function calling
-- Extended thinking
-- Vision (image input)
+Messages and multi-turn conversations
+-
+Streaming
+-
+System prompts
+-
+Tool calling / function calling
+-
+Extended thinking
+-
+Vision (image input)
+-
 For a complete list of supported features, see the Anthropic compatibility documentation.
 Learn more
 For more detailed setup instructions and configuration options, see the Claude Code guide.

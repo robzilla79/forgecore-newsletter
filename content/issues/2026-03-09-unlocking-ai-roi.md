@@ -49,3 +49,4 @@ Pick one workflow from this issue, test it with a measurable success metric this
 - [ollama launch](https://ollama.com/blog/launch)
 - [OpenAI Codex with Ollama](https://ollama.com/blog/codex)
 - [OpenAI gpt-oss-safeguard](https://ollama.com/blog/gpt-oss-safeguard)
+- [Ollama is now powered by MLX on Apple Silicon in preview](https://ollama.com/blog/mlx)

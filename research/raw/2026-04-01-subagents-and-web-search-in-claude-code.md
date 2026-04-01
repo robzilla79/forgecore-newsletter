@@ -36,6 +36,9 @@ minimax-m2.5:cloud
 glm-5:cloud
 kimi-k2.5:cloud
 Learn more
-- ollama launch for more integrations
-- Claude Code with Ollama for basic setup
-- Web search API for standalone usage
+ollama launch for more integrations
+-
+Claude Code with Ollama for basic setup
+-
+Web search API for standalone usage
+-
