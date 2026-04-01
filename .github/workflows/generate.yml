@@ -89,15 +89,20 @@ jobs:
       - name: Ensure Ollama models are pulled
         if: steps.ollama_check.outputs.reachable == 'true'
         run: |
+          set -e
           echo "[ollama] Pulling $RESEARCH_MODEL ..."
-          ollama pull "$RESEARCH_MODEL" || echo "::warning::Failed to pull $RESEARCH_MODEL — may already be present or name changed"
+          ollama pull "$RESEARCH_MODEL"
           if [ "$WRITER_MODEL" != "$RESEARCH_MODEL" ]; then
             echo "[ollama] Pulling $WRITER_MODEL ..."
-            ollama pull "$WRITER_MODEL" || echo "::warning::Failed to pull $WRITER_MODEL"
+            ollama pull "$WRITER_MODEL"
           fi
-          if [ "$FALLBACK_MODEL" != "$RESEARCH_MODEL" ] && [ "$FALLBACK_MODEL" != "$WRITER_MODEL" ]; then
+          if [ "$EDITOR_MODEL" != "$RESEARCH_MODEL" ] && [ "$EDITOR_MODEL" != "$WRITER_MODEL" ]; then
+            echo "[ollama] Pulling $EDITOR_MODEL ..."
+            ollama pull "$EDITOR_MODEL"
+          fi
+          if [ "$FALLBACK_MODEL" != "$RESEARCH_MODEL" ] && [ "$FALLBACK_MODEL" != "$WRITER_MODEL" ] && [ "$FALLBACK_MODEL" != "$EDITOR_MODEL" ]; then
             echo "[ollama] Pulling $FALLBACK_MODEL ..."
-            ollama pull "$FALLBACK_MODEL" || echo "::warning::Failed to pull $FALLBACK_MODEL"
+            ollama pull "$FALLBACK_MODEL"
           fi
           echo "[ollama] Model pull complete. Available models:"
           ollama list

@@ -21,8 +21,8 @@ from utils import WORKSPACE, append_text, load_text, now_str, today_str, write_t
 load_dotenv(WORKSPACE / ".env")
 
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434").rstrip("/")
-RESEARCH_MODEL = os.getenv("RESEARCH_MODEL", "qwen2.5:14b-instruct")
-WRITER_MODEL = os.getenv("WRITER_MODEL", "gemma3:12b")
+RESEARCH_MODEL = os.getenv("RESEARCH_MODEL", "qwen3:14b")
+WRITER_MODEL = os.getenv("WRITER_MODEL", "qwen3:14b")
 EDITOR_MODEL = os.getenv("EDITOR_MODEL", WRITER_MODEL)
 FALLBACK_MODEL = os.getenv("FALLBACK_MODEL", "qwen3:8b")
 MAX_CONTEXT_CHARS = int(os.getenv("MAX_CONTEXT_CHARS", "22000"))
@@ -118,6 +118,34 @@ def ollama_healthcheck() -> tuple[bool, str]:
         return True, "ok"
     except Exception as exc:
         return False, f"{type(exc).__name__}: {exc}"
+
+
+def model_exists(model: str) -> bool:
+    """Return True if the given model appears in Ollama's local tag list."""
+    try:
+        resp = requests.get(f"{OLLAMA_URL}/api/tags", timeout=10)
+        resp.raise_for_status()
+        names = [m.get("name", "") for m in resp.json().get("models", [])]
+        target_base = model.split(":")[0]
+        return any(model == name or target_base == name.split(":")[0] for name in names if name)
+    except Exception:
+        return False
+
+
+def ensure_model_available(model: str) -> None:
+    """Ensure the requested model is present locally, pulling it if needed.
+
+    This prevents repeated /api/generate failures when a model tag is missing.
+    """
+    if model_exists(model):
+        return
+    progress(f"ollama: model {model!r} missing, pulling now")
+    try:
+        subprocess.run(["ollama", "pull", model], check=True, timeout=900)
+    except Exception as exc:
+        raise RuntimeError(f"Model {model!r} not present and pull failed: {exc}") from exc
+    if not model_exists(model):
+        raise RuntimeError(f"Model {model!r} still unavailable after pull")
 
 
 def call_ollama(model: str, prompt: str, *, suppress_thinking: bool = False) -> str:
@@ -315,7 +343,8 @@ def run_llm(agent: str) -> dict[str, Any]:
             print(f"[{agent}] FATAL: Ollama healthcheck failed: {msg}", flush=True)
             raise RuntimeError(f"Ollama healthcheck failed: {msg}")
 
-        print(f"[{agent}] Ollama reachable, calling model...", flush=True)
+        ensure_model_available(model)
+        print(f"[{agent}] Ollama reachable, model ready, calling model...", flush=True)
         raw = call_ollama(model, build_prompt(agent, build_context(agent)), suppress_thinking=suppress)
         print(f"[{agent}] Model responded ({len(raw)} chars), parsing JSON...", flush=True)
 
