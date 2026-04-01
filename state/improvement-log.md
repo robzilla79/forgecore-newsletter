@@ -114,3 +114,38 @@
 ---
 
 [2026-04-01 21:57:44 UTC] Improvement pass complete: 2/3 issues updated (model=mistral:7b, origin=improve)
+
+
+---
+
+[2026-04-01 22:29:27 UTC] Improving ISSUE-2026-04-01.md ...
+
+
+---
+
+[2026-04-01 22:29:43 UTC] Improved ISSUE-2026-04-01.md (5910 -> 5352 chars)
+
+
+---
+
+[2026-04-01 22:29:43 UTC] Improving ISSUE-2026-03-31.md ...
+
+
+---
+
+[2026-04-01 22:29:54 UTC] Improvement too minor for ISSUE-2026-03-31.md, skipping write
+
+
+---
+
+[2026-04-01 22:29:54 UTC] Improving ISSUE-2026-03-14.md ...
+
+
+---
+
+[2026-04-01 22:30:06 UTC] Improvement too minor for ISSUE-2026-03-14.md, skipping write
+
+
+---
+
+[2026-04-01 22:30:06 UTC] Improvement pass complete: 1/3 issues updated (model=mistral:7b, origin=improve)
