@@ -1,1 +1,1 @@
-This post announces that Ollama is now running faster on Apple silicon, thanks to Apple's machine learning framework, MLX. It mentions improved performance for personal assistants and coding agents like Claude Code.
+This post announces that Ollama is now running on Apple Silicon using MLX, Apple's machine learning framework, which promises faster performance for personal assistants and coding tools like Claude Code and OpenCode.

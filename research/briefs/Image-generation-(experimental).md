@@ -1,0 +1,1 @@
+This post discusses Ollama's new image generation feature on macOS, which generates images locally using models like Z-Image Turbo and FLUX.2 Klein. It also provides examples of photorealistic portraits, Chinese calligraphy, and creative compositions.

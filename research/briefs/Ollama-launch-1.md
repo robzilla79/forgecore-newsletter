@@ -1,0 +1,1 @@
+This post introduces `ollama launch`, a command that sets up and runs your favorite coding tools like Claude Code, OpenCode, and Codex with local or cloud models. It also mentions supported integrations and recommended models for coding.
