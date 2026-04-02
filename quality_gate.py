@@ -15,6 +15,7 @@ MIN_SOURCE_LINKS = 3
 REQUIRED_CTA_URL = "https://forgecore-newsletter.beehiiv.com/"
 REQUIRED_SPONSOR_EMAIL = "sponsors@forgecore.co"
 MIN_CRITIC_OVERALL = float(os.getenv("MIN_CRITIC_OVERALL", "8.0"))
+REQUIRE_CRITIC_REVIEW = os.getenv("REQUIRE_CRITIC_REVIEW", "1") == "1"
 
 LEAKED_PHRASE_PATTERNS: list[str] = [
     r"\baudience\s+focus\b",
@@ -64,22 +65,19 @@ def find_duplicate_paragraphs(text: str) -> list[str]:
     return [key[:80] + "..." for key, count in seen.items() if count > 1]
 
 
-def load_latest_critic(issue_path: Path) -> dict | None:
+def load_issue_critic(issue_path: Path) -> tuple[dict | None, str | None]:
     date_match = re.search(r"(\d{4}-\d{2}-\d{2})", issue_path.stem)
     suffix = date_match.group(1) if date_match else "latest"
     candidate = WORKSPACE / "state" / f"critic-review-{suffix}.json"
     if not candidate.exists():
-        files = sorted((WORKSPACE / "state").glob("critic-review-*.json"), reverse=True)
-        candidate = files[0] if files else candidate
-    if candidate.exists():
-        try:
-            return json.loads(candidate.read_text(encoding="utf-8"))
-        except Exception:
-            return None
-    return None
+        return None, candidate.as_posix()
+    try:
+        return json.loads(candidate.read_text(encoding="utf-8")), candidate.as_posix()
+    except Exception:
+        return None, candidate.as_posix()
 
 
-def collect_errors(text: str, critic: dict | None = None) -> list[str]:
+def collect_errors(text: str, critic: dict | None = None, critic_expected_path: str | None = None) -> list[str]:
     errors: list[str] = []
 
     for header in REQUIRED_SECTIONS:
@@ -152,6 +150,10 @@ def collect_errors(text: str, critic: dict | None = None) -> list[str]:
         if len(source_lines) < MIN_SOURCE_LINKS:
             errors.append(f"Sources section is too short: {len(source_lines)} entries")
 
+    if REQUIRE_CRITIC_REVIEW and critic is None:
+        expected = critic_expected_path or "state/critic-review-<date>.json"
+        errors.append(f"Critic review missing for current issue: expected {expected}")
+
     if critic:
         overall = float(critic.get("overall_score", 0.0) or 0.0)
         if overall < MIN_CRITIC_OVERALL:
@@ -176,8 +178,8 @@ def main() -> int:
     leaked = find_matching_patterns(text, LEAKED_PHRASE_PATTERNS)
     missing = find_matching_patterns(text, MISSING_CONTENT_PATTERNS)
     dupes = find_duplicate_paragraphs(text)
-    critic = load_latest_critic(path)
-    errors = collect_errors(text, critic)
+    critic, critic_path = load_issue_critic(path)
+    errors = collect_errors(text, critic, critic_path)
 
     checks = {
         "exists": path.exists(),
@@ -190,6 +192,7 @@ def main() -> int:
         "leaked_phrases": leaked,
         "placeholder_language": missing,
         "duplicate_paragraphs": dupes,
+        "critic_expected_path": critic_path,
         "critic_review": critic or {},
         "errors": errors,
     }
