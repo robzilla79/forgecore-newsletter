@@ -12,13 +12,14 @@ concurrency:
 jobs:
   improve:
     runs-on: self-hosted
-    timeout-minutes: 8
+    timeout-minutes: 10
     env:
       OLLAMA_URL: http://localhost:11434
-      RESEARCH_MODEL: ${{ secrets.RESEARCH_MODEL || 'qwen3:14b' }}
-      WRITER_MODEL: ${{ secrets.WRITER_MODEL || 'qwen3:14b' }}
-      EDITOR_MODEL: ${{ secrets.EDITOR_MODEL || 'qwen3:14b' }}
-      FALLBACK_MODEL: ${{ secrets.FALLBACK_MODEL || 'qwen3:14b' }}
+      RESEARCH_MODEL: ${{ secrets.RESEARCH_MODEL || 'qwen2.5:14b-instruct' }}
+      WRITER_MODEL: ${{ secrets.WRITER_MODEL || 'gemma3:12b' }}
+      EDITOR_MODEL: ${{ secrets.EDITOR_MODEL || 'gemma3:12b' }}
+      CRITIC_MODEL: ${{ secrets.CRITIC_MODEL || 'gemma3:12b' }}
+      FALLBACK_MODEL: ${{ secrets.FALLBACK_MODEL || 'qwen3:8b' }}
       SITE_DOMAIN: news.forgecore.co
       SITE_BASE_URL: https://news.forgecore.co
       NEWSLETTER_NAME: ForgeCore AI Productivity Brief
@@ -32,6 +33,9 @@ jobs:
       OLLAMA_TIMEOUT: '180'
       OLLAMA_RETRIES: '2'
       AUTO_REPAIR_PATHS: '1'
+      MIN_CRITIC_OVERALL: '8.0'
+      MIN_CRITIC_CATEGORY: '7.0'
+      MAX_TARGETED_REWRITE_ITEMS: '6'
       MAX_ARTICLES_PER_RUN: '4'
       MAX_FEED_ITEMS_PER_SOURCE: '4'
       CLOUDFLARE_PAGES_PROJECT: forgecore-newsletter
@@ -80,19 +84,20 @@ jobs:
             echo "::warning::Ollama not reachable at $OLLAMA_URL — skipping improvement loop"
           fi
 
-      - name: Run improvement loop
+      - name: Run improvement controller
+        id: improve_controller
         if: steps.ollama_check.outputs.reachable == 'true'
         env:
           IMPROVEMENT_ORIGIN: improve
         run: |
-          .venv/bin/python improvement_loop.py
+          .venv/bin/python improve_until_passes.py
 
       - name: Publish site (render HTML)
-        if: steps.ollama_check.outputs.reachable == 'true'
+        if: steps.ollama_check.outputs.reachable == 'true' && steps.improve_controller.outcome == 'success'
         run: .venv/bin/python publish_site.py
 
       - name: Commit improvements
-        if: steps.ollama_check.outputs.reachable == 'true'
+        if: steps.ollama_check.outputs.reachable == 'true' && steps.improve_controller.outcome == 'success'
         run: |
           git config user.name "ForgeCore AI Bot"
           git config user.email "bot@forgecore.co"
@@ -106,7 +111,7 @@ jobs:
           fi
 
       - name: Deploy to Cloudflare Pages
-        if: steps.ollama_check.outputs.reachable == 'true'
+        if: steps.ollama_check.outputs.reachable == 'true' && steps.improve_controller.outcome == 'success'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -122,6 +127,8 @@ jobs:
             state/improvement-log.md
             state/errors.log
             state/progress-log.md
+            state/critic-review-*.json
+            state/quality-gate-*.json
             HEARTBEAT.md
           retention-days: 14
           if-no-files-found: warn
