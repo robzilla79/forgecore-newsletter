@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import sys
 import time
 from pathlib import Path
 from typing import Any
@@ -28,6 +29,7 @@ MIN_CRITIC_CATEGORY = float(os.getenv("MIN_CRITIC_CATEGORY", "7.0"))
 _MAX_REWRITE_ITEMS = int(os.getenv("CRITIC_MAX_REWRITE_ITEMS", "6"))
 
 _THINKING_MODEL_PREFIXES = ("qwen3", "qwq", "deepseek-r1", "deepseek-r2")
+RUN_TOKEN = os.getenv("RUN_TOKEN", "").strip()
 
 
 def _is_thinking_model(model: str) -> bool:
@@ -212,14 +214,20 @@ def evaluate_issue(path: Path) -> dict[str, Any]:
 
 
 def main() -> int:
-    path = ensure_issue_contract(latest_issue_path())
-    result = evaluate_issue(path)
-    date_match = re.search(r"(\d{4}-\d{2}-\d{2})", path.stem)
-    suffix = date_match.group(1) if date_match else "latest"
-    out_path = WORKSPACE / "state" / f"critic-review-{suffix}.json"
-    dump_json(out_path, result)
-    print(json.dumps(result, indent=2))
-    return 0 if result["passed"] else 1
+    try:
+        path = ensure_issue_contract(latest_issue_path())
+        result = evaluate_issue(path)
+        date_match = re.search(r"(\d{4}-\d{2}-\d{2})", path.stem)
+        suffix = date_match.group(1) if date_match else "latest"
+        out_path = WORKSPACE / "state" / f"critic-review-{suffix}.json"
+        result["run_token"] = RUN_TOKEN
+        result["artifact_path"] = out_path.as_posix()
+        dump_json(out_path, result)
+        print(json.dumps(result, indent=2))
+        return 0 if result["passed"] else 1
+    except Exception as exc:
+        print(f"critic_review failed: {exc}", file=sys.stderr)
+        return 2
 
 
 if __name__ == "__main__":

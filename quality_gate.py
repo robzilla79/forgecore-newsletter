@@ -16,6 +16,7 @@ REQUIRED_CTA_URL = "https://forgecore-newsletter.beehiiv.com/"
 REQUIRED_SPONSOR_EMAIL = "sponsors@forgecore.co"
 MIN_CRITIC_OVERALL = float(os.getenv("MIN_CRITIC_OVERALL", "8.0"))
 REQUIRE_CRITIC_REVIEW = os.getenv("REQUIRE_CRITIC_REVIEW", "1") == "1"
+RUN_TOKEN = os.getenv("RUN_TOKEN", "").strip()
 
 LEAKED_PHRASE_PATTERNS: list[str] = [
     r"\baudience\s+focus\b",
@@ -92,7 +93,7 @@ def collect_errors(text: str, critic: dict | None = None, critic_expected_path: 
         errors.append(f"Leaked meta-phrase pattern found: {pattern}")
 
     for pattern in find_matching_patterns(text, MISSING_CONTENT_PATTERNS):
-        errors.append(f"Placeholder language found: {pattern}")
+        errors.append(f"Placeholder language found (normalized-placeholder risk): {pattern}")
 
     dupes = find_duplicate_paragraphs(text)
     for para in dupes:
@@ -172,7 +173,12 @@ def collect_errors(text: str, critic: dict | None = None, critic_expected_path: 
 
 
 def main() -> int:
-    path = ensure_issue_contract(latest_issue_path())
+    contract_error = ""
+    path = latest_issue_path()
+    try:
+        path = ensure_issue_contract(path)
+    except Exception as exc:
+        contract_error = str(exc).strip() or "issue contract failed"
     text = load_text(path)
     urls = [u.rstrip(").,") for u in re.findall(r"https?://\S+", text)]
     leaked = find_matching_patterns(text, LEAKED_PHRASE_PATTERNS)
@@ -180,6 +186,10 @@ def main() -> int:
     dupes = find_duplicate_paragraphs(text)
     critic, critic_path = load_issue_critic(path)
     errors = collect_errors(text, critic, critic_path)
+    if contract_error:
+        errors.append(f"Issue contract failed before gate: {contract_error}")
+        if "placeholder/meta upstream content blocked" in contract_error.lower():
+            errors.append("Placeholder/meta language was present upstream and blocked before normalization.")
 
     checks = {
         "exists": path.exists(),
@@ -195,11 +205,15 @@ def main() -> int:
         "critic_expected_path": critic_path,
         "critic_review": critic or {},
         "errors": errors,
+        "contract_error": contract_error,
     }
     result = {"passed": not errors, "checks": checks, "issue": path.as_posix()}
     date_match = re.search(r"(\d{4}-\d{2}-\d{2})", path.stem)
     suffix = date_match.group(1) if date_match else "latest"
-    dump_json(WORKSPACE / "state" / f"quality-gate-{suffix}.json", result)
+    out_path = WORKSPACE / "state" / f"quality-gate-{suffix}.json"
+    result["run_token"] = RUN_TOKEN
+    result["artifact_path"] = out_path.as_posix()
+    dump_json(out_path, result)
     print(json.dumps(result, indent=2))
     return 0 if not errors else 1
 
