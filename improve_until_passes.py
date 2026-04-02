@@ -10,6 +10,8 @@ Exits 0 only when the critic and quality gate both pass.
 from __future__ import annotations
 
 import json
+import os
+import time
 import subprocess
 import sys
 from pathlib import Path
@@ -18,28 +20,41 @@ MAX_ITERATIONS = 5
 STATE_DIR = Path("state")
 
 
-def find_latest_json(prefix: str) -> Path | None:
-    files = sorted(STATE_DIR.glob(f"{prefix}-*.json"), reverse=True)
-    return files[0] if files else None
+def _load_json(path: Path) -> dict:
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
-def run_json_script(script_name: str, prefix: str) -> dict:
+def run_json_script(script_name: str, run_token: str) -> dict:
     STATE_DIR.mkdir(parents=True, exist_ok=True)
-    result = subprocess.run([sys.executable, script_name], capture_output=True, text=True)
+    started = time.time()
+    env = {**os.environ, "RUN_TOKEN": run_token}
+    result = subprocess.run([sys.executable, script_name], capture_output=True, text=True, env=env)
     try:
-        return json.loads(result.stdout)
-    except (json.JSONDecodeError, ValueError):
-        pass
-    path = find_latest_json(prefix)
-    if path and path.exists():
-        try:
-            return json.loads(path.read_text(encoding="utf-8"))
-        except Exception:
-            pass
-    return {"passed": False, "errors": [f"{script_name} produced no parseable output"]}
+        payload = json.loads(result.stdout)
+    except (json.JSONDecodeError, ValueError) as exc:
+        raise RuntimeError(f"{script_name} produced no parseable JSON stdout ({exc})")
+
+    artifact_path = payload.get("artifact_path")
+    if not artifact_path:
+        raise RuntimeError(f"{script_name} missing artifact_path in JSON output")
+    path = Path(str(artifact_path))
+    if not path.exists():
+        raise RuntimeError(f"{script_name} did not write expected artifact: {path.as_posix()}")
+    if path.stat().st_mtime < started:
+        raise RuntimeError(f"{script_name} artifact is stale (not generated during this pass): {path.as_posix()}")
+    try:
+        artifact_payload = _load_json(path)
+    except Exception as exc:
+        raise RuntimeError(f"{script_name} wrote non-parseable artifact JSON: {exc}")
+
+    if payload.get("run_token") != run_token or artifact_payload.get("run_token") != run_token:
+        raise RuntimeError(f"{script_name} artifact run token mismatch; refusing stale state reuse")
+    if result.returncode not in (0, 1):
+        raise RuntimeError(f"{script_name} exited {result.returncode}: {result.stderr.strip() or 'no stderr'}")
+    return payload
 
 
-def run_improvement() -> int:
+def run_improvement() -> dict:
     import os
 
     env_override = {
@@ -48,8 +63,18 @@ def run_improvement() -> int:
         "IMPROVEMENT_ORIGIN": "generate",
     }
     env = {**os.environ, **env_override}
-    result = subprocess.run([sys.executable, "improvement_loop.py"], env=env)
-    return result.returncode
+    result = subprocess.run([sys.executable, "improvement_loop.py"], env=env, capture_output=True, text=True)
+    try:
+        payload = json.loads(result.stdout.strip())
+    except Exception as exc:
+        raise RuntimeError(f"improvement_loop.py returned non-JSON output: {exc}")
+    if result.returncode != 0:
+        raise RuntimeError(f"improvement_loop.py failed: {payload.get('reason') or result.stderr.strip() or 'unknown error'}")
+    if not payload.get("changed"):
+        raise RuntimeError(f"improvement_loop.py made no issue changes: {payload.get('reason', 'no reason provided')}")
+    if not payload.get("issue_path"):
+        raise RuntimeError("improvement_loop.py reported changed=true but no issue_path")
+    return payload
 
 
 def summarise(critic: dict, gate: dict, iteration: int) -> None:
@@ -72,12 +97,21 @@ def summarise(critic: dict, gate: dict, iteration: int) -> None:
         print(f"  gate error: {item}")
 
 
+def _new_run_token(iteration: int) -> str:
+    return f"pass-{iteration}-{time.time_ns()}"
+
+
 def main() -> int:
     print(f"[improve_until_passes] Starting critic-driven improvement loop (max {MAX_ITERATIONS} passes)")
 
     for i in range(1, MAX_ITERATIONS + 1):
-        critic = run_json_script("critic_review.py", "critic-review")
-        gate = run_json_script("quality_gate.py", "quality-gate")
+        token = _new_run_token(i)
+        try:
+            critic = run_json_script("critic_review.py", token)
+            gate = run_json_script("quality_gate.py", token)
+        except RuntimeError as exc:
+            print(f"[improve_until_passes] FAIL-FAST: stale critic/gate artifact or invalid JSON: {exc}")
+            return 1
         summarise(critic, gate, i)
 
         if critic.get("passed") and gate.get("passed"):
@@ -89,9 +123,12 @@ def main() -> int:
             return 1
 
         print(f"[improve_until_passes] Running targeted improvement agent (pass {i}/{MAX_ITERATIONS - 1} remaining)...")
-        rc = run_improvement()
-        if rc != 0:
-            print(f"[improve_until_passes] improvement_loop.py exited with code {rc} — continuing to re-check quality.")
+        try:
+            change = run_improvement()
+            print(f"[improve_until_passes] Improvement updated {change.get('issue_path')}")
+        except RuntimeError as exc:
+            print(f"[improve_until_passes] FAIL-FAST: {exc}")
+            return 1
 
     return 1
 

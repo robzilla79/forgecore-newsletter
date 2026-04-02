@@ -69,6 +69,12 @@ META_PATTERNS = [
     r'^\*\*edition:\*\*',
 ]
 
+PLACEHOLDER_PATTERNS = [
+    r"\bno concrete content returned\b",
+    r"\bmissing content\b",
+    r"\bdescription incomplete in provided content\b",
+]
+
 
 def list_issue_files() -> list[Path]:
     root = WORKSPACE / 'content' / 'issues'
@@ -288,9 +294,63 @@ def sanitize_text(text: str) -> str:
     return re.sub(r'\n{3,}', '\n\n', text).strip()
 
 
+def contains_placeholder_or_meta(text: str) -> list[str]:
+    hits: list[str] = []
+    for pattern in PLACEHOLDER_PATTERNS:
+        if re.search(pattern, text, flags=re.IGNORECASE | re.MULTILINE):
+            hits.append(pattern)
+    for pattern in META_PATTERNS:
+        if re.search(pattern, text, flags=re.IGNORECASE | re.MULTILINE):
+            hits.append(pattern)
+    return list(dict.fromkeys(hits))
+
+
+def _research_paragraphs(text: str) -> list[str]:
+    cleaned = sanitize_text(text)
+    paras = [p.strip() for p in re.split(r'\n\s*\n', cleaned) if p.strip()]
+    out: list[str] = []
+    for para in paras:
+        if _is_meta_line(para):
+            continue
+        if len(para.split()) >= 20:
+            out.append(para)
+    return out
+
+
+def _expand_top_story(brief_text: str, raw_text: str) -> str:
+    candidates = _research_paragraphs(raw_text) + _research_paragraphs(brief_text)
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for para in candidates:
+        key = ' '.join(para.lower().split())
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(para)
+    selected: list[str] = []
+    words = 0
+    for para in deduped:
+        selected.append(para)
+        words += len(para.split())
+        if len(selected) >= 2 and words >= 110:
+            break
+    if len(selected) < 2 or words < 80:
+        raise ValueError(
+            "Top Story contract failure: missing substantive content. "
+            "Need multiple research paragraphs; refusing single-paragraph autofill."
+        )
+    return '\n\n'.join(selected)
+
+
 def normalize_issue_text(text: str, issue_path: Path | None = None) -> str:
     issue_path = issue_path or latest_issue_path()
     issue_date = issue_date_from_path(issue_path)
+    upstream_hits = contains_placeholder_or_meta(text)
+    if upstream_hits:
+        raise ValueError(
+            "Placeholder/meta upstream content blocked by issue contract: "
+            + ", ".join(upstream_hits[:4])
+        )
 
     text = sanitize_text(text)
     title = extract_title(text, f'ForgeCore AI Brief — {issue_date}')
@@ -308,8 +368,8 @@ def normalize_issue_text(text: str, issue_path: Path | None = None) -> str:
     hook = dedup_paragraphs(hook)
 
     top_story = sanitize_text(extract_section(text, ['Top Story', 'Main Story']))
-    if not top_story:
-        top_story = first_paragraph(raw_text)
+    if not top_story or len(top_story.split()) < 80:
+        top_story = _expand_top_story(brief_text, raw_text)
     top_story = dedup_paragraphs(top_story)
 
     why_body = sanitize_text(extract_section(text, ['Why It Matters', 'Why this matters']))

@@ -49,6 +49,10 @@ def err(msg: str) -> None:
     log(f"[ERROR] {msg}")
 
 
+def emit_result(*, changed: bool, issue_path: str | None, reason: str) -> None:
+    print(json.dumps({"changed": changed, "issue_path": issue_path, "reason": reason}))
+
+
 def ollama_ok() -> bool:
     try:
         r = requests.get(f"{OLLAMA_URL}/api/tags", timeout=8)
@@ -230,11 +234,11 @@ You are the ForgeCore editor. Rewrite the issue below so it is publishable.
     return EDITOR_SYSTEM + '\n\n' + context
 
 
-def improve_issue(issue_path: Path) -> bool:
+def improve_issue(issue_path: Path) -> tuple[bool, str]:
     original = load_text(issue_path)
     if not original.strip():
         log(f'Skipping {issue_path.name}: empty')
-        return False
+        return False, 'empty issue payload'
 
     critic = load_critic(issue_path)
     log(f'Improving {issue_path.name} using targeted critic guidance ...')
@@ -246,43 +250,51 @@ def improve_issue(issue_path: Path) -> bool:
             improved_raw = call_ollama(FALLBACK_MODEL, build_improvement_prompt(original, issue_path.name, critic))
         except RuntimeError as exc2:
             err(f'Fallback model also failed: {exc2}')
-            return False
+            return False, 'editor unavailable'
 
     improved = extract_markdown_payload(improved_raw)
     if not improved or '## Hook' not in improved or '## CTA' not in improved:
         err(f'Editor returned invalid issue payload for {issue_path.name}; skipping write')
-        return False
+        return False, 'invalid editor payload'
     if improved == original:
         log(f'No improvement detected for {issue_path.name}')
-        return False
+        return False, 'rewrite is identical'
 
     change_ratio = abs(len(improved) - len(original)) / max(len(original), 1)
     if change_ratio < 0.005 and len(improved) > len(original) * 0.99:
         log(f'Improvement too minor for {issue_path.name}, skipping write')
-        return False
+        return False, 'rewrite delta is too minor'
 
     write_text(issue_path, improved + '\n')
     try:
         ensure_issue_contract(issue_path)
     except Exception as exc:
         err(f'Contract enforcement failed after improvement: {exc}')
+        return False, f'contract failure: {exc}'
 
     log(f'Improved {issue_path.name} ({len(original)} -> {len(improved)} chars)')
-    return True
+    return True, 'rewritten issue saved'
 
 
 def main() -> int:
+    fail_fast = IMPROVEMENT_ORIGIN == "generate"
     if not ollama_ok():
-        log('Ollama not reachable - skipping improvement pass')
-        return 0
+        reason = 'Ollama is unreachable'
+        log(f'{reason} - skipping improvement pass')
+        emit_result(changed=False, issue_path=None, reason=reason)
+        return 1 if fail_fast else 0
 
     issues = sorted(list_issue_files(), reverse=True)[:MAX_ISSUES_TO_IMPROVE]
     if not issues:
+        reason = 'no issue files found'
         log('No issue files found - nothing to improve')
+        emit_result(changed=False, issue_path=None, reason=reason)
         return 0
 
     lock = load_lock()
     improved_count = 0
+    first_changed_path: str | None = None
+    first_failure_reason: str | None = None
 
     for issue_path in issues:
         key = issue_path.name
@@ -294,17 +306,34 @@ def main() -> int:
             log(f'Skipping {key}: improved {mins_ago:.1f}m ago (min interval {MIN_IMPROVEMENT_INTERVAL_MINUTES}m)')
             continue
 
-        changed = improve_issue(issue_path)
+        changed, reason = improve_issue(issue_path)
         if changed:
             improved_count += 1
+            if first_changed_path is None:
+                first_changed_path = issue_path.as_posix()
             lock[key] = {
                 'last_improved': datetime.now(timezone.utc).isoformat(),
                 'pass': int(last_entry.get('pass', 0)) + 1,
                 'origin': IMPROVEMENT_ORIGIN,
             }
             save_lock(lock)
+        elif first_failure_reason is None:
+            first_failure_reason = reason
+            if fail_fast and reason in {
+                'invalid editor payload',
+                'rewrite is identical',
+                'rewrite delta is too minor',
+            }:
+                log(f'Generate-mode fail-fast: {reason} ({issue_path.name})')
+                emit_result(changed=False, issue_path=issue_path.as_posix(), reason=reason)
+                return 1
 
     log(f'Improvement pass complete: {improved_count}/{len(issues)} issues updated (model={EDITOR_MODEL}, origin={IMPROVEMENT_ORIGIN})')
+    if improved_count == 0:
+        reason = first_failure_reason or 'no issue file was updated'
+        emit_result(changed=False, issue_path=None, reason=reason)
+        return 1 if fail_fast else 0
+    emit_result(changed=True, issue_path=first_changed_path, reason='issue improved')
     return 0
 
 
