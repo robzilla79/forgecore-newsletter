@@ -12,13 +12,13 @@ concurrency:
 jobs:
   improve:
     runs-on: self-hosted
-    timeout-minutes: 10
+    timeout-minutes: 20
     env:
       OLLAMA_URL: http://localhost:11434
-      RESEARCH_MODEL: ${{ secrets.RESEARCH_MODEL || 'qwen2.5:14b-instruct' }}
-      WRITER_MODEL: ${{ secrets.WRITER_MODEL || 'gemma3:12b' }}
-      EDITOR_MODEL: ${{ secrets.EDITOR_MODEL || 'gemma3:12b' }}
-      CRITIC_MODEL: ${{ secrets.CRITIC_MODEL || 'gemma3:12b' }}
+      RESEARCH_MODEL: ${{ secrets.RESEARCH_MODEL || 'qwen3:14b' }}
+      WRITER_MODEL: ${{ secrets.WRITER_MODEL || 'qwen3:14b' }}
+      EDITOR_MODEL: ${{ secrets.EDITOR_MODEL || 'qwen3:14b' }}
+      CRITIC_MODEL: ${{ secrets.CRITIC_MODEL || 'qwen3:14b' }}
       FALLBACK_MODEL: ${{ secrets.FALLBACK_MODEL || 'qwen3:8b' }}
       SITE_DOMAIN: news.forgecore.co
       SITE_BASE_URL: https://news.forgecore.co
@@ -83,6 +83,31 @@ jobs:
             echo "reachable=false" >> $GITHUB_OUTPUT
             echo "::warning::Ollama not reachable at $OLLAMA_URL — skipping improvement loop"
           fi
+
+      - name: Ensure Ollama models are pulled
+        if: steps.ollama_check.outputs.reachable == 'true'
+        run: |
+          set -e
+          echo "[ollama] Pulling $RESEARCH_MODEL ..."
+          ollama pull "$RESEARCH_MODEL"
+          if [ "$WRITER_MODEL" != "$RESEARCH_MODEL" ]; then
+            echo "[ollama] Pulling $WRITER_MODEL ..."
+            ollama pull "$WRITER_MODEL"
+          fi
+          if [ "$EDITOR_MODEL" != "$RESEARCH_MODEL" ] && [ "$EDITOR_MODEL" != "$WRITER_MODEL" ]; then
+            echo "[ollama] Pulling $EDITOR_MODEL ..."
+            ollama pull "$EDITOR_MODEL"
+          fi
+          if [ "$CRITIC_MODEL" != "$RESEARCH_MODEL" ] && [ "$CRITIC_MODEL" != "$WRITER_MODEL" ] && [ "$CRITIC_MODEL" != "$EDITOR_MODEL" ]; then
+            echo "[ollama] Pulling $CRITIC_MODEL ..."
+            ollama pull "$CRITIC_MODEL"
+          fi
+          if [ "$FALLBACK_MODEL" != "$RESEARCH_MODEL" ] && [ "$FALLBACK_MODEL" != "$WRITER_MODEL" ] && [ "$FALLBACK_MODEL" != "$EDITOR_MODEL" ] && [ "$FALLBACK_MODEL" != "$CRITIC_MODEL" ]; then
+            echo "[ollama] Pulling $FALLBACK_MODEL ..."
+            ollama pull "$FALLBACK_MODEL"
+          fi
+          echo "[ollama] Models ready:"
+          ollama list
 
       - name: Run improvement controller
         id: improve_controller
