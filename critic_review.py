@@ -163,12 +163,30 @@ def build_prompt(issue_name: str, issue_text: str) -> str:
 def evaluate_issue(path: Path) -> dict[str, Any]:
     issue_text = load_text(path)
     raw = ""
+    parse_failures: list[str] = []
     try:
         raw = call_ollama(CRITIC_MODEL, build_prompt(path.name, issue_text))
         parsed = parse_json(raw)
-    except Exception:
+    except Exception as exc:
+        parse_failures.append(f"{CRITIC_MODEL}: {type(exc).__name__}: {exc}")
         raw = call_ollama(FALLBACK_MODEL, build_prompt(path.name, issue_text))
-        parsed = parse_json(raw)
+        try:
+            parsed = parse_json(raw)
+        except Exception as fallback_exc:
+            parse_failures.append(f"{FALLBACK_MODEL}: {type(fallback_exc).__name__}: {fallback_exc}")
+            parsed = {
+                "summary": "Critic model outputs were not parseable JSON.",
+                "overall_score": 0,
+                "scores": {},
+                "strengths": [],
+                "weaknesses": ["Critic output parsing failed for both primary and fallback models."],
+                "must_fix": ["Repair critic model/output formatting before publishing."],
+                "rewrite_plan": [
+                    "Switch to a known-stable JSON-following model for critic.",
+                    "Add stricter response format controls and retries.",
+                ],
+                "verdict": "reject",
+            }
 
     scores = parsed.get("scores", {}) if isinstance(parsed.get("scores"), dict) else {}
     normalized_scores = {
@@ -195,10 +213,11 @@ def evaluate_issue(path: Path) -> dict[str, Any]:
         rewrite_plan = must_fix[:_MAX_REWRITE_ITEMS] or weaknesses[:_MAX_REWRITE_ITEMS]
     passed = overall_score >= MIN_CRITIC_OVERALL and not weak_categories and len(must_fix) == 0
 
-    return {
+    result = {
         "passed": passed,
         "issue": path.as_posix(),
         "model": CRITIC_MODEL,
+        "fallback_model": FALLBACK_MODEL,
         "overall_score": overall_score,
         "min_overall_required": MIN_CRITIC_OVERALL,
         "min_category_required": MIN_CRITIC_CATEGORY,
@@ -211,23 +230,43 @@ def evaluate_issue(path: Path) -> dict[str, Any]:
         "summary": str(parsed.get("summary", "")).strip(),
         "verdict": str(parsed.get("verdict", "needs_revision")).strip() or "needs_revision",
     }
+    if parse_failures:
+        result["parser_errors"] = parse_failures
+    return result
 
 
 def main() -> int:
+    path = latest_issue_path()
+    date_match = re.search(r"(\d{4}-\d{2}-\d{2})", path.stem)
+    suffix = date_match.group(1) if date_match else "latest"
+    out_path = WORKSPACE / "state" / f"critic-review-{suffix}.json"
     try:
-        path = ensure_issue_contract(latest_issue_path())
+        path = ensure_issue_contract(path)
         result = evaluate_issue(path)
-        date_match = re.search(r"(\d{4}-\d{2}-\d{2})", path.stem)
-        suffix = date_match.group(1) if date_match else "latest"
-        out_path = WORKSPACE / "state" / f"critic-review-{suffix}.json"
-        result["run_token"] = RUN_TOKEN
-        result["artifact_path"] = out_path.as_posix()
-        dump_json(out_path, result)
-        print(json.dumps(result, indent=2))
-        return 0 if result["passed"] else 1
     except Exception as exc:
-        print(f"critic_review failed: {exc}", file=sys.stderr)
-        return 2
+        result = {
+            "passed": False,
+            "issue": path.as_posix(),
+            "model": CRITIC_MODEL,
+            "fallback_model": FALLBACK_MODEL,
+            "overall_score": 0.0,
+            "min_overall_required": MIN_CRITIC_OVERALL,
+            "min_category_required": MIN_CRITIC_CATEGORY,
+            "scores": {},
+            "weak_categories": ["critic_runtime_failure"],
+            "strengths": [],
+            "weaknesses": [f"critic_review runtime failure: {type(exc).__name__}"],
+            "must_fix": ["Resolve critic runtime/model failure before publish."],
+            "rewrite_plan": ["Re-run critic_review.py after fixing model and JSON parsing reliability."],
+            "summary": f"critic_review failed: {exc}",
+            "verdict": "reject",
+            "runtime_error": f"{type(exc).__name__}: {exc}",
+        }
+    result["run_token"] = RUN_TOKEN
+    result["artifact_path"] = out_path.as_posix()
+    dump_json(out_path, result)
+    print(json.dumps(result, indent=2))
+    return 0 if result["passed"] else 1
 
 
 if __name__ == "__main__":

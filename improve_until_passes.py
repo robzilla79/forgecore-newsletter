@@ -24,15 +24,63 @@ def _load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _extract_first_json_object(text: str) -> dict:
+    """Parse the first balanced JSON object from mixed stdout text."""
+    text = (text or "").strip()
+    if not text:
+        raise ValueError("empty stdout")
+    try:
+        parsed = json.loads(text)
+        if isinstance(parsed, dict):
+            return parsed
+    except Exception:
+        pass
+
+    depth = 0
+    start = -1
+    in_string = False
+    escape_next = False
+    for i, ch in enumerate(text):
+        if escape_next:
+            escape_next = False
+            continue
+        if ch == "\\" and in_string:
+            escape_next = True
+            continue
+        if ch == '"':
+            in_string = not in_string
+            continue
+        if in_string:
+            continue
+        if ch == "{":
+            if depth == 0:
+                start = i
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0 and start != -1:
+                candidate = text[start : i + 1]
+                try:
+                    parsed = json.loads(candidate)
+                    if isinstance(parsed, dict):
+                        return parsed
+                except Exception:
+                    continue
+    raise ValueError("no balanced JSON object found")
+
+
 def run_json_script(script_name: str, run_token: str) -> dict:
     STATE_DIR.mkdir(parents=True, exist_ok=True)
     started = time.time()
     env = {**os.environ, "RUN_TOKEN": run_token}
     result = subprocess.run([sys.executable, script_name], capture_output=True, text=True, env=env)
     try:
-        payload = json.loads(result.stdout)
+        payload = _extract_first_json_object(result.stdout)
     except (json.JSONDecodeError, ValueError) as exc:
-        raise RuntimeError(f"{script_name} produced no parseable JSON stdout ({exc})")
+        stderr = (result.stderr or "").strip()
+        raise RuntimeError(
+            f"{script_name} produced no parseable JSON stdout ({exc}); stderr={stderr or 'empty'}"
+        )
 
     artifact_path = payload.get("artifact_path")
     if not artifact_path:
@@ -65,9 +113,10 @@ def run_improvement() -> dict:
     env = {**os.environ, **env_override}
     result = subprocess.run([sys.executable, "improvement_loop.py"], env=env, capture_output=True, text=True)
     try:
-        payload = json.loads(result.stdout.strip())
+        payload = _extract_first_json_object(result.stdout)
     except Exception as exc:
-        raise RuntimeError(f"improvement_loop.py returned non-JSON output: {exc}")
+        stderr = (result.stderr or "").strip()
+        raise RuntimeError(f"improvement_loop.py returned non-JSON output: {exc}; stderr={stderr or 'empty'}")
     if result.returncode != 0:
         raise RuntimeError(f"improvement_loop.py failed: {payload.get('reason') or result.stderr.strip() or 'unknown error'}")
     if not payload.get("changed"):
