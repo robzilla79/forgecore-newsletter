@@ -1,0 +1,47 @@
+name: Deploy FORGE/DAILY Site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'content/issues/**.md'
+      - 'templates/**'
+      - 'static/**'
+      - 'publish_site.py'
+      - 'issue_contract.py'
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    name: Build static site and deploy to Cloudflare Pages
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install jinja2 python-dotenv
+
+      - name: Build static site
+        run: python publish_site.py
+        env:
+          SITE_BASE_URL: https://news.forgecore.co
+          NEWSLETTER_NAME: FORGE/DAILY
+          NEWSLETTER_TAGLINE: AI news for people who don't need it explained twice.
+          PRIMARY_CTA_URL: ${{ secrets.BEEHIIV_SUBSCRIBE_URL }}
+          SPONSOR_EMAIL: sponsors@forgecore.co
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy site/dist --project-name=forgecore-newsletter --commit-dirty=true
