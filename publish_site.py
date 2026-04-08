@@ -31,9 +31,18 @@ BEEHIIV_EMBED_HTML = re.sub(r"<iframe\b[^>]*>.*?</iframe>", "", BEEHIIV_EMBED_HT
 CURRENT_YEAR = datetime.now().year
 WPM = 220
 
-# FORGE/DAILY canonical sections - files with these are NOT passed through the old contract
+# FORGE/DAILY canonical sections
 FORGE_DAILY_MARKERS = ["## THE STORY", "## QUICK HITS", "## EM'S TAKE", "## ONE THING TO TRY"]
 
+# Vibe tag heuristics for Quick Hits bullets
+VIBE_RULES = [
+    (["leak", "breach", "exposed", "dump", "hack", "security"], "💀", "vibe-yikes", "Yikes"),
+    (["raise", "valuation", "billion", "funding", "vc", "investor"], "💰", "vibe-money", "Money"),
+    (["launch", "ship", "release", "drop", "new model", "new version", "open source", "open-source"], "🔥", "vibe-hot", "Hot"),
+    (["watch", "could", "potential", "emerging", "early", "beta", "preview"], "👀", "vibe-watch", "Watch"),
+    (["price", "cost", "cheaper", "competitive", "discount", "subscription"], "💡", "vibe-smart", "Smart"),
+    (["sf ", "san francisco", "median home", "real estate", "housing"], "🌆", "vibe-vibe", "Vibe check"),
+]
 
 def is_forge_daily(text: str) -> bool:
     return any(marker in text for marker in FORGE_DAILY_MARKERS)
@@ -58,11 +67,10 @@ def safe_ensure_contract(path: Path) -> bool:
     try:
         text = load_text(path)
         if not is_valid_issue(text):
-            print(f"[skip] {path.name} \u2014 stub or broken content, skipping")
+            print(f"[skip] {path.name} — stub or broken content, skipping")
             return False
         if is_forge_daily(text):
-            return True  # FORGE/DAILY format: no normalization needed
-        # Old format: run the contract
+            return True
         from issue_contract import ensure_issue_contract
         ensure_issue_contract(path)
         return True
@@ -178,7 +186,7 @@ def md_to_html(text: str) -> str:
         elif line.startswith("# "):
             flush_para()
             out.append(f"<h1>{format_inline(line[2:].strip())}</h1>")
-        elif re.match(r"^-{3,}$|^\*{3,}$", line):
+        elif re.match(r"^-{3,}$|\*{3,}$", line):
             flush_para()
             out.append("<hr>")
         else:
@@ -204,7 +212,6 @@ def parse_date(date_str: str) -> dict[str, str]:
 
 
 def date_to_iso(date_str: str) -> str:
-    """Convert a human-readable date string to ISO 8601 (YYYY-MM-DD). Returns empty string on failure."""
     for fmt in ("%B %d, %Y", "%Y-%m-%d", "%b %d, %Y"):
         try:
             return datetime.strptime(date_str.strip(), fmt).strftime("%Y-%m-%d")
@@ -214,17 +221,14 @@ def date_to_iso(date_str: str) -> str:
 
 
 def extract_hero_image(text: str) -> str:
-    """Pull the first Markdown image URL from the issue text, if any."""
     match = re.search(r"!\[[^\]]*\]\((https?://[^\)]+)\)", text)
     return match.group(1) if match else ""
 
 
 def extract_summary(text: str) -> str:
-    # FORGE/DAILY: pull from THE STORY section
     story_match = re.search(r"^## THE STORY\n(.+?)(?=^## |\Z)", text, flags=re.MULTILINE | re.DOTALL)
     if story_match:
         return strip_markdown(story_match.group(1))[:180]
-    # Legacy format
     hook_match = re.search(r"^## Hook\n(.+?)(?=^## |\Z)", text, flags=re.MULTILINE | re.DOTALL)
     if hook_match:
         return strip_markdown(hook_match.group(1))[:180]
@@ -251,11 +255,11 @@ def issue_meta(path: Path, text: str) -> dict[str, str]:
         "hero_image": extract_hero_image(text),
         "read_time": read_time(text),
         "html": md_to_html(text),
+        "raw": text,
     }
 
 
 def hero_block_html(meta: dict[str, str]) -> str:
-    """Render the issue hero image block, or a dark placeholder if no image is available."""
     if meta.get("hero_image"):
         return (
             "<figure class='issue-hero'>"
@@ -312,7 +316,146 @@ def related_item_html(meta: dict[str, str]) -> str:
     )
 
 
+# ── FORGE/DAILY section parsers ────────────────────────────────────────────────
+
+def _extract_section(text: str, heading: str) -> str:
+    """Pull body of a ## HEADING section (stops at next ## or end)."""
+    pat = rf"^## {re.escape(heading)}\n(.*?)(?=^## |\Z)"
+    m = re.search(pat, text, flags=re.MULTILINE | re.DOTALL)
+    return m.group(1).strip() if m else ""
+
+
+def _vibe_tag(bullet: str) -> tuple[str, str, str]:
+    """Return (emoji, css-class, label) for a Quick Hit bullet."""
+    lower = bullet.lower()
+    for keywords, emoji, css, label in VIBE_RULES:
+        if any(k in lower for k in keywords):
+            return emoji, css, label
+    return "📌", "vibe-default", "Noted"
+
+
+def render_story_card(story_text: str) -> str:
+    """THE STORY → a punchy callout card with the bold lede as a pull-quote."""
+    lines = [l.strip() for l in story_text.splitlines() if l.strip()]
+    if not lines:
+        return ""
+    # First bold line is the lede
+    lede = ""
+    body_lines = []
+    for i, line in enumerate(lines):
+        m = re.match(r"^\*\*(.+?)\*\*$", line)
+        if m and not lede:
+            lede = m.group(1)
+        else:
+            body_lines.append(line)
+    body_html = md_to_html("\n\n".join(body_lines)) if body_lines else ""
+    lede_html = f"<p class='story-lede'>{format_inline(lede)}</p>" if lede else ""
+    return (
+        "<section class='fd-section fd-story' id='the-story'>"
+        "<div class='fd-section-label'>The Story</div>"
+        f"<div class='story-card'>{lede_html}{body_html}</div>"
+        "</section>"
+    )
+
+
+def render_quick_hits(hits_text: str) -> str:
+    """QUICK HITS → scannable chip cards with auto vibe tags."""
+    bullets = re.findall(r"^[-*]\s+(.+)$", hits_text, flags=re.MULTILINE)
+    if not bullets:
+        return ""
+    items_html = ""
+    for bullet in bullets:
+        emoji, css, label = _vibe_tag(bullet)
+        # Split on first em-dash or colon to get headline vs body
+        parts = re.split(r"\s*[—–]\s*|\*\*(.+?)\*\*\s*—\s*", bullet, maxsplit=1)
+        rendered = format_inline(bullet)
+        items_html += (
+            f"<li class='hit-item'>"
+            f"<span class='hit-vibe {css}' title='{html.escape(label)}'>{emoji}</span>"
+            f"<span class='hit-body'>{rendered}</span>"
+            f"</li>"
+        )
+    return (
+        "<section class='fd-section fd-hits' id='quick-hits'>"
+        "<div class='fd-section-label'>Quick Hits</div>"
+        f"<ul class='hits-list'>{items_html}</ul>"
+        "</section>"
+    )
+
+
+def render_ems_take(take_text: str) -> str:
+    """EM'S TAKE → sticky-note sidebar card."""
+    if not take_text.strip():
+        return ""
+    body_html = md_to_html(take_text)
+    return (
+        "<section class='fd-section fd-take' id='ems-take'>"
+        "<div class='fd-section-label'>Em&rsquo;s Take</div>"
+        f"<div class='take-card'>{body_html}</div>"
+        "</section>"
+    )
+
+
+def render_one_thing(try_text: str) -> str:
+    """ONE THING TO TRY → terminal-style card with copy button."""
+    if not try_text.strip():
+        return ""
+    # Detect inline code command (backtick)
+    cmd_match = re.search(r"`([^`]+)`", try_text)
+    cmd = cmd_match.group(1) if cmd_match else ""
+    body_html = md_to_html(try_text)
+    copy_btn = ""
+    if cmd:
+        safe_cmd = html.escape(cmd)
+        copy_btn = (
+            f"<button class='try-copy' onclick=\"navigator.clipboard.writeText('{safe_cmd}');"
+            "this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)\" "
+            f"aria-label='Copy command'>Copy</button>"
+        )
+    return (
+        "<section class='fd-section fd-try' id='one-thing'>"
+        "<div class='fd-section-label'>One Thing to Try</div>"
+        f"<div class='try-card'>{body_html}{copy_btn}</div>"
+        "</section>"
+    )
+
+
+def build_forge_daily_body(raw: str, meta: dict[str, str]) -> str:
+    """Build the full ADHD-optimised issue body from raw markdown."""
+    story   = _extract_section(raw, "THE STORY")
+    hits    = _extract_section(raw, "QUICK HITS")
+    take    = _extract_section(raw, "EM'S TAKE")
+    try_    = _extract_section(raw, "ONE THING TO TRY")
+
+    # Skip-nav strip at the top
+    skip_nav = (
+        "<div class='fd-skip-nav'>"
+        "<a href='#the-story'>Story</a>"
+        "<a href='#quick-hits'>Hits</a>"
+        "<a href='#ems-take'>Take</a>"
+        "<a href='#one-thing'>Try&nbsp;It</a>"
+        f"<span class='fd-read-time'>{html.escape(meta['read_time'])}</span>"
+        "</div>"
+    )
+
+    return (
+        skip_nav
+        + render_story_card(story)
+        + render_quick_hits(hits)
+        + render_ems_take(take)
+        + render_one_thing(try_)
+    )
+
+
+# ── Page builders ──────────────────────────────────────────────────────────────
+
 def build_issue_page(meta: dict[str, str], related_items: str) -> str:
+    raw = meta.get("raw", "")
+    if is_forge_daily(raw):
+        issue_body = build_forge_daily_body(raw, meta)
+    else:
+        issue_body = f"<div class='issue-body'>{meta['html']}</div>"
+
     return f"""
 {hero_block_html(meta)}
 
@@ -335,8 +478,8 @@ def build_issue_page(meta: dict[str, str], related_items: str) -> str:
     <p>Sponsor slot &mdash; <a href="mailto:{html.escape(SPONSOR_EMAIL)}">{html.escape(SPONSOR_EMAIL)}</a></p>
   </div>
 
-  <div class="issue-body">
-    {meta['html']}
+  <div class="issue-body fd-body">
+    {issue_body}
   </div>
 
   {signup_block_html()}
