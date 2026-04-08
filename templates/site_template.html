@@ -4,11 +4,101 @@
   <meta charset="utf-8">
   <title>{{ title }}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  {# ── SEO Meta ── #}
   <meta name="description" content="{{ meta_description }}">
+  <meta name="robots" content="{{ robots | default('index, follow') }}">
+  <meta name="author" content="ForgeCore">
   <link rel="canonical" href="{{ canonical }}">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+
+  {# ── Open Graph ── #}
+  <meta property="og:type"        content="{{ og_type | default('website') }}">
+  <meta property="og:site_name"   content="ForgeCore AI Productivity Brief">
+  <meta property="og:title"       content="{{ og_title | default(title) }}">
+  <meta property="og:description" content="{{ og_description | default(meta_description) }}">
+  <meta property="og:url"         content="{{ canonical }}">
+  {% if hero_image %}
+  <meta property="og:image"       content="{{ hero_image }}">
+  <meta property="og:image:width"  content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt"   content="{{ og_title | default(title) }}">
+  {% else %}
+  <meta property="og:image"       content="https://news.forgecore.co/og-default.png">
+  <meta property="og:image:width"  content="1200">
+  <meta property="og:image:height" content="630">
+  {% endif %}
+
+  {# ── Twitter / X Card ── #}
+  <meta name="twitter:card"        content="summary_large_image">
+  <meta name="twitter:site"        content="@forgecorenews">
+  <meta name="twitter:title"       content="{{ og_title | default(title) }}">
+  <meta name="twitter:description" content="{{ og_description | default(meta_description) }}">
+  {% if hero_image %}
+  <meta name="twitter:image"       content="{{ hero_image }}">
+  {% else %}
+  <meta name="twitter:image"       content="https://news.forgecore.co/og-default.png">
+  {% endif %}
+
+  {# ── Structured Data (NewsArticle / WebSite) ── #}
+  {% if issue_number %}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    "headline": {{ title | tojson }},
+    "description": {{ meta_description | tojson }},
+    "url": {{ canonical | tojson }},
+    "datePublished": "{{ pub_date | default('') }}",
+    "dateModified": "{{ pub_date | default('') }}",
+    "author": {
+      "@type": "Organization",
+      "name": "ForgeCore",
+      "url": "https://news.forgecore.co"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "ForgeCore AI Productivity Brief",
+      "url": "https://news.forgecore.co",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://news.forgecore.co/logo.png"
+      }
+    }{% if hero_image %},
+    "image": {
+      "@type": "ImageObject",
+      "url": {{ hero_image | tojson }},
+      "width": 1200,
+      "height": 630
+    }{% endif %}
+  }
+  </script>
+  {% else %}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "ForgeCore AI Productivity Brief",
+    "url": "https://news.forgecore.co",
+    "description": "Practical AI workflows, tools, and ROI cases for operators",
+    "potentialAction": {
+      "@type": "SubscribeAction",
+      "target": "https://forgecore-newsletter.beehiiv.com/"
+    }
+  }
+  </script>
+  {% endif %}
+
+  {# ── Fonts (Fontshare: Cabinet Grotesk + Satoshi) ── #}
+  <link rel="preconnect" href="https://api.fontshare.com">
+  <link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@400,500,700,800&f[]=satoshi@300,400,500,700&display=swap" rel="stylesheet">
+
+  {# ── Favicon ── #}
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="alternate icon" href="/favicon.ico">
+
+  {# ── RSS Feed ── #}
+  <link rel="alternate" type="application/rss+xml" title="ForgeCore AI Productivity Brief" href="/rss.xml">
+
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
@@ -16,30 +106,39 @@
 
     <header class="site-header">
       <div class="header-inner">
-        <a href="/" class="site-logo">ForgeCore</a>
-        <nav class="site-nav">
+        <a href="/" class="site-logo" aria-label="ForgeCore home">
+          {# Inline SVG forge-anvil mark #}
+          <svg class="logo-mark" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+            <rect width="28" height="28" rx="5" fill="#f97316"/>
+            <path d="M8 20h12M10 20v-5l4-6 4 6v5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="14" cy="8" r="2" fill="#fff"/>
+          </svg>
+          <span class="logo-wordmark">Forge<span>Core</span></span>
+        </a>
+        <nav class="site-nav" aria-label="Main navigation">
           <a href="/">Home</a>
           <a href="/archive/">Archive</a>
           <a href="/about/">About</a>
           <a href="/advertise/">Advertise</a>
         </nav>
         <div class="header-actions">
-          <a href="{{ subscribe_url | default('#') }}" class="btn-subscribe">Subscribe</a>
+          <a href="{{ subscribe_url | default('https://forgecore-newsletter.beehiiv.com/') }}" class="btn-subscribe" target="_blank" rel="noopener noreferrer">Subscribe Free</a>
         </div>
       </div>
     </header>
 
-    <main class="site-main">
+    <main class="site-main" id="main-content">
       {{ body | safe }}
     </main>
 
     <footer class="site-footer">
       <div class="footer-inner">
-        <span>ForgeCore &copy; {{ year | default('2026') }}</span>
-        <nav class="footer-nav">
-          <a href="{{ subscribe_url | default('#') }}">Join Free &rarr;</a>
-          <a href="/advertise/">&bull; Advertise with us</a>
-          <a href="/about/">&bull; About</a>
+        <span>&copy; {{ year | default('2026') }} ForgeCore &mdash; Practical AI for operators</span>
+        <nav class="footer-nav" aria-label="Footer navigation">
+          <a href="{{ subscribe_url | default('https://forgecore-newsletter.beehiiv.com/') }}" target="_blank" rel="noopener noreferrer">Join Free &rarr;</a>
+          <a href="/advertise/">Advertise</a>
+          <a href="/about/">About</a>
+          <a href="/rss.xml">RSS</a>
         </nav>
       </div>
     </footer>

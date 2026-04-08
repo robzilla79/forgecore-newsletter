@@ -1,0 +1,268 @@
+name: Site Maintenance — SEO, Sitemap & Quality Audit
+
+on:
+  schedule:
+    # Every Sunday at 6 AM CDT (11:00 UTC)
+    - cron: '0 11 * * 0'
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 'Which task to run'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - sitemap
+          - seo_audit
+          - broken_links
+          - design_refresh
+
+concurrency:
+  group: forgecore-maintenance
+  cancel-in-progress: true
+
+jobs:
+  maintenance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      SITE_BASE_URL: https://news.forgecore.co
+      SITE_DOMAIN: news.forgecore.co
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install jinja2 python-dotenv requests lxml beautifulsoup4
+
+      # ─── 1. Regenerate XML Sitemap ───────────────────────────────────
+      - name: Regenerate sitemap
+        if: ${{ github.event.inputs.task == 'all' || github.event.inputs.task == 'sitemap' || github.event.inputs.task == '' }}
+        run: |
+          python - << 'PYEOF'
+          import os, glob, re
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          base = os.environ["SITE_BASE_URL"].rstrip("/")
+          dist = Path("site/dist")
+          now = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+          urls = []
+          # Homepage — highest priority
+          urls.append((f"{base}/", now, "daily", "1.0"))
+
+          # Issue pages
+          for f in sorted(glob.glob(str(dist / "issues" / "*" / "index.html"))):
+            slug = Path(f).parent.name
+            # Try to get lastmod from file mtime
+            mtime = datetime.fromtimestamp(Path(f).stat().st_mtime, tz=timezone.utc).strftime("%Y-%m-%d")
+            urls.append((f"{base}/issues/{slug}/", mtime, "monthly", "0.8"))
+
+          # Static pages
+          for page in ["archive", "about", "advertise"]:
+            p = dist / page / "index.html"
+            if p.exists():
+              urls.append((f"{base}/{page}/", now, "monthly", "0.6"))
+
+          lines = ['<?xml version="1.0" encoding="UTF-8"?>']
+          lines.append('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
+          for (loc, lastmod, changefreq, priority) in urls:
+            lines.append('  <url>')
+            lines.append(f'    <loc>{loc}</loc>')
+            lines.append(f'    <lastmod>{lastmod}</lastmod>')
+            lines.append(f'    <changefreq>{changefreq}</changefreq>')
+            lines.append(f'    <priority>{priority}</priority>')
+            lines.append('  </url>')
+          lines.append('</urlset>')
+
+          out = dist / "sitemap.xml"
+          out.parent.mkdir(parents=True, exist_ok=True)
+          out.write_text("\n".join(lines), encoding="utf-8")
+          print(f"[sitemap] Wrote {len(urls)} URLs → site/dist/sitemap.xml")
+
+          # Also write robots.txt if missing
+          robots = dist / "robots.txt"
+          if not robots.exists():
+            robots.write_text(
+              f"User-agent: *\nAllow: /\nSitemap: {base}/sitemap.xml\n",
+              encoding="utf-8"
+            )
+            print("[robots] Wrote robots.txt")
+          PYEOF
+
+      # ─── 2. SEO Audit — meta tags, headings, image alt, canonical ───
+      - name: SEO audit
+        if: ${{ github.event.inputs.task == 'all' || github.event.inputs.task == 'seo_audit' || github.event.inputs.task == '' }}
+        run: |
+          python - << 'PYEOF'
+          import glob, json
+          from pathlib import Path
+          from bs4 import BeautifulSoup
+
+          dist = Path("site/dist")
+          issues = []
+          html_files = list(glob.glob(str(dist / "**" / "*.html"), recursive=True))
+          print(f"[seo] Auditing {len(html_files)} HTML files...")
+
+          for fpath in html_files:
+            soup = BeautifulSoup(Path(fpath).read_text(encoding='utf-8'), 'lxml')
+            rel = Path(fpath).relative_to(dist)
+            page_issues = []
+
+            # Title
+            title = soup.find('title')
+            if not title or not title.text.strip():
+              page_issues.append('MISSING title tag')
+            elif len(title.text) > 70:
+              page_issues.append(f'title too long ({len(title.text)} chars, max 70)')
+
+            # Meta description
+            desc = soup.find('meta', attrs={'name': 'description'})
+            if not desc or not desc.get('content', '').strip():
+              page_issues.append('MISSING meta description')
+            elif len(desc['content']) > 160:
+              page_issues.append(f'meta description too long ({len(desc["content"])} chars)')
+
+            # Canonical
+            canonical = soup.find('link', attrs={'rel': 'canonical'})
+            if not canonical:
+              page_issues.append('MISSING canonical link')
+
+            # OG tags
+            for prop in ['og:title', 'og:description', 'og:image']:
+              tag = soup.find('meta', attrs={'property': prop})
+              if not tag or not tag.get('content', '').strip():
+                page_issues.append(f'MISSING {prop}')
+
+            # H1
+            h1s = soup.find_all('h1')
+            if len(h1s) == 0:
+              page_issues.append('MISSING h1 tag')
+            elif len(h1s) > 1:
+              page_issues.append(f'Multiple h1 tags ({len(h1s)})')
+
+            # Images without alt
+            imgs_missing_alt = [img.get('src', '')[:60] for img in soup.find_all('img') if not img.get('alt')]
+            if imgs_missing_alt:
+              page_issues.append(f'Images missing alt: {imgs_missing_alt[:3]}')
+
+            if page_issues:
+              issues.append({'file': str(rel), 'issues': page_issues})
+
+          if issues:
+            print(f"\n[seo] ⚠ Found issues in {len(issues)} page(s):")
+            for item in issues:
+              print(f"  {item['file']}:")
+              for i in item['issues']:
+                print(f"    - {i}")
+            # Write report
+            Path("state").mkdir(exist_ok=True)
+            Path("state/seo-audit.json").write_text(json.dumps(issues, indent=2))
+            print(f"\n[seo] Report saved → state/seo-audit.json")
+          else:
+            print("[seo] ✓ All pages pass SEO audit")
+          PYEOF
+
+      # ─── 3. Broken internal link check ──────────────────────────────
+      - name: Broken link check
+        if: ${{ github.event.inputs.task == 'all' || github.event.inputs.task == 'broken_links' || github.event.inputs.task == '' }}
+        run: |
+          python - << 'PYEOF'
+          import glob, re
+          from pathlib import Path
+          from bs4 import BeautifulSoup
+
+          dist = Path("site/dist")
+          html_files = list(glob.glob(str(dist / "**" / "*.html"), recursive=True))
+          broken = []
+
+          for fpath in html_files:
+            soup = BeautifulSoup(Path(fpath).read_text(encoding='utf-8'), 'lxml')
+            rel = Path(fpath).relative_to(dist)
+            for a in soup.find_all('a', href=True):
+              href = a['href']
+              # Only check internal links (not anchors, not external)
+              if href.startswith('#') or href.startswith('http') or href.startswith('mailto'):
+                continue
+              # Resolve relative path
+              target = (dist / href.lstrip('/')).resolve()
+              # Check for index.html in directory or exact file
+              exists = target.exists() or (target / 'index.html').exists()
+              if not exists:
+                broken.append({'page': str(rel), 'href': href})
+
+          if broken:
+            print(f"[links] ⚠ {len(broken)} broken internal links:")
+            for b in broken[:20]:
+              print(f"  {b['page']} → {b['href']}")
+          else:
+            print("[links] ✓ No broken internal links found")
+          PYEOF
+
+      # ─── 4. Design refresh check — flag outdated template SHA ────────
+      - name: Design staleness check
+        if: ${{ github.event.inputs.task == 'all' || github.event.inputs.task == 'design_refresh' || github.event.inputs.task == '' }}
+        run: |
+          python - << 'PYEOF'
+          import subprocess, json
+          from pathlib import Path
+          from datetime import datetime, timezone
+
+          # Check age of style.css and template
+          for tracked in ['static/style.css', 'templates/site_template.html']:
+            result = subprocess.run(
+              ['git', 'log', '-1', '--format=%ci', '--', tracked],
+              capture_output=True, text=True
+            )
+            if result.stdout.strip():
+              last_touch = result.stdout.strip()
+              print(f"[design] {tracked}: last modified {last_touch}")
+            else:
+              print(f"[design] {tracked}: no git history found")
+
+          print("[design] ✓ Design freshness check complete")
+          PYEOF
+
+      # ─── 5. Commit generated artifacts ──────────────────────────────
+      - name: Commit sitemap and audit artifacts
+        run: |
+          git config user.name "ForgeCore Maintenance Bot"
+          git config user.email "bot@forgecore.co"
+          git add site/dist/sitemap.xml site/dist/robots.txt state/seo-audit.json 2>/dev/null || true
+          if git diff --staged --quiet; then
+            echo "[commit] Nothing to commit"
+          else
+            TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M UTC')
+            git commit -m "maintenance: sitemap + SEO audit $TIMESTAMP [bot]"
+            git push
+          fi
+
+      # ─── 6. Re-deploy after sitemap update ──────────────────────────
+      - name: Deploy updated sitemap to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy site/dist --project-name=forgecore-newsletter --commit-dirty=true --branch=main
+
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: seo-audit-${{ github.run_id }}
+          path: state/seo-audit.json
+          retention-days: 30
+          if-no-files-found: warn
