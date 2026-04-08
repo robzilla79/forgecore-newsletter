@@ -21,13 +21,13 @@ from utils import WORKSPACE, load_project_env, load_text, write_text
 load_project_env()
 
 SITE_BASE_URL = os.getenv("SITE_BASE_URL", "https://news.forgecore.co").rstrip("/")
-NEWSLETTER_NAME = os.getenv("NEWSLETTER_NAME", "ForgeCore")
-TAGLINE = os.getenv("NEWSLETTER_TAGLINE", "Daily AI news and workflows for operators")
+NEWSLETTER_NAME = os.getenv("NEWSLETTER_NAME", "FORGE/DAILY")
+TAGLINE = os.getenv("NEWSLETTER_TAGLINE", "AI news for people who don't need it explained twice.")
 SUBSCRIBE_URL = os.getenv("PRIMARY_CTA_URL", "https://forgecore-newsletter.beehiiv.com/")
 SPONSOR_EMAIL = os.getenv("SPONSOR_EMAIL", "sponsors@forgecore.co")
+# Keep only the iframe — strip only <script> tags, not the embed iframe
 BEEHIIV_EMBED_HTML = os.getenv("BEEHIIV_EMBED_HTML", "").strip()
 BEEHIIV_EMBED_HTML = re.sub(r"<script[^>]*>.*?</script>", "", BEEHIIV_EMBED_HTML, flags=re.DOTALL).strip()
-BEEHIIV_EMBED_HTML = re.sub(r"<iframe\b[^>]*>.*?</iframe>", "", BEEHIIV_EMBED_HTML, flags=re.DOTALL).strip()
 CURRENT_YEAR = datetime.now().year
 WPM = 220
 
@@ -41,7 +41,7 @@ VIBE_RULES = [
     (["launch", "ship", "release", "drop", "new model", "new version", "open source", "open-source"], "🔥", "vibe-hot", "Hot"),
     (["watch", "could", "potential", "emerging", "early", "beta", "preview"], "👀", "vibe-watch", "Watch"),
     (["price", "cost", "cheaper", "competitive", "discount", "subscription"], "💡", "vibe-smart", "Smart"),
-    (["sf ", "san francisco", "median home", "real estate", "housing"], "🌆", "vibe-vibe", "Vibe check"),
+    (["sf ", "san francisco", "median home", "real estate", "housing"], "🏙", "vibe-vibe", "Vibe check"),
 ]
 
 def is_forge_daily(text: str) -> bool:
@@ -80,7 +80,7 @@ def safe_ensure_contract(path: Path) -> bool:
 
 
 def signup_block_html(heading: str = "Get the next issue", sub: str = "") -> str:
-    sub = sub or f"{TAGLINE}. Free."
+    sub = sub or f"{TAGLINE} Free."
     cta = (
         BEEHIIV_EMBED_HTML
         if BEEHIIV_EMBED_HTML
@@ -316,7 +316,7 @@ def related_item_html(meta: dict[str, str]) -> str:
     )
 
 
-# ── FORGE/DAILY section parsers ────────────────────────────────────────────────
+# ── FORGE/DAILY section parsers ──────────────────────────────────────────────
 
 def _extract_section(text: str, heading: str) -> str:
     """Pull body of a ## HEADING section (stops at next ## or end)."""
@@ -339,7 +339,6 @@ def render_story_card(story_text: str) -> str:
     lines = [l.strip() for l in story_text.splitlines() if l.strip()]
     if not lines:
         return ""
-    # First bold line is the lede
     lede = ""
     body_lines = []
     for i, line in enumerate(lines):
@@ -366,8 +365,6 @@ def render_quick_hits(hits_text: str) -> str:
     items_html = ""
     for bullet in bullets:
         emoji, css, label = _vibe_tag(bullet)
-        # Split on first em-dash or colon to get headline vs body
-        parts = re.split(r"\s*[—–]\s*|\*\*(.+?)\*\*\s*—\s*", bullet, maxsplit=1)
         rendered = format_inline(bullet)
         items_html += (
             f"<li class='hit-item'>"
@@ -400,7 +397,6 @@ def render_one_thing(try_text: str) -> str:
     """ONE THING TO TRY → terminal-style card with copy button."""
     if not try_text.strip():
         return ""
-    # Detect inline code command (backtick)
     cmd_match = re.search(r"`([^`]+)`", try_text)
     cmd = cmd_match.group(1) if cmd_match else ""
     body_html = md_to_html(try_text)
@@ -427,7 +423,6 @@ def build_forge_daily_body(raw: str, meta: dict[str, str]) -> str:
     take    = _extract_section(raw, "EM'S TAKE")
     try_    = _extract_section(raw, "ONE THING TO TRY")
 
-    # Skip-nav strip at the top
     skip_nav = (
         "<div class='fd-skip-nav'>"
         "<a href='#the-story'>Story</a>"
@@ -447,7 +442,7 @@ def build_forge_daily_body(raw: str, meta: dict[str, str]) -> str:
     )
 
 
-# ── Page builders ──────────────────────────────────────────────────────────────
+# ── Page builders ───────────────────────────────────────────────────────
 
 def build_issue_page(meta: dict[str, str], related_items: str) -> str:
     raw = meta.get("raw", "")
@@ -534,8 +529,8 @@ def build_about() -> str:
   <p class="page-sub">{html.escape(TAGLINE)}</p>
 </div>
 <div class="page-body">
-  <p>{html.escape(NEWSLETTER_NAME)} is a daily newsletter for developers, Reddit power users, and technical builders who want signal, not hype.</p>
-  <p>Every issue covers what actually matters today in AI \u2014 written by Em, ForgeCore's resident pattern-hunter and chaos-adjacent editorial AI.</p>
+  <p>{html.escape(NEWSLETTER_NAME)} is a daily newsletter for developers, technical builders, and AI-forward operators who want signal, not hype.</p>
+  <p>Every issue covers what actually matters today in AI — written by Em, ForgeCore's resident pattern-hunter and slightly feral editorial AI.</p>
   <div style="margin-top:28px">{signup_block_html()}</div>
 </div>
 """
@@ -611,7 +606,7 @@ def main() -> int:
         write_text(
             out_dir / "index.html",
             render(
-                title=f"{meta['clean_title']} \u2014 {NEWSLETTER_NAME}",
+                title=f"{meta['clean_title']} — {NEWSLETTER_NAME}",
                 desc=meta["desc"],
                 canonical=f"{SITE_BASE_URL}/{meta['slug']}/",
                 body=build_issue_page(meta, related_html),
@@ -627,19 +622,19 @@ def main() -> int:
     (dist / "archive").mkdir(exist_ok=True)
     write_text(
         dist / "archive" / "index.html",
-        render(f"Archive \u2014 {NEWSLETTER_NAME}", f"Browse every issue of {NEWSLETTER_NAME}.", f"{SITE_BASE_URL}/archive/", build_archive(issues)),
+        render(f"Archive — {NEWSLETTER_NAME}", f"Browse every issue of {NEWSLETTER_NAME}.", f"{SITE_BASE_URL}/archive/", build_archive(issues)),
     )
 
     (dist / "about").mkdir(exist_ok=True)
     write_text(
         dist / "about" / "index.html",
-        render(f"About \u2014 {NEWSLETTER_NAME}", f"About {NEWSLETTER_NAME}.", f"{SITE_BASE_URL}/about/", build_about()),
+        render(f"About — {NEWSLETTER_NAME}", f"About {NEWSLETTER_NAME}.", f"{SITE_BASE_URL}/about/", build_about()),
     )
 
     (dist / "advertise").mkdir(exist_ok=True)
     write_text(
         dist / "advertise" / "index.html",
-        render(f"Advertise \u2014 {NEWSLETTER_NAME}", f"Sponsor {NEWSLETTER_NAME}.", f"{SITE_BASE_URL}/advertise/", build_advertise()),
+        render(f"Advertise — {NEWSLETTER_NAME}", f"Sponsor {NEWSLETTER_NAME}.", f"{SITE_BASE_URL}/advertise/", build_advertise()),
     )
 
     write_text(dist / "style.css", load_text(WORKSPACE / "static" / "style.css"))
