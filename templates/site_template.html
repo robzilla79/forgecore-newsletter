@@ -4,41 +4,41 @@
   <meta charset="utf-8">
   <title>{{ title }}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-
+  
   {# ── SEO Meta ── #}
   <meta name="description" content="{{ meta_description }}">
   <meta name="robots" content="{{ robots | default('index, follow') }}">
   <meta name="author" content="ForgeCore">
   <link rel="canonical" href="{{ canonical }}">
-
+  
   {# ── Open Graph ── #}
-  <meta property="og:type"        content="{{ og_type | default('website') }}">
-  <meta property="og:site_name"   content="ForgeCore AI Productivity Brief">
-  <meta property="og:title"       content="{{ og_title | default(title) }}">
+  <meta property="og:type" content="{{ og_type | default('website') }}">
+  <meta property="og:site_name" content="ForgeCore AI Productivity Brief">
+  <meta property="og:title" content="{{ og_title | default(title) }}">
   <meta property="og:description" content="{{ og_description | default(meta_description) }}">
-  <meta property="og:url"         content="{{ canonical }}">
+  <meta property="og:url" content="{{ canonical }}">
   {% if hero_image %}
-  <meta property="og:image"       content="{{ hero_image }}">
-  <meta property="og:image:width"  content="1200">
+  <meta property="og:image" content="{{ hero_image }}">
+  <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt"   content="{{ og_title | default(title) }}">
+  <meta property="og:image:alt" content="{{ og_title | default(title) }}">
   {% else %}
-  <meta property="og:image"       content="https://news.forgecore.co/og-default.png">
-  <meta property="og:image:width"  content="1200">
+  <meta property="og:image" content="https://news.forgecore.co/og-default.png">
+  <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   {% endif %}
-
+  
   {# ── Twitter / X Card ── #}
-  <meta name="twitter:card"        content="summary_large_image">
-  <meta name="twitter:site"        content="@forgecorenews">
-  <meta name="twitter:title"       content="{{ og_title | default(title) }}">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@forgecorenews">
+  <meta name="twitter:title" content="{{ og_title | default(title) }}">
   <meta name="twitter:description" content="{{ og_description | default(meta_description) }}">
   {% if hero_image %}
-  <meta name="twitter:image"       content="{{ hero_image }}">
+  <meta name="twitter:image" content="{{ hero_image }}">
   {% else %}
-  <meta name="twitter:image"       content="https://news.forgecore.co/og-default.png">
+  <meta name="twitter:image" content="https://news.forgecore.co/og-default.png">
   {% endif %}
-
+  
   {# ── Structured Data (NewsArticle / WebSite) ── #}
   {% if issue_number %}
   <script type="application/ld+json">
@@ -87,62 +87,334 @@
   }
   </script>
   {% endif %}
-
+  
   {# ── Fonts (Fontshare: Cabinet Grotesk + Satoshi) ── #}
-  <link rel="preconnect" href="https://api.fontshare.com">
-  <link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@400,500,700,800&f[]=satoshi@300,400,500,700&display=swap" rel="stylesheet">
-
+  <link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@800,500,400&f[]=satoshi@700,500,400&display=swap" rel="stylesheet">
+  
   {# ── Favicon ── #}
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <link rel="alternate icon" href="/favicon.ico">
-
+  <link rel="icon" href="/favicon.ico">
+  
   {# ── RSS Feed ── #}
-  <link rel="alternate" type="application/rss+xml" title="ForgeCore AI Productivity Brief" href="/rss.xml">
-
-  <link rel="stylesheet" href="/style.css">
+  <link rel="alternate" type="application/rss+xml" title="FORGE/DAILY RSS" href="/rss.xml">
+  
+  <style>
+    :root {
+      --bg: #0d0f12;
+      --bg-card: #151820;
+      --bg-hover: #1c1f28;
+      --text: #e5e7eb;
+      --text-dim: #9ca3af;
+      --accent: #f97316;
+      --accent-dim: #fb923c;
+      --border: #272933;
+      --glow: rgba(249, 115, 22, 0.15);
+    }
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    html { scroll-behavior: smooth; }
+    
+    body {
+      font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+    
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { color: var(--accent-dim); }
+    
+    h1, h2, h3 {
+      font-family: 'Cabinet Grotesk', sans-serif;
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    }
+    
+    h1 { font-size: clamp(2rem, 5vw, 3.5rem); }
+    h2 { font-size: clamp(1.5rem, 3vw, 2rem); }
+    h3 { font-size: 1.25rem; }
+    
+    .container { width: min(calc(100% - 2rem), 1200px); margin: 0 auto; }
+    
+    /* Ticker Strip */
+    .ticker {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      padding: 0.5rem 0;
+      overflow: hidden;
+      position: relative;
+    }
+    .ticker-content {
+      display: flex;
+      gap: 2rem;
+      animation: scroll 30s linear infinite;
+    }
+    .ticker-item {
+      white-space: nowrap;
+      font-size: 0.9rem;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .ticker-item::before {
+      content: '■';
+      color: var(--accent);
+      font-size: 0.6rem;
+    }
+    @keyframes scroll {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    
+    /* Header */
+    .header {
+      background: rgba(13, 15, 18, 0.9);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 0;
+      gap: 2rem;
+    }
+    .brand {
+      font-family: 'Cabinet Grotesk', sans-serif;
+      font-weight: 800;
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .brand svg {
+      width: 24px;
+      height: 24px;
+      fill: var(--accent);
+    }
+    .nav-links {
+      display: flex;
+      gap: 1.5rem;
+      align-items: center;
+    }
+    .nav-links a {
+      color: var(--text-dim);
+      font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .btn {
+      padding: 0.5rem 1.25rem;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+    }
+    .btn-primary:hover {
+      background: var(--accent-dim);
+      transform: translateY(-1px);
+    }
+    
+    /* Hero Section */
+    .hero {
+      padding: 3rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .hero-title {
+      color: var(--text);
+      margin-bottom: 0.5rem;
+    }
+    .hero-subtitle {
+      color: var(--text-dim);
+      font-size: 1.1rem;
+      margin-bottom: 2rem;
+    }
+    
+    /* Stat Bar */
+    .stats {
+      display: flex;
+      gap: 2rem;
+      margin-top: 2rem;
+      flex-wrap: wrap;
+    }
+    .stat {
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+    }
+    .stat-number {
+      font-family: 'Cabinet Grotesk', sans-serif;
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--accent);
+    }
+    .stat-label {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    /* Card Grid */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.5rem;
+      padding: 3rem 0;
+    }
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      transition: all 0.3s;
+      position: relative;
+    }
+    .card:hover {
+      background: var(--bg-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px var(--glow);
+    }
+    .card-meta {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      margin-bottom: 1rem;
+      font-size: 0.85rem;
+      color: var(--text-dim);
+    }
+    .card-title {
+      font-size: 1.25rem;
+      margin-bottom: 0.5rem;
+      color: var(--text);
+    }
+    .card-excerpt {
+      font-size: 0.95rem;
+      color: var(--text-dim);
+      line-height: 1.5;
+    }
+    
+    /* Signal Badges */
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .badge-breaking { background: #dc2626; color: #fff; }
+    .badge-deep { background: #2563eb; color: #fff; }
+    .badge-tool { background: #16a34a; color: #fff; }
+    .badge-hot { background: var(--accent); color: #000; }
+    
+    /* Article Body */
+    .article {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 3rem 1rem;
+    }
+    .article h2 { margin-top: 2rem; margin-bottom: 1rem; }
+    .article p { margin-bottom: 1.25rem; color: var(--text-dim); }
+    .article ul, .article ol { margin: 1rem 0 1.5rem 1.5rem; color: var(--text-dim); }
+    .article li { margin-bottom: 0.5rem; }
+    .article a { text-decoration: underline; }
+    
+    /* Footer */
+    .footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem 0;
+      margin-top: 4rem;
+    }
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .footer-links {
+      display: flex;
+      gap: 1.5rem;
+      font-size: 0.9rem;
+    }
+    .footer-links a { color: var(--text-dim); }
+    .footer-copy { color: var(--text-dim); font-size: 0.85rem; }
+    
+    @media (max-width: 768px) {
+      .nav { flex-direction: column; align-items: flex-start; }
+      .card-grid { grid-template-columns: 1fr; }
+      .stats { flex-direction: column; gap: 1rem; }
+    }
+  </style>
 </head>
 <body>
-  <div class="site-shell">
 
-    <header class="site-header">
-      <div class="header-inner">
-        <a href="/" class="site-logo" aria-label="ForgeCore home">
-          {# Inline SVG forge-anvil mark #}
-          <svg class="logo-mark" viewBox="0 0 28 28" fill="none" aria-hidden="true">
-            <rect width="28" height="28" rx="5" fill="#f97316"/>
-            <path d="M8 20h12M10 20v-5l4-6 4 6v5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle cx="14" cy="8" r="2" fill="#fff"/>
-          </svg>
-          <span class="logo-wordmark">Forge<span>Core</span></span>
-        </a>
-        <nav class="site-nav" aria-label="Main navigation">
-          <a href="/">Home</a>
-          <a href="/archive/">Archive</a>
-          <a href="/about/">About</a>
-          <a href="/advertise/">Advertise</a>
-        </nav>
-        <div class="header-actions">
-          <a href="{{ subscribe_url | default('https://forgecore-newsletter.beehiiv.com/') }}" class="btn-subscribe" target="_blank" rel="noopener noreferrer">Subscribe Free</a>
-        </div>
-      </div>
-    </header>
-
-    <main class="site-main" id="main-content">
-      {{ body | safe }}
-    </main>
-
-    <footer class="site-footer">
-      <div class="footer-inner">
-        <span>&copy; {{ year | default('2026') }} ForgeCore &mdash; Practical AI for operators</span>
-        <nav class="footer-nav" aria-label="Footer navigation">
-          <a href="{{ subscribe_url | default('https://forgecore-newsletter.beehiiv.com/') }}" target="_blank" rel="noopener noreferrer">Join Free &rarr;</a>
-          <a href="/advertise/">Advertise</a>
-          <a href="/about/">About</a>
-          <a href="/rss.xml">RSS</a>
-        </nav>
-      </div>
-    </footer>
-
+{# ── Ticker Strip ── #}
+<div class="ticker">
+  <div class="ticker-content">
+    <span class="ticker-item">OpenAI raises $122B at $852B valuation</span>
+    <span class="ticker-item">Sora loses $1M/day and made $2.1M total</span>
+    <span class="ticker-item">AI news for people who don't need it explained twice</span>
+    <span class="ticker-item">Daily brief | Operator-focused | Zero fluff</span>
+    {# Duplicate for seamless loop #}
+    <span class="ticker-item">OpenAI raises $122B at $852B valuation</span>
+    <span class="ticker-item">Sora loses $1M/day and made $2.1M total</span>
+    <span class="ticker-item">AI news for people who don't need it explained twice</span>
+    <span class="ticker-item">Daily brief | Operator-focused | Zero fluff</span>
   </div>
+</div>
+
+{# ── Header ── #}
+<header class="header">
+  <div class="container">
+    <nav class="nav">
+      <a href="/" class="brand">
+        {# Inline SVG forge-anvil mark #}
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/>
+        </svg>
+        ForgeCore
+      </a>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/archive/">Archive</a>
+        <a href="/about/">About</a>
+        <a href="/advertise/">Advertise</a>
+        <a href="{{ subscribe_url | default('https://forgecore-newsletter.beehiiv.com/') }}" class="btn btn-primary">Subscribe Free</a>
+      </div>
+    </nav>
+  </div>
+</header>
+
+{# ── Body Content ── #}
+{{ body | safe }}
+
+{# ── Footer ── #}
+<footer class="footer">
+  <div class="container">
+    <div class="footer-inner">
+      <p class="footer-copy">© {{ year | default('2026') }} ForgeCore — Practical AI for operators</p>
+      <div class="footer-links">
+        <a href="{{ subscribe_url | default('https://forgecore-newsletter.beehiiv.com/') }}">Join Free →</a>
+        <a href="/advertise/">Advertise</a>
+        <a href="/about/">About</a>
+        <a href="/rss.xml">RSS</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
 </body>
 </html>
