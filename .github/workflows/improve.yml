@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: forgecore-newsletter-main
+    group: forgecore-newsletter-improve
   cancel-in-progress: true  # Allow new runs to cancel stuck ones
 jobs:
   improve:
