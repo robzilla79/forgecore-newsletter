@@ -14,7 +14,7 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    name: Build static site and deploy to Cloudflare Pages
+    name: Build, deploy, and send FORGE/DAILY
 
     steps:
       - name: Checkout repo
@@ -28,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install jinja2 python-dotenv
+          pip install jinja2 python-dotenv requests
 
       - name: Build static site
         run: python publish_site.py
@@ -36,7 +36,7 @@ jobs:
           SITE_BASE_URL: https://news.forgecore.co
           NEWSLETTER_NAME: FORGE/DAILY
           NEWSLETTER_TAGLINE: AI news for people who don't need it explained twice.
-          PRIMARY_CTA_URL: ${{ secrets.BEEHIIV_SUBSCRIBE_URL }}
+          PRIMARY_CTA_URL: https://news.forgecore.co
           SPONSOR_EMAIL: sponsors@forgecore.co
 
       - name: Deploy to Cloudflare Pages
@@ -45,3 +45,12 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy site/dist --project-name=forgecore-newsletter --commit-dirty=true
+
+      - name: Send issue to Beehiiv subscribers
+        run: python beehiiv_publish.py
+        env:
+          BEEHIIV_API_KEY: ${{ secrets.BEEHIIV_API_KEY }}
+          BEEHIIV_PUBLICATION_ID: ${{ secrets.BEEHIIV_PUBLICATION_ID }}
+          BEEHIIV_SEND_MODE: draft
+          SITE_BASE_URL: https://news.forgecore.co
+          NEWSLETTER_NAME: FORGE/DAILY
