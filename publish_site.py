@@ -11,7 +11,6 @@ from pathlib import Path
 from jinja2 import Template
 
 from issue_contract import (
-    ensure_issue_contract,
     issue_date_from_path,
     latest_issue_path,
     list_issue_files,
@@ -32,6 +31,45 @@ BEEHIIV_EMBED_HTML = re.sub(r"<iframe\b[^>]*>.*?</iframe>", "", BEEHIIV_EMBED_HT
 CURRENT_YEAR = datetime.now().year
 WPM = 220
 
+# FORGE/DAILY canonical sections - files with these are NOT passed through the old contract
+FORGE_DAILY_MARKERS = ["## THE STORY", "## QUICK HITS", "## EM'S TAKE", "## ONE THING TO TRY"]
+
+
+def is_forge_daily(text: str) -> bool:
+    return any(marker in text for marker in FORGE_DAILY_MARKERS)
+
+
+def is_valid_issue(text: str) -> bool:
+    """Reject empty files and known broken stub patterns."""
+    if len(text.strip()) < 200:
+        return False
+    broken_phrases = [
+        "no concrete content returned",
+        "missing content",
+        "description incomplete in provided content",
+        "these appear to be",
+    ]
+    lowered = text.lower()
+    return not any(phrase in lowered for phrase in broken_phrases)
+
+
+def safe_ensure_contract(path: Path) -> bool:
+    """Run contract normalization only on old-format issues. Skip FORGE/DAILY and broken stubs."""
+    try:
+        text = load_text(path)
+        if not is_valid_issue(text):
+            print(f"[skip] {path.name} — stub or broken content, skipping")
+            return False
+        if is_forge_daily(text):
+            return True  # FORGE/DAILY format: no normalization needed
+        # Old format: run the contract
+        from issue_contract import ensure_issue_contract
+        ensure_issue_contract(path)
+        return True
+    except Exception as exc:
+        print(f"[warn] {path.name} failed contract check ({exc}), skipping")
+        return False
+
 
 def signup_block_html(heading: str = "Get the next issue", sub: str = "") -> str:
     sub = sub or f"{TAGLINE}. Free."
@@ -51,7 +89,7 @@ def signup_block_html(heading: str = "Get the next issue", sub: str = "") -> str
 
 def feed_subscribe_html() -> str:
     return (
-        f"<p class='feed-subscribe-text'>Join operators building with AI &mdash; free weekly rundown.</p>"
+        f"<p class='feed-subscribe-text'>Join the FORGE/DAILY community &mdash; 1 email, daily, free.</p>"
         f"<form class='feed-subscribe' action='{html.escape(SUBSCRIBE_URL)}' method='get'>"
         "<input type='email' name='email' placeholder='Your email address' required>"
         "<button type='submit'>SUBSCRIBE</button>"
@@ -99,7 +137,6 @@ def md_to_html(text: str) -> str:
 
     for raw in lines:
         line = raw.rstrip()
-
         if line.startswith("```"):
             flush_para()
             if in_list:
@@ -112,31 +149,26 @@ def md_to_html(text: str) -> str:
             else:
                 in_code = True
             continue
-
         if in_code:
             code_lines.append(line)
             continue
-
         if not line.strip():
             flush_para()
             if in_list:
                 out.append("</ul>")
                 in_list = False
             continue
-
-        if line.startswith(("- ", "* ", "• ")):
+        if line.startswith(("- ", "* ", "\u2022 ")):
             flush_para()
             if not in_list:
                 out.append("<ul>")
                 in_list = True
-            body = re.sub(r"^[-*•]\s+", "", line)
+            body = re.sub(r"^[-*\u2022]\s+", "", line)
             out.append(f"<li>{format_inline(body.strip())}</li>")
             continue
-
         if in_list:
             out.append("</ul>")
             in_list = False
-
         if line.startswith("### "):
             flush_para()
             out.append(f"<h3>{format_inline(line[4:].strip())}</h3>")
@@ -172,10 +204,14 @@ def parse_date(date_str: str) -> dict[str, str]:
 
 
 def extract_summary(text: str) -> str:
+    # FORGE/DAILY: pull from THE STORY section
+    story_match = re.search(r"^## THE STORY\n(.+?)(?=^## |\Z)", text, flags=re.MULTILINE | re.DOTALL)
+    if story_match:
+        return strip_markdown(story_match.group(1))[:180]
+    # Legacy format
     hook_match = re.search(r"^## Hook\n(.+?)(?=^## |\Z)", text, flags=re.MULTILINE | re.DOTALL)
     if hook_match:
-        summary = strip_markdown(hook_match.group(1))
-        return summary[:180]
+        return strip_markdown(hook_match.group(1))[:180]
     top_story_match = re.search(r"^## Top Story\n(.+?)(?=^## |\Z)", text, flags=re.MULTILINE | re.DOTALL)
     if top_story_match:
         return strip_markdown(top_story_match.group(1))[:180]
@@ -234,7 +270,7 @@ def build_issue_page(meta: dict[str, str], related_items: str) -> str:
     <span>&bull;</span>
     <span>{html.escape(meta['read_time'])}</span>
     <span>&bull;</span>
-    <span class="issue-tag">DAILY RUNDOWN</span>
+    <span class="issue-tag">FORGE/DAILY</span>
   </div>
 
   <h1 class="issue-h1">{html.escape(meta['clean_title'])}</h1>
@@ -243,7 +279,7 @@ def build_issue_page(meta: dict[str, str], related_items: str) -> str:
 
   <div class="issue-sponsor">
     <div class="issue-sponsor-label">Sponsored</div>
-    <h2>Reach operators building with AI</h2>
+    <h2>Reach developers building with AI</h2>
     <p>Sponsor slot &mdash; <a href="mailto:{html.escape(SPONSOR_EMAIL)}">{html.escape(SPONSOR_EMAIL)}</a></p>
   </div>
 
@@ -254,7 +290,7 @@ def build_issue_page(meta: dict[str, str], related_items: str) -> str:
   {signup_block_html()}
 
   <div class="related-section">
-    <div class="related-label">You might also like&hellip;</div>
+    <div class="related-label">Previous issues</div>
     <ul class="related-list">
       {related_items}
     </ul>
@@ -267,7 +303,7 @@ def build_home(issues: list[dict[str, str]]) -> str:
     items = "\n".join(feed_item_html(meta) for meta in issues)
     return f"""
 <div class="feed-header">
-  <div class="feed-header-title">Join the ForgeCore community &mdash; 1 email, daily, free</div>
+  <div class="feed-header-title">AI news for people who don't need it explained twice.</div>
   {feed_subscribe_html()}
 </div>
 
@@ -299,12 +335,12 @@ def build_about() -> str:
     return f"""
 <div class="page-header">
   <div class="page-eyebrow">About</div>
-  <h1 class="page-title">AI for people who need it to do real work</h1>
+  <h1 class="page-title">AI news for people who don't need it explained twice.</h1>
   <p class="page-sub">{html.escape(TAGLINE)}</p>
 </div>
 <div class="page-body">
-  <p>{html.escape(NEWSLETTER_NAME)} is a daily newsletter for operators, founders, consultants, and technical teams who want AI to improve execution &mdash; not just generate noise.</p>
-  <p>Every issue covers practical workflows, deployable tooling, and ROI-focused ideas you can act on today.</p>
+  <p>{html.escape(NEWSLETTER_NAME)} is a daily newsletter for developers, Reddit power users, and technical builders who want signal, not hype.</p>
+  <p>Every issue covers what actually matters today in AI — written by Em, ForgeCore's resident pattern-hunter and chaos-adjacent editorial AI.</p>
   <div style="margin-top:28px">{signup_block_html()}</div>
 </div>
 """
@@ -314,8 +350,8 @@ def build_advertise() -> str:
     return f"""
 <div class="page-header">
   <div class="page-eyebrow">Advertise</div>
-  <h1 class="page-title">Reach operators building with AI</h1>
-  <p class="page-sub">Sponsor a practical publication read by builders evaluating real AI systems.</p>
+  <h1 class="page-title">Reach developers building with AI</h1>
+  <p class="page-sub">Sponsor a no-fluff publication read by technical builders and AI-forward developers.</p>
 </div>
 <div class="page-body">
   <div class="pricing-card">
@@ -332,7 +368,6 @@ def build_advertise() -> str:
 
 
 def main() -> int:
-    ensure_issue_contract(latest_issue_path())
     dist = WORKSPACE / "site" / "dist"
     dist.mkdir(parents=True, exist_ok=True)
 
@@ -350,9 +385,16 @@ def main() -> int:
 
     issues: list[dict[str, str]] = []
     for path in sorted(list_issue_files(), key=lambda p: p.name, reverse=True):
-        ensure_issue_contract(path)
+        if not safe_ensure_contract(path):
+            continue
         text = load_text(path)
+        if not is_valid_issue(text):
+            continue
         issues.append(issue_meta(path, text))
+
+    if not issues:
+        print("[warn] No valid issues found. Nothing to publish.")
+        return 0
 
     for meta in issues:
         related_html = "\n".join(related_item_html(other) for other in issues if other["slug"] != meta["slug"])
