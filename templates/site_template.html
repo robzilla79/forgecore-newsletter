@@ -103,6 +103,31 @@
 </head>
 <body>
 
+{# ── Reading Progress Bar ──
+   Only shown on issue pages (where issue_number is set).
+   The JS below drives the CSS custom property --scroll-pct
+   which the .reading-progress-bar width is bound to.
+   Zero JS overhead on homepage / static pages. #}
+{% if issue_number %}
+<div class="reading-progress" aria-hidden="true">
+  <div class="reading-progress-bar" id="progress-bar"></div>
+</div>
+<script>
+  (function() {
+    var bar = document.getElementById('progress-bar');
+    if (!bar) return;
+    function update() {
+      var scrollTop = window.scrollY || document.documentElement.scrollTop;
+      var docH = document.documentElement.scrollHeight - window.innerHeight;
+      var pct = docH > 0 ? Math.min(scrollTop / docH, 1) : 0;
+      document.documentElement.style.setProperty('--scroll-pct', pct);
+    }
+    window.addEventListener('scroll', update, { passive: true });
+    update();
+  })();
+</script>
+{% endif %}
+
 <div class="site-shell">
 
   {# ── Header ── #}
