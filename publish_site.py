@@ -203,6 +203,22 @@ def parse_date(date_str: str) -> dict[str, str]:
     return {"month": (parts[0][:3]).upper() if parts else "?", "day": parts[1].rstrip(",") if len(parts) > 1 else "?"}
 
 
+def date_to_iso(date_str: str) -> str:
+    """Convert a human-readable date string to ISO 8601 (YYYY-MM-DD). Returns empty string on failure."""
+    for fmt in ("%B %d, %Y", "%Y-%m-%d", "%b %d, %Y"):
+        try:
+            return datetime.strptime(date_str.strip(), fmt).strftime("%Y-%m-%d")
+        except ValueError:
+            continue
+    return ""
+
+
+def extract_hero_image(text: str) -> str:
+    """Pull the first Markdown image URL from the issue text, if any."""
+    match = re.search(r"!\[[^\]]*\]\((https?://[^\)]+)\)", text)
+    return match.group(1) if match else ""
+
+
 def extract_summary(text: str) -> str:
     # FORGE/DAILY: pull from THE STORY section
     story_match = re.search(r"^## THE STORY\n(.+?)(?=^## |\Z)", text, flags=re.MULTILINE | re.DOTALL)
@@ -231,6 +247,8 @@ def issue_meta(path: Path, text: str) -> dict[str, str]:
         "slug": issue_slug,
         "desc": desc,
         "date": date_str,
+        "pub_date": date_to_iso(date_str),
+        "hero_image": extract_hero_image(text),
         "read_time": read_time(text),
         "html": md_to_html(text),
     }
@@ -373,7 +391,16 @@ def main() -> int:
 
     template = Template((WORKSPACE / "templates" / "site_template.html").read_text(encoding="utf-8"))
 
-    def render(title: str, desc: str, canonical: str, body: str) -> str:
+    def render(
+        title: str,
+        desc: str,
+        canonical: str,
+        body: str,
+        og_type: str = "website",
+        hero_image: str = "",
+        pub_date: str = "",
+        issue_number: str = "",
+    ) -> str:
         return template.render(
             title=title,
             meta_description=desc,
@@ -381,6 +408,10 @@ def main() -> int:
             subscribe_url=SUBSCRIBE_URL,
             year=CURRENT_YEAR,
             body=body,
+            og_type=og_type,
+            hero_image=hero_image,
+            pub_date=pub_date,
+            issue_number=issue_number,
         )
 
     issues: list[dict[str, str]] = []
@@ -396,7 +427,7 @@ def main() -> int:
         print("[warn] No valid issues found. Nothing to publish.")
         return 0
 
-    for meta in issues:
+    for idx, meta in enumerate(issues):
         related_html = "\n".join(related_item_html(other) for other in issues if other["slug"] != meta["slug"])
         out_dir = dist / meta["slug"]
         out_dir.mkdir(parents=True, exist_ok=True)
@@ -407,6 +438,10 @@ def main() -> int:
                 desc=meta["desc"],
                 canonical=f"{SITE_BASE_URL}/{meta['slug']}/",
                 body=build_issue_page(meta, related_html),
+                og_type="article",
+                hero_image=meta.get("hero_image", ""),
+                pub_date=meta.get("pub_date", ""),
+                issue_number=str(len(issues) - idx),
             ),
         )
 
