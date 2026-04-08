@@ -58,7 +58,7 @@ def safe_ensure_contract(path: Path) -> bool:
     try:
         text = load_text(path)
         if not is_valid_issue(text):
-            print(f"[skip] {path.name} — stub or broken content, skipping")
+            print(f"[skip] {path.name} \u2014 stub or broken content, skipping")
             return False
         if is_forge_daily(text):
             return True  # FORGE/DAILY format: no normalization needed
@@ -254,13 +254,45 @@ def issue_meta(path: Path, text: str) -> dict[str, str]:
     }
 
 
+def hero_block_html(meta: dict[str, str]) -> str:
+    """Render the issue hero image block, or a dark placeholder if no image is available."""
+    if meta.get("hero_image"):
+        return (
+            "<figure class='issue-hero'>"
+            f"<img src='{html.escape(meta['hero_image'])}'"
+            f" alt='{html.escape(meta['clean_title'])}'"
+            " width='880' height='367'"
+            " loading='eager' decoding='async'>"
+            "</figure>"
+        )
+    return (
+        "<div class='issue-hero'>"
+        "<div class='issue-hero-placeholder'>"
+        "<svg viewBox='0 0 80 80' fill='none' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>"
+        "<path d='M40 8L12 24V56L40 72L68 56V24L40 8Z' stroke='currentColor' stroke-width='3' stroke-linejoin='round'/>"
+        "<path d='M40 8V72M12 24H68' stroke='currentColor' stroke-width='3' stroke-linecap='round'/>"
+        "</svg>"
+        "</div>"
+        "</div>"
+    )
+
+
 def feed_item_html(meta: dict[str, str]) -> str:
+    thumb = (
+        f"<img class='feed-item-thumb' src='{html.escape(meta['hero_image'])}'"
+        f" alt='{html.escape(meta['clean_title'])}' width='88' height='64' loading='lazy'>"
+        if meta.get("hero_image")
+        else ""
+    )
     return (
         "<li class='feed-item'>"
+        "<div class='feed-item-body'>"
         f"<div class='feed-item-meta'>{html.escape(meta['date'])} &bull; {html.escape(meta['read_time'])}</div>"
         f"<div class='feed-item-title'><a href='/{meta['slug']}/'>{html.escape(meta['clean_title'])}</a></div>"
         f"<div class='feed-item-sub'>{html.escape(meta['desc'])}</div>"
-        "</li>"
+        "</div>"
+        + thumb
+        + "</li>"
     )
 
 
@@ -282,6 +314,8 @@ def related_item_html(meta: dict[str, str]) -> str:
 
 def build_issue_page(meta: dict[str, str], related_items: str) -> str:
     return f"""
+{hero_block_html(meta)}
+
 <article class="issue-page">
   <div class="issue-eyebrow">
     <span>{html.escape(meta['date'])}</span>
@@ -358,7 +392,7 @@ def build_about() -> str:
 </div>
 <div class="page-body">
   <p>{html.escape(NEWSLETTER_NAME)} is a daily newsletter for developers, Reddit power users, and technical builders who want signal, not hype.</p>
-  <p>Every issue covers what actually matters today in AI — written by Em, ForgeCore's resident pattern-hunter and chaos-adjacent editorial AI.</p>
+  <p>Every issue covers what actually matters today in AI \u2014 written by Em, ForgeCore's resident pattern-hunter and chaos-adjacent editorial AI.</p>
   <div style="margin-top:28px">{signup_block_html()}</div>
 </div>
 """
@@ -434,7 +468,7 @@ def main() -> int:
         write_text(
             out_dir / "index.html",
             render(
-                title=f"{meta['clean_title']} — {NEWSLETTER_NAME}",
+                title=f"{meta['clean_title']} \u2014 {NEWSLETTER_NAME}",
                 desc=meta["desc"],
                 canonical=f"{SITE_BASE_URL}/{meta['slug']}/",
                 body=build_issue_page(meta, related_html),
@@ -450,19 +484,19 @@ def main() -> int:
     (dist / "archive").mkdir(exist_ok=True)
     write_text(
         dist / "archive" / "index.html",
-        render(f"Archive — {NEWSLETTER_NAME}", f"Browse every issue of {NEWSLETTER_NAME}.", f"{SITE_BASE_URL}/archive/", build_archive(issues)),
+        render(f"Archive \u2014 {NEWSLETTER_NAME}", f"Browse every issue of {NEWSLETTER_NAME}.", f"{SITE_BASE_URL}/archive/", build_archive(issues)),
     )
 
     (dist / "about").mkdir(exist_ok=True)
     write_text(
         dist / "about" / "index.html",
-        render(f"About — {NEWSLETTER_NAME}", f"About {NEWSLETTER_NAME}.", f"{SITE_BASE_URL}/about/", build_about()),
+        render(f"About \u2014 {NEWSLETTER_NAME}", f"About {NEWSLETTER_NAME}.", f"{SITE_BASE_URL}/about/", build_about()),
     )
 
     (dist / "advertise").mkdir(exist_ok=True)
     write_text(
         dist / "advertise" / "index.html",
-        render(f"Advertise — {NEWSLETTER_NAME}", f"Sponsor {NEWSLETTER_NAME}.", f"{SITE_BASE_URL}/advertise/", build_advertise()),
+        render(f"Advertise \u2014 {NEWSLETTER_NAME}", f"Sponsor {NEWSLETTER_NAME}.", f"{SITE_BASE_URL}/advertise/", build_advertise()),
     )
 
     write_text(dist / "style.css", load_text(WORKSPACE / "static" / "style.css"))
