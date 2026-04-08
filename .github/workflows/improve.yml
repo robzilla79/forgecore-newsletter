@@ -7,8 +7,7 @@ on:
 
 concurrency:
   group: forgecore-newsletter-main
-  cancel-in-progress: false
-
+  cancel-in-progress: true  # Allow new runs to cancel stuck ones
 jobs:
   improve:
     runs-on: self-hosted
