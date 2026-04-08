@@ -30,18 +30,19 @@ BEEHIIV_EMBED_HTML = os.getenv("BEEHIIV_EMBED_HTML", "").strip()
 BEEHIIV_EMBED_HTML = re.sub(r"<script[^>]*>.*?</script>", "", BEEHIIV_EMBED_HTML, flags=re.DOTALL).strip()
 CURRENT_YEAR = datetime.now().year
 WPM = 220
+BUILD_VERSION = datetime.now().strftime("%Y%m%d%H%M")
 
 # FORGE/DAILY canonical sections
 FORGE_DAILY_MARKERS = ["## THE STORY", "## QUICK HITS", "## EM'S TAKE", "## ONE THING TO TRY"]
 
 # Vibe tag heuristics for Quick Hits bullets
 VIBE_RULES = [
-    (["leak", "breach", "exposed", "dump", "hack", "security"], "💀", "vibe-yikes", "Yikes"),
-    (["raise", "valuation", "billion", "funding", "vc", "investor"], "💰", "vibe-money", "Money"),
-    (["launch", "ship", "release", "drop", "new model", "new version", "open source", "open-source"], "🔥", "vibe-hot", "Hot"),
-    (["watch", "could", "potential", "emerging", "early", "beta", "preview"], "👀", "vibe-watch", "Watch"),
-    (["price", "cost", "cheaper", "competitive", "discount", "subscription"], "💡", "vibe-smart", "Smart"),
-    (["sf ", "san francisco", "median home", "real estate", "housing"], "🏙", "vibe-vibe", "Vibe check"),
+    (["leak", "breach", "exposed", "dump", "hack", "security"], "\U0001f480", "vibe-yikes", "Yikes"),
+    (["raise", "valuation", "billion", "funding", "vc", "investor"], "\U0001f4b0", "vibe-money", "Money"),
+    (["launch", "ship", "release", "drop", "new model", "new version", "open source", "open-source"], "\U0001f525", "vibe-hot", "Hot"),
+    (["watch", "could", "potential", "emerging", "early", "beta", "preview"], "\U0001f440", "vibe-watch", "Watch"),
+    (["price", "cost", "cheaper", "competitive", "discount", "subscription"], "\U0001f4a1", "vibe-smart", "Smart"),
+    (["sf ", "san francisco", "median home", "real estate", "housing"], "\U0001f3d9", "vibe-vibe", "Vibe check"),
 ]
 
 def is_forge_daily(text: str) -> bool:
@@ -226,9 +227,23 @@ def extract_hero_image(text: str) -> str:
 
 
 def extract_summary(text: str) -> str:
-    story_match = re.search(r"^## THE STORY\n(.+?)(?=^## |\Z)", text, flags=re.MULTILINE | re.DOTALL)
-    if story_match:
-        return strip_markdown(story_match.group(1))[:180]
+    """Generate a teaser summary. For FORGE/DAILY issues, use a neutral tagline
+    instead of the opening of THE STORY — prevents the lede appearing twice on
+    the article page (once as subtitle, once inside the story card)."""
+    if is_forge_daily(text):
+        # Pull just the first non-bold, non-empty sentence from THE STORY
+        # so the subtitle is genuinely different from the rendered story card lede.
+        story_match = re.search(r"^## THE STORY\n(.+?)(?=^## |\Z)", text, flags=re.MULTILINE | re.DOTALL)
+        if story_match:
+            story_body = story_match.group(1)
+            # Skip any **bold lede** lines — those become the pull-quote in the card
+            lines = [l.strip() for l in story_body.splitlines() if l.strip()]
+            for line in lines:
+                if not re.match(r"^\*\*.+\*\*$", line):
+                    clean = strip_markdown(line)
+                    if len(clean) > 40:
+                        return clean[:180]
+        return TAGLINE[:180]
     hook_match = re.search(r"^## Hook\n(.+?)(?=^## |\Z)", text, flags=re.MULTILINE | re.DOTALL)
     if hook_match:
         return strip_markdown(hook_match.group(1))[:180]
@@ -331,7 +346,7 @@ def _vibe_tag(bullet: str) -> tuple[str, str, str]:
     for keywords, emoji, css, label in VIBE_RULES:
         if any(k in lower for k in keywords):
             return emoji, css, label
-    return "📌", "vibe-default", "Noted"
+    return "\U0001f4cc", "vibe-default", "Noted"
 
 
 def render_story_card(story_text: str) -> str:
@@ -424,13 +439,13 @@ def build_forge_daily_body(raw: str, meta: dict[str, str]) -> str:
     try_    = _extract_section(raw, "ONE THING TO TRY")
 
     skip_nav = (
-        "<div class='fd-skip-nav'>"
-        "<a href='#the-story'>Story</a>"
-        "<a href='#quick-hits'>Hits</a>"
-        "<a href='#ems-take'>Take</a>"
-        "<a href='#one-thing'>Try&nbsp;It</a>"
+        "<nav class='fd-skip-nav' aria-label='Jump to section'>"
+        "<a class='fd-skip-link' href='#the-story'>Story</a>"
+        "<a class='fd-skip-link' href='#quick-hits'>Hits</a>"
+        "<a class='fd-skip-link' href='#ems-take'>Take</a>"
+        "<a class='fd-skip-link' href='#one-thing'>Try&nbsp;It</a>"
         f"<span class='fd-read-time'>{html.escape(meta['read_time'])}</span>"
-        "</div>"
+        "</nav>"
     )
 
     return (
@@ -584,6 +599,7 @@ def main() -> int:
             hero_image=hero_image,
             pub_date=pub_date,
             issue_number=issue_number,
+            build_version=BUILD_VERSION,
         )
 
     issues: list[dict[str, str]] = []

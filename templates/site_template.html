@@ -98,16 +98,11 @@
   {# ── RSS Feed ── #}
   <link rel="alternate" type="application/rss+xml" title="FORGE/DAILY RSS" href="/rss.xml">
 
-  {# ── Stylesheet ── #}
-  <link rel="stylesheet" href="/style.css">
+  {# ── Stylesheet (versioned for cache busting) ── #}
+  <link rel="stylesheet" href="/style.css?v={{ build_version | default('1') }}">
 </head>
 <body>
 
-{# ── Reading Progress Bar ──
-   Only shown on issue pages (where issue_number is set).
-   The JS below drives the CSS custom property --scroll-pct
-   which the .reading-progress-bar width is bound to.
-   Zero JS overhead on homepage / static pages. #}
 {% if issue_number %}
 <div class="reading-progress" aria-hidden="true">
   <div class="reading-progress-bar" id="progress-bar"></div>
