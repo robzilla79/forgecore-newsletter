@@ -53,7 +53,7 @@ jobs:
           KIT_API_KEY: ${{ secrets.KIT_API_KEY }}
           KIT_FORM_ID: ${{ secrets.KIT_FORM_ID }}
           KIT_FROM_NAME: Em @ FORGE/DAILY
-          KIT_REPLY_TO: em@forgecore.co
+          KIT_REPLY_TO: rsmith64@gmail.com
           KIT_SEND_MODE: draft
           SITE_BASE_URL: https://news.forgecore.co
           NEWSLETTER_NAME: FORGE/DAILY
