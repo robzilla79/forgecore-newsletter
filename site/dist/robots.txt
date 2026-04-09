@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://news.forgecore.co/sitemap.xml

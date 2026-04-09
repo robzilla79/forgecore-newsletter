@@ -1,0 +1,221 @@
+[
+  {
+    "file": "index.html",
+    "issues": [
+      "MISSING og:title",
+      "MISSING og:description",
+      "MISSING og:image",
+      "MISSING h1 tag"
+    ]
+  },
+  {
+    "file": "2026-03-10/index.html",
+    "issues": [
+      "title too long (92 chars, max 70)",
+      "meta description too long (180 chars)",
+      "MISSING og:title",
+      "MISSING og:description",
+      "MISSING og:image",
+      "Multiple h1 tags (2)"
+    ]
+  },
+  {
+    "file": "2023-04-01/index.html",
+    "issues": [
+      "MISSING og:title",
+      "MISSING og:description",
+      "MISSING og:image",
+      "Multiple h1 tags (2)"
+    ]
+  },
+  {
+    "file": "archive/index.html",
+    "issues": [
+      "MISSING og:title",
+      "MISSING og:description",
+      "MISSING og:image"
+    ]
+  },
+  {
+    "file": "issue-2026-03-08/index.html",
+    "issues": [
+      "title too long (79 chars, max 70)",
+      "meta description too long (180 chars)",
+      "MISSING og:title",
+      "MISSING og:description",
+      "MISSING og:image",
+      "Multiple h1 tags (2)"
+    ]
+  },
+  {
+    "file": "2026-03-31/index.html",
+    "issues": [
+      "title too long (77 chars, max 70)",
+      "meta description too long (161 chars)",
+      "MISSING og:title",
+      "MISSING og:description",
+      "MISSING og:image",
+      "Multiple h1 tags (2)"
+    ]
+  },
+  {
+    "file": "2025-10-23-ollama-performance-on-nvidia-dgx-spark/index.html",
+    "issues": [
+      "title too long (78 chars, max 70)",
+      "MISSING og:title",
+      "MISSING og:description",
+      "MISSING og:image",
+      "Multiple h1 tags (2)"
+    ]
+  },
+  {
+    "file": "2026-03-09-ai-productivity-roi/index.html",
+    "issues": [
+      "title too long (91 chars, max 70)",
+      "meta description too long (180 chars)",
+      "MISSING og:title",
+      "MISSING og:description",
+      "MISSING og:image",
+      "Multiple h1 tags (2)"
+    ]
+  },
+  {
+    "file": "2026-03-30/index.html",
+    "issues": [
+      "MISSING og:title",
+      "MISSING og:description",
+      "MISSING og:image",
+      "Multiple h1 tags (2)"
+    ]
+  },
+  {
+    "file": "2026-03-09-ai-productivity/index.html",
+    "issues": [
+      "title too long (104 chars, max 70)",
+      "meta description too long (180 chars)",
+      "MISSING og:title",
+      "MISSING og:description",
+      "MISSING og:image",
+      "Multiple h1 tags (2)"
+    ]
+  },
+  {
+    "file": "2025-10-23/index.html",
+    "issues": [
+      "MISSING og:title",
+      "MISSING og:description",
+      "MISSING og:image",
+      "Multiple h1 tags (2)"
+    ]
+  },
+  {
+    "file": "2026-03-10-ollama-ai-for-business/index.html",
+    "issues": [
+      "title too long (94 chars, max 70)",
+      "meta description too long (180 chars)",
+      "MISSING og:title",
+      "MISSING og:description",
+      "MISSING og:image",
+      "Multiple h1 tags (2)"
+    ]
+  },
+  {
+    "file": "2026-03-14/index.html",
+    "issues": [
+      "title too long (104 chars, max 70)",
+      "meta description too long (180 chars)",
+      "MISSING og:title",
+      "MISSING og:description",
+      "MISSING og:image",
+      "Multiple h1 tags (2)"
+    ]
+  },
+  {
+    "file": "issue-2026-04-01/index.html",
+    "issues": [
+      "title too long (100 chars, max 70)",
+      "MISSING og:title",
+      "MISSING og:description",
+      "MISSING og:image",
+      "Multiple h1 tags (2)"
+    ]
+  },
+  {
+    "file": "about/index.html",
+    "issues": [
+      "MISSING og:title",
+      "MISSING og:description",
+      "MISSING og:image"
+    ]
+  },
+  {
+    "file": "2026-04-01/index.html",
+    "issues": [
+      "MISSING og:title",
+      "MISSING og:description",
+      "MISSING og:image",
+      "Multiple h1 tags (2)"
+    ]
+  },
+  {
+    "file": "issue-2026-03-14/index.html",
+    "issues": [
+      "title too long (114 chars, max 70)",
+      "MISSING og:title",
+      "MISSING og:description",
+      "MISSING og:image",
+      "Multiple h1 tags (2)"
+    ]
+  },
+  {
+    "file": "2026-03-09/index.html",
+    "issues": [
+      "title too long (130 chars, max 70)",
+      "MISSING og:title",
+      "MISSING og:description",
+      "MISSING og:image",
+      "Multiple h1 tags (2)"
+    ]
+  },
+  {
+    "file": "issue-2026-03-09/index.html",
+    "issues": [
+      "title too long (143 chars, max 70)",
+      "meta description too long (180 chars)",
+      "MISSING og:title",
+      "MISSING og:description",
+      "MISSING og:image",
+      "Multiple h1 tags (2)"
+    ]
+  },
+  {
+    "file": "advertise/index.html",
+    "issues": [
+      "MISSING og:title",
+      "MISSING og:description",
+      "MISSING og:image"
+    ]
+  },
+  {
+    "file": "issue-2026-03-31/index.html",
+    "issues": [
+      "title too long (90 chars, max 70)",
+      "meta description too long (180 chars)",
+      "MISSING og:title",
+      "MISSING og:description",
+      "MISSING og:image",
+      "Multiple h1 tags (2)"
+    ]
+  },
+  {
+    "file": "2026-03-09-unlocking-ai-roi/index.html",
+    "issues": [
+      "title too long (117 chars, max 70)",
+      "MISSING meta description",
+      "MISSING og:title",
+      "MISSING og:description",
+      "MISSING og:image",
+      "Multiple h1 tags (2)"
+    ]
+  }
+]
