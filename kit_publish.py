@@ -9,7 +9,7 @@ Required env vars:
   KIT_API_KEY        - API key from Kit → Settings → Developer → API Key
 
 Optional env vars:
-  KIT_SEND_MODE      - 'draft' (default) or 'public' (sends immediately)
+  KIT_SEND_MODE      - 'public' (default, sends immediately) or 'draft'
   SITE_BASE_URL      - Used to build the web version link
   NEWSLETTER_NAME    - Used as subject fallback
   SPONSOR_EMAIL      - Used in footer
@@ -38,7 +38,7 @@ except ImportError:
 # Config
 # ---------------------------------------------------------------------------
 API_KEY         = os.environ.get("KIT_API_KEY", "").strip()
-SEND_MODE       = os.environ.get("KIT_SEND_MODE", "draft").strip()  # draft | public
+SEND_MODE       = os.environ.get("KIT_SEND_MODE", "public").strip()  # public | draft
 SITE_BASE_URL   = os.environ.get("SITE_BASE_URL", "https://news.forgecore.co").strip()
 NEWSLETTER_NAME = os.environ.get("NEWSLETTER_NAME", "FORGE/DAILY").strip()
 SPONSOR_EMAIL   = os.environ.get("SPONSOR_EMAIL", "sponsors@forgecore.co").strip()
@@ -151,7 +151,7 @@ def build_email_html(meta: dict, body_md: str, issue_date: str) -> str:
 <body style="margin:0;padding:0;background:#0d0d0d;">
 <div style="max-width:680px;margin:0 auto;padding:32px 24px;font-family:Georgia,serif;color:#e0e0e0;background:#111;">
   <p style="font-size:12px;color:#666;margin-bottom:28px;">
-    Can’t see this properly?
+    Can't see this properly?
     <a href="{web_url}" style="color:#f97316;">Read it on the web</a>.
   </p>
 
@@ -159,7 +159,7 @@ def build_email_html(meta: dict, body_md: str, issue_date: str) -> str:
 
   <hr style="border:none;border-top:1px solid #222;margin:40px 0;">
   <p style="font-size:11px;color:#555;line-height:1.6;">
-    You’re receiving this because you subscribed to {NEWSLETTER_NAME}.<br>
+    You're receiving this because you subscribed to {NEWSLETTER_NAME}.<br>
     <a href="{unsubscribe}" style="color:#555;">Unsubscribe</a>
   </p>
 </div>
