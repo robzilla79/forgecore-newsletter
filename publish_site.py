@@ -227,16 +227,13 @@ def extract_hero_image(text: str) -> str:
 
 
 def extract_summary(text: str) -> str:
-    """Generate a teaser summary. For FORGE/DAILY issues, use a neutral tagline
-    instead of the opening of THE STORY — prevents the lede appearing twice on
-    the article page (once as subtitle, once inside the story card)."""
+    """Generate a teaser summary for feed cards and meta descriptions only.
+    For FORGE/DAILY issues, pull the first substantive non-bold sentence from
+    THE STORY so feed previews have real content without duplicating the lede."""
     if is_forge_daily(text):
-        # Pull just the first non-bold, non-empty sentence from THE STORY
-        # so the subtitle is genuinely different from the rendered story card lede.
         story_match = re.search(r"^## THE STORY\n(.+?)(?=^## |\Z)", text, flags=re.MULTILINE | re.DOTALL)
         if story_match:
             story_body = story_match.group(1)
-            # Skip any **bold lede** lines — those become the pull-quote in the card
             lines = [l.strip() for l in story_body.splitlines() if l.strip()]
             for line in lines:
                 if not re.match(r"^\*\*.+\*\*$", line):
@@ -479,7 +476,6 @@ def build_issue_page(meta: dict[str, str], related_items: str) -> str:
   </div>
 
   <h1 class="issue-h1">{html.escape(meta['clean_title'])}</h1>
-  <p class="issue-subtitle">{html.escape(meta['desc'])}</p>
   <hr class="issue-divider">
 
   <div class="issue-sponsor">
