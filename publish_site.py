@@ -23,11 +23,11 @@ load_project_env()
 SITE_BASE_URL = os.getenv("SITE_BASE_URL", "https://news.forgecore.co").rstrip("/")
 NEWSLETTER_NAME = os.getenv("NEWSLETTER_NAME", "FORGE/DAILY")
 TAGLINE = os.getenv("NEWSLETTER_TAGLINE", "AI news for people who don't need it explained twice.")
-SUBSCRIBE_URL = os.getenv("PRIMARY_CTA_URL", "https://forgecore-newsletter.beehiiv.com/")
+SUBSCRIBE_URL = os.getenv("PRIMARY_CTA_URL", "https://app.kit.com/landing_pages/subscribe")
 SPONSOR_EMAIL = os.getenv("SPONSOR_EMAIL", "sponsors@forgecore.co")
-# Keep only the iframe — strip only <script> tags, not the embed iframe
-BEEHIIV_EMBED_HTML = os.getenv("BEEHIIV_EMBED_HTML", "").strip()
-BEEHIIV_EMBED_HTML = re.sub(r"<script[^>]*>.*?</script>", "", BEEHIIV_EMBED_HTML, flags=re.DOTALL).strip()
+# Kit form ID — used to build the native subscribe form action URL
+# Set KIT_FORM_ID in .env to your Kit form ID (found in Kit → Forms → embed code URL)
+KIT_FORM_ID = os.getenv("KIT_FORM_ID", "").strip()
 CURRENT_YEAR = datetime.now().year
 WPM = 220
 BUILD_VERSION = datetime.now().strftime("%Y%m%d%H%M")
@@ -80,12 +80,22 @@ def safe_ensure_contract(path: Path) -> bool:
         return False
 
 
+def _kit_form_action() -> str:
+    """Return the Kit form submit URL if KIT_FORM_ID is set, else fallback."""
+    if KIT_FORM_ID:
+        return f"https://app.kit.com/forms/{KIT_FORM_ID}/subscriptions"
+    return html.escape(SUBSCRIBE_URL)
+
+
 def signup_block_html(heading: str = "Get the next issue", sub: str = "") -> str:
     sub = sub or f"{TAGLINE} Free."
+    action = _kit_form_action()
+    # Native Kit form — no third-party script, full style control
     cta = (
-        BEEHIIV_EMBED_HTML
-        if BEEHIIV_EMBED_HTML
-        else f"<a class='btn btn-primary' href='{html.escape(SUBSCRIBE_URL)}'>Subscribe Free &rarr;</a>"
+        f"<form class='kit-form' action='{action}' method='post' target='_blank'>"
+        "<input type='email' name='email_address' placeholder='Your email address' required>"
+        "<button type='submit'>SUBSCRIBE</button>"
+        "</form>"
     )
     return (
         "<div class='issue-cta'>"
@@ -97,10 +107,11 @@ def signup_block_html(heading: str = "Get the next issue", sub: str = "") -> str
 
 
 def feed_subscribe_html() -> str:
+    action = _kit_form_action()
     return (
         f"<p class='feed-subscribe-text'>Join the FORGE/DAILY community &mdash; 1 email, daily, free.</p>"
-        f"<form class='feed-subscribe' action='{html.escape(SUBSCRIBE_URL)}' method='get'>"
-        "<input type='email' name='email' placeholder='Your email address' required>"
+        f"<form class='feed-subscribe' action='{action}' method='post' target='_blank'>"
+        "<input type='email' name='email_address' placeholder='Your email address' required>"
         "<button type='submit'>SUBSCRIBE</button>"
         "</form>"
     )
@@ -228,13 +239,21 @@ def extract_hero_image(text: str) -> str:
 
 def extract_summary(text: str) -> str:
     """Generate a teaser summary for feed cards and meta descriptions only.
-    For FORGE/DAILY issues, pull the first substantive non-bold sentence from
-    THE STORY so feed previews have real content without duplicating the lede."""
+    For FORGE/DAILY issues, pull the bold lede from THE STORY — it's already
+    written as a punchy one-liner and makes a perfect TLDR."""
     if is_forge_daily(text):
         story_match = re.search(r"^## THE STORY\n(.+?)(?=^## |\Z)", text, flags=re.MULTILINE | re.DOTALL)
         if story_match:
             story_body = story_match.group(1)
             lines = [l.strip() for l in story_body.splitlines() if l.strip()]
+            # Prefer the bold lede line — it's the intentional TLDR
+            for line in lines:
+                m = re.match(r"^\*\*(.+?)\*\*$", line)
+                if m:
+                    clean = strip_markdown(m.group(1))
+                    if len(clean) > 20:
+                        return clean[:180]
+            # Fall back to first substantive non-bold sentence
             for line in lines:
                 if not re.match(r"^\*\*.+\*\*$", line):
                     clean = strip_markdown(line)
