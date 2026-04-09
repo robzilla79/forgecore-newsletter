@@ -35,9 +35,10 @@ jobs:
         env:
           SITE_BASE_URL: https://news.forgecore.co
           NEWSLETTER_NAME: FORGE/DAILY
-          NEWSLETTER_TAGLINE: AI news for people who don't need it explained twice.
-          PRIMARY_CTA_URL: https://news.forgecore.co
+          NEWSLETTER_TAGLINE: "AI news for people who don't need it explained twice."
+          PRIMARY_CTA_URL: https://forge-daily.kit.com/
           SPONSOR_EMAIL: sponsors@forgecore.co
+          KIT_FORM_ID: ${{ secrets.KIT_FORM_ID }}
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
@@ -46,11 +47,14 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy site/dist --project-name=forgecore-newsletter --commit-dirty=true
 
-      - name: Send issue to Beehiiv subscribers
-        run: python beehiiv_publish.py
+      - name: Send issue to Kit subscribers
+        run: python kit_publish.py
         env:
-          BEEHIIV_API_KEY: ${{ secrets.BEEHIIV_API_KEY }}
-          BEEHIIV_PUBLICATION_ID: ${{ secrets.BEEHIIV_PUBLICATION_ID }}
-          BEEHIIV_SEND_MODE: draft
+          KIT_API_KEY: ${{ secrets.KIT_API_KEY }}
+          KIT_FORM_ID: ${{ secrets.KIT_FORM_ID }}
+          KIT_FROM_NAME: Em @ FORGE/DAILY
+          KIT_REPLY_TO: em@forgecore.co
+          KIT_SEND_MODE: draft
           SITE_BASE_URL: https://news.forgecore.co
           NEWSLETTER_NAME: FORGE/DAILY
+          SPONSOR_EMAIL: sponsors@forgecore.co
