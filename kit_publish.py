@@ -7,20 +7,16 @@ to Kit (formerly ConvertKit) subscribers via the Kit API v4.
 
 Required env vars:
   KIT_API_KEY        - API key from Kit → Settings → Developer → API Key
-  KIT_BROADCAST_TAG  - Tag ID (or comma-separated IDs) to send to, OR
-  KIT_SEGMENT_ID     - Segment ID to send to (mutually exclusive with tag)
 
 Optional env vars:
-  KIT_SEND_MODE      - 'public' (default, sends now) or 'draft'
-  KIT_FROM_NAME      - From name shown to subscribers (default: NEWSLETTER_NAME)
-  KIT_REPLY_TO       - Reply-to address (default: SPONSOR_EMAIL)
+  KIT_SEND_MODE      - 'draft' (default) or 'public' (sends immediately)
   SITE_BASE_URL      - Used to build the web version link
   NEWSLETTER_NAME    - Used as subject fallback
-  SPONSOR_EMAIL      - Used as reply-to fallback
+  SPONSOR_EMAIL      - Used in footer
 
 Exit codes:
-  0 - sent (or skipped because already sent)
-  1 - missing credentials or API error
+  0 - sent (or skipped because already sent / no credentials)
+  1 - API error
   2 - no issue found
   3 - issue already sent (idempotency guard)
 """
@@ -41,15 +37,11 @@ except ImportError:
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
-API_KEY       = os.environ.get("KIT_API_KEY", "").strip()
-SEND_MODE     = os.environ.get("KIT_SEND_MODE", "public").strip()   # public | draft
-FROM_NAME     = os.environ.get("KIT_FROM_NAME", "").strip()
-REPLY_TO      = os.environ.get("KIT_REPLY_TO", "").strip()
-BROADCAST_TAG = os.environ.get("KIT_BROADCAST_TAG", "").strip()      # e.g. "1234567"
-SEGMENT_ID    = os.environ.get("KIT_SEGMENT_ID", "").strip()
-SITE_BASE_URL = os.environ.get("SITE_BASE_URL", "https://news.forgecore.co").strip()
+API_KEY         = os.environ.get("KIT_API_KEY", "").strip()
+SEND_MODE       = os.environ.get("KIT_SEND_MODE", "draft").strip()  # draft | public
+SITE_BASE_URL   = os.environ.get("SITE_BASE_URL", "https://news.forgecore.co").strip()
 NEWSLETTER_NAME = os.environ.get("NEWSLETTER_NAME", "FORGE/DAILY").strip()
-SPONSOR_EMAIL = os.environ.get("SPONSOR_EMAIL", "sponsors@forgecore.co").strip()
+SPONSOR_EMAIL   = os.environ.get("SPONSOR_EMAIL", "sponsors@forgecore.co").strip()
 
 API_BASE   = "https://api.kit.com/v4"
 STATE_DIR  = Path("state")
@@ -186,16 +178,14 @@ def create_broadcast(subject: str, email_html: str, preview_text: str) -> dict:
         "Content-Type": "application/json",
         "Accept": "application/json",
     }
+    # email_address intentionally omitted — Kit uses the account default sender.
+    # Supplying an unregistered address causes a 422 "Email address not found".
     payload: dict = {
         "subject": subject,
         "content": email_html,
         "preview_text": preview_text,
-        "email_address": REPLY_TO or SPONSOR_EMAIL,
-        "email_layout_template": "none",   # use our own HTML, no Kit wrapper
         "public": SEND_MODE == "public",
     }
-    if FROM_NAME:
-        payload["email_address"] = f"{FROM_NAME} <{REPLY_TO or SPONSOR_EMAIL}>"
 
     log(f"POST {url}")
     log(f"Subject: {subject}")
@@ -207,17 +197,6 @@ def create_broadcast(subject: str, email_html: str, preview_text: str) -> dict:
         log(f"ERROR: {resp.text[:1000]}")
         resp.raise_for_status()
     return resp.json()
-
-
-def send_broadcast(broadcast_id: int) -> None:
-    """Trigger send for a draft broadcast (only needed if SEND_MODE=draft then manually promote)."""
-    # Kit v4: PATCH /broadcasts/{id} with published_at to send
-    url = f"{API_BASE}/broadcasts/{broadcast_id}"
-    headers = {"X-Kit-Api-Key": API_KEY, "Content-Type": "application/json"}
-    resp = requests.patch(url, headers=headers,
-                          json={"published_at": datetime.now(timezone.utc).isoformat()},
-                          timeout=30)
-    log(f"Send broadcast {broadcast_id}: {resp.status_code}")
 
 
 # ---------------------------------------------------------------------------
