@@ -6,8 +6,9 @@ on:
   workflow_dispatch:
 
 concurrency:
-    group: forgecore-newsletter-improve
-  cancel-in-progress: true  # Allow new runs to cancel stuck ones
+  group: forgecore-newsletter-improve
+  cancel-in-progress: true
+
 jobs:
   improve:
     runs-on: self-hosted
@@ -25,7 +26,7 @@ jobs:
       NEWSLETTER_TAGLINE: Practical AI workflows, tools, and ROI cases for operators
       TARGET_AUDIENCE: Operators, founders, consultants, and technical teams adopting AI workflows.
       PRIMARY_CTA_TEXT: Subscribe for weekly operator-grade AI workflows
-      PRIMARY_CTA_URL: https://forgecore-newsletter.beehiiv.com/
+      PRIMARY_CTA_URL: https://forge-daily.kit.com/
       BEEHIIV_PUBLICATION_URL: https://forgecore-newsletter.beehiiv.com/
       SPONSOR_EMAIL: sponsors@forgecore.co
       MAX_CONTEXT_CHARS: '22000'
