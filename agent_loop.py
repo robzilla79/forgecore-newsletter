@@ -23,25 +23,26 @@ WRITER_MODEL = os.getenv("WRITER_MODEL", "gpt-4o-mini")
 EDITOR_MODEL = os.getenv("EDITOR_MODEL", WRITER_MODEL)
 
 ALLOWED = ("scout", "analyst", "author", "editor", "publisher", "deployer", "all", "pipeline")
+
 AGENT_PREFIXES = {
-    "scout": ["research/raw/", "state/"],
+    "scout":   ["research/raw/", "state/"],
     "analyst": ["research/briefs/", "state/"],
-    "author": ["content/issues/", "content/blueprints/", "state/"],
-    "editor": ["content/issues/", "state/"],
+    "author":  ["content/issues/", "content/blueprints/", "state/"],
+    "editor":  ["content/issues/", "state/"],
 }
 
 DEFAULT_PATHS = {
-    "scout": "research/raw/RAW-INTEL-{date}.md",
+    "scout":   "research/raw/RAW-INTEL-{date}.md",
     "analyst": "research/briefs/EDITORIAL-BRIEF-{date}.md",
-    "author": "content/issues/{date}.md",
-    "editor": "content/issues/{date}.md",
+    "author":  "content/issues/{date}.md",
+    "editor":  "content/issues/{date}.md",
 }
 
 SYSTEMS = {
-    "scout": SCOUT_SYSTEM,
+    "scout":   SCOUT_SYSTEM,
     "analyst": ANALYST_SYSTEM,
-    "author": AUTHOR_SYSTEM,
-    "editor": EDITOR_SYSTEM,
+    "author":  AUTHOR_SYSTEM,
+    "editor":  EDITOR_SYSTEM,
 }
 
 
@@ -51,7 +52,6 @@ def check_openai_ready() -> None:
         raise RuntimeError(
             "OPENAI_API_KEY is not set. Add it to your .env file or environment before running."
         )
-    # Light validation: key must start with 'sk-'
     if not OPENAI_API_KEY.startswith("sk-"):
         raise RuntimeError(
             f"OPENAI_API_KEY looks malformed (starts with {OPENAI_API_KEY[:6]!r}). "
@@ -168,10 +168,10 @@ def build_prompt(agent: str, context: str) -> str:
     }
 
     hints = {
-        "scout": "Write a high-signal raw intel synthesis. Rank promising angles and identify one strong Tool of the Week candidate.",
+        "scout":   "Write a high-signal raw intel synthesis. Rank promising angles and identify one strong Tool of the Week candidate.",
         "analyst": "Write a strong editorial brief with audience, thesis, why now, section plan, SEO title ideas, CTA direction, and distribution angles.",
-        "author": f"Write a COMPLETE, FULL-LENGTH newsletter issue. Minimum 600 words. Issue file must be written to content/issues/{today_str()}.md.",
-        "editor": "Edit the issue draft. Return the COMPLETE edited Markdown in the 'content' field. Keep ALL required sections.",
+        "author":  f"Write a COMPLETE, FULL-LENGTH newsletter issue. Minimum 600 words. Issue file must be written to content/issues/{today_str()}.md.",
+        "editor":  "Edit the issue draft. Return the COMPLETE edited Markdown in the 'content' field. Keep ALL required sections.",
     }
 
     return (
@@ -193,7 +193,10 @@ def apply(agent: str, result: dict[str, Any]) -> int:
             write_text(path, content)
         count += 1
     if result.get("memory_update"):
-        write_text(WORKSPACE / "agents" / agent / "MEMORY.md", result["memory_update"] + "\n")
+        write_text(
+            WORKSPACE / "agents" / agent / "MEMORY.md",
+            result["memory_update"] + "\n",
+        )
     return count
 
 
@@ -207,11 +210,23 @@ def run_llm(agent: str) -> dict[str, Any]:
         count = apply(agent, parsed)
         duration = time.time() - start
         progress(f"{agent}: {parsed.get('summary', 'Done')} (files={count}, duration={duration:.2f}s)")
-        return {"status": "ok", "agent": agent, "files_updated": count, "duration_s": duration, "summary": parsed.get("summary")}
+        return {
+            "status": "ok",
+            "agent": agent,
+            "files_updated": count,
+            "duration_s": duration,
+            "summary": parsed.get("summary"),
+        }
     except Exception as exc:
         duration = time.time() - start
         error(agent, f"{type(exc).__name__}: {exc}")
-        return {"status": "error", "agent": agent, "files_updated": 0, "duration_s": duration, "summary": str(exc)}
+        return {
+            "status": "error",
+            "agent": agent,
+            "files_updated": 0,
+            "duration_s": duration,
+            "summary": str(exc),
+        }
 
 
 def run_script(name: str, script_name: str) -> dict[str, Any]:
@@ -226,23 +241,40 @@ def run_script(name: str, script_name: str) -> dict[str, Any]:
     start = time.time()
     try:
         if script_name.endswith(".py"):
-            cmd_args = [sys.executable, str(WORKSPACE / script_name)]
-            cp = subprocess.run(cmd_args, capture_output=True, text=True)
+            cp = subprocess.run(
+                [sys.executable, str(WORKSPACE / script_name)],
+                capture_output=True,
+                text=True,
+            )
         else:
             # Inject --yes so npx never prompts for package installs
             cmd_str = script_name.replace("npx wrangler", "npx --yes wrangler")
             cp = subprocess.run(cmd_str, shell=True, capture_output=True, text=True)
 
+        duration = time.time() - start
+
         if cp.returncode != 0:
             detail = (cp.stderr or cp.stdout or "no output").strip()
             raise RuntimeError(detail)
 
-        duration = time.time() - start
-        return {"status": "ok", "agent": name, "files_updated": 1, "duration_s": duration, "summary": "ok"}
+        summary = (cp.stdout or "").strip() or "ok"
+        return {
+            "status": "ok",
+            "agent": name,
+            "files_updated": 1,
+            "duration_s": duration,
+            "summary": summary,
+        }
     except Exception as exc:
         duration = time.time() - start
         error(name, str(exc))
-        return {"status": "error", "agent": name, "files_updated": 0, "duration_s": duration, "summary": str(exc)}
+        return {
+            "status": "error",
+            "agent": name,
+            "files_updated": 0,
+            "duration_s": duration,
+            "summary": str(exc),
+        }
 
 
 def run_pipeline() -> int:
@@ -250,7 +282,7 @@ def run_pipeline() -> int:
     results.append(run_script("research", "web_research.py"))
     for agent in ["scout", "analyst", "author", "editor"]:
         results.append(run_llm(agent))
-    run_script("publisher", "publish_site.py")
+    results.append(run_script("publisher", "publish_site.py"))
     return 0 if all(r["status"] == "ok" for r in results) else 1
 
 
