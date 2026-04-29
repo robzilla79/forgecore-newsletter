@@ -26,8 +26,7 @@ jobs:
       NEWSLETTER_TAGLINE: Practical AI workflows, tools, and ROI cases for operators
       TARGET_AUDIENCE: Operators, founders, consultants, and technical teams adopting AI workflows.
       PRIMARY_CTA_TEXT: Subscribe for weekly operator-grade AI workflows
-      PRIMARY_CTA_URL: https://forge-daily.kit.com/
-      BEEHIIV_PUBLICATION_URL: https://forgecore-newsletter.beehiiv.com/
+      PRIMARY_CTA_URL: https://forgecore-newsletter.beehiiv.com/
       SPONSOR_EMAIL: sponsors@forgecore.co
       MAX_CONTEXT_CHARS: '22000'
       AUTO_REPAIR_PATHS: '1'
@@ -38,9 +37,13 @@ jobs:
       MAX_FEED_ITEMS_PER_SOURCE: '4'
       CLOUDFLARE_PAGES_PROJECT: forgecore-newsletter
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      KIT_API_KEY: ${{ secrets.KIT_API_KEY }}
+      KIT_FORM_ID: ${{ secrets.KIT_FORM_ID }}
+      KIT_SEND_MODE: 'public'
       BEEHIIV_EMBED_HTML: ${{ secrets.BEEHIIV_EMBED_HTML }}
       BEEHIIV_API_KEY: ${{ secrets.BEEHIIV_API_KEY }}
       BEEHIIV_PUBLICATION_ID: ${{ secrets.BEEHIIV_PUBLICATION_ID }}
+      BEEHIIV_PUBLICATION_URL: https://forgecore-newsletter.beehiiv.com/
       BEEHIIV_SEND_MODE: 'draft'
     steps:
       - name: Checkout repo
@@ -70,6 +73,17 @@ jobs:
         if: steps.improve_controller.outcome == 'success'
         run: python publish_site.py
 
+      - name: Write CI HEARTBEAT
+        if: always()
+        run: |
+          TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          printf '# Last Run Status: %s\n- Origin: GitHub Actions (%s)\n- Run ID: %s\n- Runner: ubuntu-latest\n- Models: research=%s, writer=%s, editor=%s, fallback=%s\n' \
+            "$TIMESTAMP" "${{ github.workflow }}" "${{ github.run_id }}" \
+            "${RESEARCH_MODEL:-gpt-4o-mini}" "${WRITER_MODEL:-gpt-4o-mini}" \
+            "${EDITOR_MODEL:-gpt-4o-mini}" "${FALLBACK_MODEL:-gpt-4o-mini}" \
+            > HEARTBEAT.md
+          echo "[heartbeat] Written for $TIMESTAMP"
+
       - name: Commit improvements
         if: steps.improve_controller.outcome == 'success'
         run: |
@@ -81,6 +95,19 @@ jobs:
           else
             TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M UTC')
             git commit -m "auto: improvement pass $TIMESTAMP [bot]"
+            git push
+          fi
+
+      - name: Commit HEARTBEAT on failure
+        if: steps.improve_controller.outcome != 'success'
+        run: |
+          git config user.name "ForgeCore AI Bot"
+          git config user.email "bot@forgecore.co"
+          git add HEARTBEAT.md
+          if git diff --staged --quiet; then
+            echo "HEARTBEAT unchanged"
+          else
+            git commit -m "heartbeat: improve run ${{ github.run_id }} (skipped/failed) [bot]"
             git push
           fi
 

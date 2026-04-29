@@ -102,6 +102,17 @@ jobs:
         run: python kit_publish.py
         continue-on-error: true
 
+      - name: Write CI HEARTBEAT
+        if: always()
+        run: |
+          TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          printf '# Last Run Status: %s\n- Origin: GitHub Actions (%s)\n- Run ID: %s\n- Runner: ubuntu-latest\n- Models: research=%s, writer=%s, editor=%s, fallback=%s\n' \
+            "$TIMESTAMP" "${{ github.workflow }}" "${{ github.run_id }}" \
+            "${RESEARCH_MODEL:-gpt-4o-mini}" "${WRITER_MODEL:-gpt-4o-mini}" \
+            "${EDITOR_MODEL:-gpt-4o-mini}" "${FALLBACK_MODEL:-gpt-4o-mini}" \
+            > HEARTBEAT.md
+          echo "[heartbeat] Written for $TIMESTAMP"
+
       - name: Commit generated content
         if: success()
         run: |
@@ -113,6 +124,19 @@ jobs:
           else
             TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M UTC')
             git commit -m "auto: newsletter issue $TIMESTAMP [bot]"
+            git push
+          fi
+
+      - name: Commit HEARTBEAT on failure
+        if: failure()
+        run: |
+          git config user.name "ForgeCore AI Bot"
+          git config user.email "bot@forgecore.co"
+          git add HEARTBEAT.md
+          if git diff --staged --quiet; then
+            echo "HEARTBEAT unchanged"
+          else
+            git commit -m "heartbeat: generate run ${{ github.run_id }} (failed) [bot]"
             git push
           fi
 

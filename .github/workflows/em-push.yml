@@ -81,7 +81,7 @@ jobs:
           SITE_BASE_URL: https://news.forgecore.co
           NEWSLETTER_NAME: FORGE/DAILY
           NEWSLETTER_TAGLINE: "AI news for people who don't need it explained twice."
-          PRIMARY_CTA_URL: https://forge-daily.kit.com/
+          PRIMARY_CTA_URL: https://forgecore-newsletter.beehiiv.com/
           SPONSOR_EMAIL: sponsors@forgecore.co
           KIT_FORM_ID: ${{ secrets.KIT_FORM_ID }}
         continue-on-error: true
@@ -109,5 +109,6 @@ jobs:
             state/progress-log.md
             state/errors.log
             state/kit_sent.json
+            HEARTBEAT.md
           retention-days: 7
           if-no-files-found: warn
