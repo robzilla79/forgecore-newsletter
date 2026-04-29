@@ -29,38 +29,49 @@ STATE_DIR = WORKSPACE / "state"
 IMPROVE_LOG = STATE_DIR / "improvement-log.md"
 IMPROVE_LOCK = STATE_DIR / "improvement-lock.json"
 
+
 def log(msg: str) -> None:
     append_text(IMPROVE_LOG, f"[{now_str()}] {msg}")
+
 
 def err(msg: str) -> None:
     append_text(STATE_DIR / "errors.log", f"[{now_str()}] improvement_loop: {msg}")
     log(f"[ERROR] {msg}")
 
+
 def emit_result(*, changed: bool, issue_path: str | None, reason: str) -> None:
     print(json.dumps({"changed": changed, "issue_path": issue_path, "reason": reason}))
+
 
 def call_openai(model: str, prompt: str) -> str:
     if not OPENAI_API_KEY:
         raise RuntimeError("OPENAI_API_KEY not set")
     headers = {
         "Authorization": f"Bearer {OPENAI_API_KEY}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
     }
     payload = {
         "model": model,
         "messages": [{"role": "user", "content": prompt}],
         "temperature": 0.15,
-        "response_format": {"type": "json_object"}
+        "response_format": {"type": "json_object"},
     }
     for attempt in range(1, 4):
         try:
-            resp = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload, timeout=300)
+            resp = requests.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers=headers,
+                json=payload,
+                timeout=300,
+            )
             resp.raise_for_status()
             return resp.json()["choices"][0]["message"]["content"].strip()
         except Exception as exc:
-            if attempt == 3: raise
+            if attempt == 3:
+                raise
             time.sleep(2 ** attempt)
     return ""
+
 
 def extract_markdown_payload(raw: str) -> str:
     try:
@@ -69,94 +80,113 @@ def extract_markdown_payload(raw: str) -> str:
         if not content and parsed.get("files"):
             content = parsed["files"][0].get("content") or ""
         return content.strip()
-    except:
+    except Exception:
         return ""
+
 
 def load_lock() -> dict:
     if IMPROVE_LOCK.exists():
-        try: return json.loads(IMPROVE_LOCK.read_text(encoding='utf-8'))
-        except: pass
+        try:
+            return json.loads(IMPROVE_LOCK.read_text(encoding="utf-8"))
+        except Exception:
+            pass
     return {}
+
 
 def save_lock(data: dict) -> None:
     IMPROVE_LOCK.parent.mkdir(parents=True, exist_ok=True)
-    IMPROVE_LOCK.write_text(json.dumps(data, indent=2), encoding='utf-8')
+    IMPROVE_LOCK.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
 
 def minutes_since(iso_str: str) -> float:
     try:
         dt = datetime.fromisoformat(iso_str)
         now = datetime.now(timezone.utc)
-        if dt.tzinfo is None: dt = dt.replace(tzinfo=timezone.utc)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
         return (now - dt).total_seconds() / 60.0
-    except: return 9999.0
+    except Exception:
+        return 9999.0
+
 
 def load_critic(issue_path: Path) -> dict | None:
-    date_match = re.search(r'(\d{4}-\d{2}-\d{2})', issue_path.stem)
-    suffix = date_match.group(1) if date_match else 'latest'
-    candidate = STATE_DIR / f'critic-review-{suffix}.json'
+    date_match = re.search(r"(\d{4}-\d{2}-\d{2})", issue_path.stem)
+    suffix = date_match.group(1) if date_match else "latest"
+    candidate = STATE_DIR / f"critic-review-{suffix}.json"
     if candidate.exists():
-        try: return json.loads(candidate.read_text(encoding='utf-8'))
-        except: return None
+        try:
+            return json.loads(candidate.read_text(encoding="utf-8"))
+        except Exception:
+            return None
     return None
 
+
 def build_improvement_prompt(issue_text: str, issue_name: str, critic: dict | None) -> str:
-    goals = load_text(WORKSPACE / 'GOALS.md')
-    rewrite_plan = critic.get('rewrite_plan', []) if critic else []
-    must_fix = critic.get('must_fix', []) if critic else []
-    plan_lines = rewrite_plan or must_fix or ['General improvement of flow and clarity.']
-    
-    context = f"""# TARGETED IMPROVEMENT TASK
-Rewrite the issue below so it is publishable.
-## GOALS
-{goals[:2000]}
-## MUST-FIX ITEMS
-{chr(10).join(f'- {item}' for item in plan_lines[:6])}
-## ISSUE CONTENT
-{issue_text[:MAX_CONTEXT_CHARS]}
+    goals = load_text(WORKSPACE / "GOALS.md")
+    rewrite_plan = critic.get("rewrite_plan", []) if critic else []
+    must_fix = critic.get("must_fix", []) if critic else []
+    plan_lines = rewrite_plan or must_fix or ["General improvement of flow and clarity."]
 
-Return a JSON object with a "content" field containing the full improved Markdown."""
-    return EDITOR_SYSTEM + "
+    context = (
+        "# TARGETED IMPROVEMENT TASK\n"
+        "Rewrite the issue below so it is publishable.\n"
+        "## GOALS\n"
+        f"{goals[:2000]}\n"
+        "## MUST-FIX ITEMS\n"
+        + "\n".join(f"- {item}" for item in plan_lines[:6])
+        + "\n## ISSUE CONTENT\n"
+        f"{issue_text[:MAX_CONTEXT_CHARS]}\n\n"
+        "Return a JSON object with a \"content\" field containing the full improved Markdown."
+    )
+    return EDITOR_SYSTEM + "\n\n" + context
 
-" + context
 
 def improve_issue(issue_path: Path) -> tuple[bool, str]:
     original = load_text(issue_path)
-    if not original.strip(): return False, 'empty issue payload'
+    if not original.strip():
+        return False, "empty issue payload"
     critic = load_critic(issue_path)
     try:
         raw = call_openai(EDITOR_MODEL, build_improvement_prompt(original, issue_path.name, critic))
         improved = extract_markdown_payload(raw)
-        if not improved or len(improved) < 200: return False, 'invalid editor payload'
-        if improved == original: return False, 'rewrite is identical'
-        write_text(issue_path, improved + '
-')
-        return True, 'rewritten issue saved'
+        if not improved or len(improved) < 200:
+            return False, "invalid editor payload"
+        if improved == original:
+            return False, "rewrite is identical"
+        write_text(issue_path, improved + "\n")
+        return True, "rewritten issue saved"
     except Exception as exc:
         err(str(exc))
         return False, str(exc)
+
 
 def main() -> int:
     fail_fast = IMPROVEMENT_ORIGIN == "generate"
     issues = sorted(list_issue_files(), reverse=True)[:MAX_ISSUES_TO_IMPROVE]
     if not issues:
-        emit_result(changed=False, issue_path=None, reason='no issues')
+        emit_result(changed=False, issue_path=None, reason="no issues")
         return 0
     lock = load_lock()
     changed_path = None
     for issue_path in issues:
         key = issue_path.name
-        last_improved = lock.get(key, {}).get('last_improved', '')
-        if minutes_since(last_improved) < MIN_IMPROVEMENT_INTERVAL_MINUTES: continue
-        
+        last_improved = lock.get(key, {}).get("last_improved", "")
+        if minutes_since(last_improved) < MIN_IMPROVEMENT_INTERVAL_MINUTES:
+            continue
         changed, reason = improve_issue(issue_path)
         if changed:
             changed_path = issue_path.as_posix()
-            lock[key] = {'last_improved': datetime.now(timezone.utc).isoformat()}
+            lock[key] = {"last_improved": datetime.now(timezone.utc).isoformat()}
             save_lock(lock)
             break
-            
-    emit_result(changed=bool(changed_path), issue_path=changed_path, reason='improved' if changed_path else 'no change')
+
+    emit_result(
+        changed=bool(changed_path),
+        issue_path=changed_path,
+        reason="improved" if changed_path else "no change",
+    )
     return 0
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     raise SystemExit(main())
