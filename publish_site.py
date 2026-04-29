@@ -269,6 +269,83 @@ def extract_summary(text: str) -> str:
     return TAGLINE[:180]
 
 
+def parse_frontmatter(markdown_text: str) -> tuple[dict[str, str], str]:
+    """Parse simple YAML frontmatter at top of markdown text."""
+    if not markdown_text.startswith("---\n"):
+        return {}, markdown_text
+    m = re.match(r"^---\n(.*?)\n---\n?", markdown_text, flags=re.DOTALL)
+    if not m:
+        return {}, markdown_text
+    raw = m.group(1)
+    body = markdown_text[m.end():]
+    meta: dict[str, str] = {}
+    for line in raw.splitlines():
+        if ':' not in line:
+            continue
+        key, value = line.split(':', 1)
+        key = key.strip().lower()
+        value = value.strip().strip("\"'")
+        if key:
+            meta[key] = value
+    return meta, body
+
+
+def article_meta(path: Path, text: str) -> dict[str, str]:
+    fm, body = parse_frontmatter(text)
+    title_match = re.search(r"^# (.+)$", body, flags=re.MULTILINE)
+    title = fm.get('title') or (title_match.group(1).strip() if title_match else path.stem)
+    description = fm.get('description') or extract_summary(body)
+    date_str = fm.get('date', '').strip()
+    pub_date = date_to_iso(date_str) if date_str else ''
+    article_slug = (fm.get('slug') or path.stem).strip()
+    return {
+        'title': title,
+        'slug': article_slug,
+        'desc': description,
+        'date': date_str,
+        'pub_date': pub_date,
+        'read_time': read_time(body),
+        'hero_image': extract_hero_image(body),
+        'html': md_to_html(body),
+    }
+
+
+def build_article_page(meta: dict[str, str]) -> str:
+    date_line = f"<div class='issue-eyebrow'><span>{html.escape(meta['date'])}</span></div>" if meta.get('date') else ''
+    return f"""
+<article class="issue-page">
+  {date_line}
+  <h1 class="issue-h1">{html.escape(meta['title'])}</h1>
+  <hr class="issue-divider">
+  <div class="issue-body">{meta['html']}</div>
+</article>
+"""
+
+
+def build_articles_index(articles: list[dict[str, str]]) -> str:
+    if not articles:
+        items = "<p class='page-sub'>No articles published yet.</p>"
+    else:
+        rows = []
+        for article in articles:
+            date_part = html.escape(article['date']) if article.get('date') else 'Undated'
+            rows.append(
+                "<li class='feed-item'><div class='feed-item-body'>"
+                f"<div class='feed-item-meta'>{date_part}</div>"
+                f"<div class='feed-item-title'><a href='/{article['slug']}/'>{html.escape(article['title'])}</a></div>"
+                "</div></li>"
+            )
+        items = "<ul class='feed-list'>" + "\n".join(rows) + "</ul>"
+    return f"""
+<div class="page-header">
+  <div class="page-eyebrow">Articles</div>
+  <h1 class="page-title">ForgeCore Articles</h1>
+  <p class="page-sub">Deep dives and guides from ForgeCore.</p>
+</div>
+{items}
+"""
+
+
 def issue_meta(path: Path, text: str) -> dict[str, str]:
     title_match = re.search(r"^# (.+)$", text, flags=re.MULTILINE)
     raw_title = title_match.group(1).strip() if title_match else path.stem
@@ -668,9 +745,41 @@ def main() -> int:
         render(f"Advertise — {NEWSLETTER_NAME}", f"Sponsor {NEWSLETTER_NAME}.", f"{SITE_BASE_URL}/advertise/", build_advertise()),
     )
 
+    articles: list[dict[str, str]] = []
+    articles_dir = WORKSPACE / "content" / "articles"
+    if articles_dir.exists():
+        for article_path in sorted(articles_dir.glob('*.md')):
+            article = article_meta(article_path, load_text(article_path))
+            articles.append(article)
+            out_dir = dist / article['slug']
+            out_dir.mkdir(parents=True, exist_ok=True)
+            write_text(
+                out_dir / 'index.html',
+                render(
+                    title=f"{article['title']} — {NEWSLETTER_NAME}",
+                    desc=article['desc'],
+                    canonical=f"{SITE_BASE_URL}/{article['slug']}/",
+                    body=build_article_page(article),
+                    og_type='article',
+                    hero_image=article.get('hero_image', ''),
+                    pub_date=article.get('pub_date', ''),
+                ),
+            )
+
+    (dist / 'articles').mkdir(exist_ok=True)
+    write_text(
+        dist / 'articles' / 'index.html',
+        render(
+            f"Articles — {NEWSLETTER_NAME}",
+            f"Articles from {NEWSLETTER_NAME}.",
+            f"{SITE_BASE_URL}/articles/",
+            build_articles_index(sorted(articles, key=lambda a: a.get('date', ''), reverse=True)),
+        ),
+    )
+
     write_text(dist / "style.css", load_text(WORKSPACE / "static" / "style.css"))
     write_text(dist / "_headers", "/*\n  X-Content-Type-Options: nosniff\n  X-Frame-Options: DENY\n  Referrer-Policy: strict-origin-when-cross-origin\n")
-    write_text(dist / "_redirects", "/archive /archive/ 301\n/about /about/ 301\n/advertise /advertise/ 301\n")
+    write_text(dist / "_redirects", "/archive /archive/ 301\n/about /about/ 301\n/advertise /advertise/ 301\n/articles /articles/ 301\n")
 
     print(f"Published {len(issues)} issue(s) to {dist}")
     return 0
