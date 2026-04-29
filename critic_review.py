@@ -27,14 +27,51 @@ MAX_CONTEXT_CHARS = int(os.getenv("MAX_CONTEXT_CHARS", "22000"))
 MIN_CRITIC_OVERALL = float(os.getenv("MIN_CRITIC_OVERALL", "8.0"))
 MIN_CRITIC_CATEGORY = float(os.getenv("MIN_CRITIC_CATEGORY", "7.0"))
 _MAX_REWRITE_ITEMS = int(os.getenv("CRITIC_MAX_REWRITE_ITEMS", "6"))
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 
 _THINKING_MODEL_PREFIXES = ("qwen3", "qwq", "deepseek-r1", "deepseek-r2")
+_OPENAI_MODEL_PREFIXES = ("gpt-", "o1-", "o1", "o3-", "o3", "o4-", "o4")
 RUN_TOKEN = os.getenv("RUN_TOKEN", "").strip()
 
 
 def _is_thinking_model(model: str) -> bool:
     lower = model.lower()
     return any(lower.startswith(p) for p in _THINKING_MODEL_PREFIXES)
+
+
+def _is_openai_model(model: str) -> bool:
+    lower = model.lower()
+    return any(lower.startswith(p) for p in _OPENAI_MODEL_PREFIXES)
+
+
+def call_openai(model: str, prompt: str) -> str:
+    """Call an OpenAI chat-completion model and return the text response."""
+    try:
+        from openai import OpenAI  # type: ignore
+    except ImportError as exc:
+        raise RuntimeError("openai package not installed; run: pip install openai") from exc
+
+    client = OpenAI(api_key=OPENAI_API_KEY)
+    delay = 2.0
+    last_exc: Exception | None = None
+    for attempt in range(1, OLLAMA_RETRIES + 1):
+        try:
+            response = client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": "You are a strict JSON-only critic. Output only a valid JSON object."},
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0.1,
+                max_tokens=3000,
+            )
+            return (response.choices[0].message.content or "").strip()
+        except Exception as exc:
+            last_exc = exc
+            if attempt < OLLAMA_RETRIES:
+                time.sleep(delay)
+                delay = min(delay * 2, 20.0)
+    raise RuntimeError(f"OpenAI call failed: {last_exc}")
 
 
 def call_ollama(model: str, prompt: str, *, suppress_thinking: bool = True) -> str:
@@ -60,6 +97,13 @@ def call_ollama(model: str, prompt: str, *, suppress_thinking: bool = True) -> s
                 time.sleep(delay)
                 delay = min(delay * 2, 20.0)
     raise RuntimeError(f"Ollama failed: {last_exc}")
+
+
+def call_model(model: str, prompt: str) -> str:
+    """Route to OpenAI or Ollama based on the model name."""
+    if _is_openai_model(model):
+        return call_openai(model, prompt)
+    return call_ollama(model, prompt)
 
 
 def extract_json(raw: str) -> str:
@@ -162,13 +206,12 @@ def build_prompt(issue_name: str, issue_text: str) -> str:
 
 def evaluate_issue(path: Path) -> dict[str, Any]:
     issue_text = load_text(path)
-    raw = ""
     parse_failures: list[str] = []
     parsed: dict[str, Any] | None = None
 
     # --- Primary model attempt ---
     try:
-        raw = call_ollama(CRITIC_MODEL, build_prompt(path.name, issue_text))
+        raw = call_model(CRITIC_MODEL, build_prompt(path.name, issue_text))
         parsed = parse_json(raw)
     except Exception as exc:
         parse_failures.append(f"{CRITIC_MODEL}: {type(exc).__name__}: {exc}")
@@ -176,7 +219,7 @@ def evaluate_issue(path: Path) -> dict[str, Any]:
     # --- Fallback model attempt (only if primary failed) ---
     if parsed is None:
         try:
-            raw = call_ollama(FALLBACK_MODEL, build_prompt(path.name, issue_text))
+            raw = call_model(FALLBACK_MODEL, build_prompt(path.name, issue_text))
             parsed = parse_json(raw)
         except Exception as fallback_exc:
             parse_failures.append(f"{FALLBACK_MODEL}: {type(fallback_exc).__name__}: {fallback_exc}")
