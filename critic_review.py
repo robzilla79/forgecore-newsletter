@@ -71,7 +71,7 @@ def call_openai(model: str, prompt: str) -> str:
             if attempt < OLLAMA_RETRIES:
                 time.sleep(delay)
                 delay = min(delay * 2, 20.0)
-    raise RuntimeError(f"OpenAI call failed: {last_exc}")
+    raise RuntimeError(f"OpenAI call failed after {OLLAMA_RETRIES} attempts: {last_exc}")
 
 
 def call_ollama(model: str, prompt: str, *, suppress_thinking: bool = True) -> str:
@@ -96,11 +96,11 @@ def call_ollama(model: str, prompt: str, *, suppress_thinking: bool = True) -> s
             if attempt < OLLAMA_RETRIES:
                 time.sleep(delay)
                 delay = min(delay * 2, 20.0)
-    raise RuntimeError(f"Ollama failed: {last_exc}")
+    raise RuntimeError(f"Ollama failed after {OLLAMA_RETRIES} attempts: {last_exc}")
 
 
 def call_model(model: str, prompt: str) -> str:
-    """Route to OpenAI or Ollama based on the model name."""
+    """Route to OpenAI or Ollama based on the model name prefix."""
     if _is_openai_model(model):
         return call_openai(model, prompt)
     return call_ollama(model, prompt)

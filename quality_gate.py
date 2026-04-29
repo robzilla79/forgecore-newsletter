@@ -66,16 +66,28 @@ def find_duplicate_paragraphs(text: str) -> list[str]:
     return [key[:80] + "..." for key, count in seen.items() if count > 1]
 
 
-def load_issue_critic(issue_path: Path) -> tuple[dict | None, str | None]:
+def load_issue_critic(issue_path: Path, *, run_token: str = "") -> tuple[dict | None, str | None]:
+    """Load the critic-review JSON for the given issue.
+
+    If run_token is non-empty, the on-disk file must carry the same token.
+    A token mismatch means the file is stale from a prior pass or prior run,
+    so we treat it as missing rather than silently accepting bad scores.
+    """
     date_match = re.search(r"(\d{4}-\d{2}-\d{2})", issue_path.stem)
     suffix = date_match.group(1) if date_match else "latest"
     candidate = WORKSPACE / "state" / f"critic-review-{suffix}.json"
     if not candidate.exists():
         return None, candidate.as_posix()
     try:
-        return json.loads(candidate.read_text(encoding="utf-8")), candidate.as_posix()
+        data = json.loads(candidate.read_text(encoding="utf-8"))
     except Exception:
         return None, candidate.as_posix()
+    # Token guard: if a run_token was provided (i.e. we are inside
+    # improve_until_passes), reject any critic file that was not written
+    # during this exact pass so stale zero-score sentinels never satisfy the gate.
+    if run_token and data.get("run_token", "") != run_token:
+        return None, candidate.as_posix()
+    return data, candidate.as_posix()
 
 
 def collect_errors(text: str, critic: dict | None = None, critic_expected_path: str | None = None) -> list[str]:
@@ -184,7 +196,8 @@ def main() -> int:
     leaked = find_matching_patterns(text, LEAKED_PHRASE_PATTERNS)
     missing = find_matching_patterns(text, MISSING_CONTENT_PATTERNS)
     dupes = find_duplicate_paragraphs(text)
-    critic, critic_path = load_issue_critic(path)
+    # Pass RUN_TOKEN so stale critic files from prior passes are rejected.
+    critic, critic_path = load_issue_critic(path, run_token=RUN_TOKEN)
     errors = collect_errors(text, critic, critic_path)
     if contract_error:
         errors.append(f"Issue contract failed before gate: {contract_error}")
