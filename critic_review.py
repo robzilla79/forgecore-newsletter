@@ -18,30 +18,16 @@ from utils import WORKSPACE, dump_json, load_project_env, load_text
 
 load_project_env()
 
-OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434").rstrip("/")
-CRITIC_MODEL = os.getenv("CRITIC_MODEL", os.getenv("EDITOR_MODEL", os.getenv("WRITER_MODEL", "gemma3:12b")))
-FALLBACK_MODEL = os.getenv("FALLBACK_MODEL", "qwen3:8b")
-OLLAMA_TIMEOUT = int(os.getenv("OLLAMA_TIMEOUT", "300"))
-OLLAMA_RETRIES = int(os.getenv("OLLAMA_RETRIES", "3"))
+CRITIC_MODEL = os.getenv("CRITIC_MODEL", os.getenv("EDITOR_MODEL", os.getenv("WRITER_MODEL", "gpt-4o-mini")))
+FALLBACK_MODEL = os.getenv("FALLBACK_MODEL", "gpt-4o-mini")
+OPENAI_RETRIES = int(os.getenv("OPENAI_RETRIES", "3"))
 MAX_CONTEXT_CHARS = int(os.getenv("MAX_CONTEXT_CHARS", "22000"))
 MIN_CRITIC_OVERALL = float(os.getenv("MIN_CRITIC_OVERALL", "6.5"))
 MIN_CRITIC_CATEGORY = float(os.getenv("MIN_CRITIC_CATEGORY", "6.0"))
 _MAX_REWRITE_ITEMS = int(os.getenv("CRITIC_MAX_REWRITE_ITEMS", "6"))
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 
-_THINKING_MODEL_PREFIXES = ("qwen3", "qwq", "deepseek-r1", "deepseek-r2")
-_OPENAI_MODEL_PREFIXES = ("gpt-", "o1-", "o1", "o3-", "o3", "o4-", "o4")
 RUN_TOKEN = os.getenv("RUN_TOKEN", "").strip()
-
-
-def _is_thinking_model(model: str) -> bool:
-    lower = model.lower()
-    return any(lower.startswith(p) for p in _THINKING_MODEL_PREFIXES)
-
-
-def _is_openai_model(model: str) -> bool:
-    lower = model.lower()
-    return any(lower.startswith(p) for p in _OPENAI_MODEL_PREFIXES)
 
 
 def call_openai(model: str, prompt: str) -> str:
@@ -63,7 +49,7 @@ def call_openai(model: str, prompt: str) -> str:
     }
     delay = 2.0
     last_exc: Exception | None = None
-    for attempt in range(1, OLLAMA_RETRIES + 1):
+    for attempt in range(1, OPENAI_RETRIES + 1):
         try:
             resp = requests.post(
                 "https://api.openai.com/v1/chat/completions",
@@ -75,42 +61,15 @@ def call_openai(model: str, prompt: str) -> str:
             return resp.json()["choices"][0]["message"]["content"].strip()
         except Exception as exc:
             last_exc = exc
-            if attempt < OLLAMA_RETRIES:
+            if attempt < OPENAI_RETRIES:
                 time.sleep(delay)
                 delay = min(delay * 2, 20.0)
-    raise RuntimeError(f"OpenAI call failed after {OLLAMA_RETRIES} attempts: {last_exc}")
-
-
-def call_ollama(model: str, prompt: str, *, suppress_thinking: bool = True) -> str:
-    options: dict[str, Any] = {"temperature": 0.3, "num_predict": 3000}
-    final_prompt = prompt
-    if suppress_thinking and _is_thinking_model(model):
-        options["think"] = False
-        final_prompt = prompt.strip() + "\n\n/no_think"
-    delay = 2.0
-    last_exc: Exception | None = None
-    for attempt in range(1, OLLAMA_RETRIES + 1):
-        try:
-            resp = requests.post(
-                f"{OLLAMA_URL}/api/generate",
-                json={"model": model, "prompt": final_prompt, "stream": False, "options": options},
-                timeout=OLLAMA_TIMEOUT,
-            )
-            resp.raise_for_status()
-            return resp.json().get("response", "").strip()
-        except Exception as exc:
-            last_exc = exc
-            if attempt < OLLAMA_RETRIES:
-                time.sleep(delay)
-                delay = min(delay * 2, 20.0)
-    raise RuntimeError(f"Ollama failed after {OLLAMA_RETRIES} attempts: {last_exc}")
+    raise RuntimeError(f"OpenAI call failed after {OPENAI_RETRIES} attempts: {last_exc}")
 
 
 def call_model(model: str, prompt: str) -> str:
-    """Route to OpenAI REST API or Ollama based on the model name prefix."""
-    if _is_openai_model(model):
-        return call_openai(model, prompt)
-    return call_ollama(model, prompt)
+    """Route all critic calls through OpenAI Chat Completions."""
+    return call_openai(model, prompt)
 
 
 def extract_json(raw: str) -> str:

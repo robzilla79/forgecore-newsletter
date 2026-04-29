@@ -267,7 +267,7 @@ def ensure_workflow_block(workflow: str) -> str:
     workflow = workflow.strip()
     fallback = """```bash
 # 1) Pick one workflow that already exists
-ollama list
+python agent_loop.py all
 
 # 2) Define your success metric before rollout
 echo \"Measure time saved, error rate, and cycle time\"
@@ -385,7 +385,7 @@ def normalize_issue_text(text: str, issue_path: Path | None = None) -> str:
     if not tool:
         tool = sanitize_text(extract_brief_field(brief_text, 'Tool of the Week'))
     if not tool:
-        tool = 'Claude Code with Ollama shortens the path from idea to implementation while keeping model choice flexible.'
+        tool = 'OpenAI-powered agent workflows shorten the path from idea to implementation while keeping output quality and governance consistent.'
     tool = dedup_paragraphs(tool)
 
     workflow = sanitize_text(extract_section(text, ['Workflow', 'Implementation']))
