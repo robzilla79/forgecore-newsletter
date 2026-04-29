@@ -45,27 +45,34 @@ def _is_openai_model(model: str) -> bool:
 
 
 def call_openai(model: str, prompt: str) -> str:
-    """Call an OpenAI chat-completion model and return the text response."""
-    try:
-        from openai import OpenAI  # type: ignore
-    except ImportError as exc:
-        raise RuntimeError("openai package not installed; run: pip install openai") from exc
-
-    client = OpenAI(api_key=OPENAI_API_KEY)
+    """Call OpenAI chat completions via requests (no openai SDK dependency)."""
+    if not OPENAI_API_KEY:
+        raise RuntimeError("OPENAI_API_KEY is not set")
+    headers = {
+        "Authorization": f"Bearer {OPENAI_API_KEY}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": "You are a strict JSON-only critic. Output only a valid JSON object. No prose before or after it."},
+            {"role": "user", "content": prompt},
+        ],
+        "temperature": 0.1,
+        "max_tokens": 3000,
+    }
     delay = 2.0
     last_exc: Exception | None = None
     for attempt in range(1, OLLAMA_RETRIES + 1):
         try:
-            response = client.chat.completions.create(
-                model=model,
-                messages=[
-                    {"role": "system", "content": "You are a strict JSON-only critic. Output only a valid JSON object."},
-                    {"role": "user", "content": prompt},
-                ],
-                temperature=0.1,
-                max_tokens=3000,
+            resp = requests.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers=headers,
+                json=payload,
+                timeout=120,
             )
-            return (response.choices[0].message.content or "").strip()
+            resp.raise_for_status()
+            return resp.json()["choices"][0]["message"]["content"].strip()
         except Exception as exc:
             last_exc = exc
             if attempt < OLLAMA_RETRIES:
@@ -100,7 +107,7 @@ def call_ollama(model: str, prompt: str, *, suppress_thinking: bool = True) -> s
 
 
 def call_model(model: str, prompt: str) -> str:
-    """Route to OpenAI or Ollama based on the model name prefix."""
+    """Route to OpenAI REST API or Ollama based on the model name prefix."""
     if _is_openai_model(model):
         return call_openai(model, prompt)
     return call_ollama(model, prompt)
@@ -214,7 +221,9 @@ def evaluate_issue(path: Path) -> dict[str, Any]:
         raw = call_model(CRITIC_MODEL, build_prompt(path.name, issue_text))
         parsed = parse_json(raw)
     except Exception as exc:
-        parse_failures.append(f"{CRITIC_MODEL}: {type(exc).__name__}: {exc}")
+        msg = f"{CRITIC_MODEL}: {type(exc).__name__}: {exc}"
+        parse_failures.append(msg)
+        print(f"[critic_review] PRIMARY FAILED: {msg}", file=sys.stderr)
 
     # --- Fallback model attempt (only if primary failed) ---
     if parsed is None:
@@ -222,10 +231,13 @@ def evaluate_issue(path: Path) -> dict[str, Any]:
             raw = call_model(FALLBACK_MODEL, build_prompt(path.name, issue_text))
             parsed = parse_json(raw)
         except Exception as fallback_exc:
-            parse_failures.append(f"{FALLBACK_MODEL}: {type(fallback_exc).__name__}: {fallback_exc}")
+            msg = f"{FALLBACK_MODEL}: {type(fallback_exc).__name__}: {fallback_exc}"
+            parse_failures.append(msg)
+            print(f"[critic_review] FALLBACK FAILED: {msg}", file=sys.stderr)
 
     # --- Hardcoded reject sentinel if both models failed ---
     if parsed is None:
+        print("[critic_review] BOTH models failed — emitting reject sentinel", file=sys.stderr)
         parsed = {
             "summary": "Critic model outputs were not parseable JSON.",
             "overall_score": 0,
@@ -296,6 +308,7 @@ def main() -> int:
         path = ensure_issue_contract(path)
         result = evaluate_issue(path)
     except Exception as exc:
+        print(f"[critic_review] RUNTIME ERROR in main: {type(exc).__name__}: {exc}", file=sys.stderr)
         result = {
             "passed": False,
             "issue": path.as_posix(),
