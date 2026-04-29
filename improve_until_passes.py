@@ -71,7 +71,9 @@ def _extract_first_json_object(text: str) -> dict:
 
 def run_json_script(script_name: str, run_token: str) -> dict:
     STATE_DIR.mkdir(parents=True, exist_ok=True)
-    started = time.time()
+    # Use a 1-second buffer so fast-writing artifacts on high-resolution
+    # filesystems don't falsely trip the staleness guard.
+    started = time.time() - 1.0
     env = {**os.environ, "RUN_TOKEN": run_token}
     result = subprocess.run([sys.executable, script_name], capture_output=True, text=True, env=env)
     try:
@@ -103,8 +105,6 @@ def run_json_script(script_name: str, run_token: str) -> dict:
 
 
 def run_improvement() -> dict:
-    import os
-
     env_override = {
         "MIN_IMPROVEMENT_INTERVAL_MINUTES": "0",
         "MAX_ISSUES_TO_IMPROVE": "1",
@@ -119,16 +119,15 @@ def run_improvement() -> dict:
         raise RuntimeError(f"improvement_loop.py returned non-JSON output: {exc}; stderr={stderr or 'empty'}")
     if result.returncode != 0:
         raise RuntimeError(f"improvement_loop.py failed: {payload.get('reason') or result.stderr.strip() or 'unknown error'}")
-    if not payload.get("changed"):
-        raise RuntimeError(f"improvement_loop.py made no issue changes: {payload.get('reason', 'no reason provided')}")
     if not payload.get("issue_path"):
-        raise RuntimeError("improvement_loop.py reported changed=true but no issue_path")
+        raise RuntimeError("improvement_loop.py reported no issue_path in output")
     return payload
 
 
 def summarise(critic: dict, gate: dict, iteration: int) -> None:
     checks = gate.get("checks", {})
-    gate_errors = gate.get("errors") or checks.get("errors", [])
+    # quality_gate.py stores errors under result["checks"]["errors"] — not result["errors"]
+    gate_errors = checks.get("errors") or []
     critic_score = critic.get("overall_score", "?")
     critic_weak = critic.get("weak_categories", [])
     critic_passed = critic.get("passed", False)
@@ -174,7 +173,12 @@ def main() -> int:
         print(f"[improve_until_passes] Running targeted improvement agent (pass {i}/{MAX_ITERATIONS - 1} remaining)...")
         try:
             change = run_improvement()
-            print(f"[improve_until_passes] Improvement updated {change.get('issue_path')}")
+            if not change.get("changed"):
+                # Improvement agent found nothing to change — log and continue so
+                # the next critic/gate pass can re-evaluate rather than FAIL-FASTing.
+                print(f"[improve_until_passes] Improvement agent made no changes: {change.get('reason', 'no reason provided')}")
+            else:
+                print(f"[improve_until_passes] Improvement updated {change.get('issue_path')}")
         except RuntimeError as exc:
             print(f"[improve_until_passes] FAIL-FAST: {exc}")
             return 1

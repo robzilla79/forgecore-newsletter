@@ -164,29 +164,38 @@ def evaluate_issue(path: Path) -> dict[str, Any]:
     issue_text = load_text(path)
     raw = ""
     parse_failures: list[str] = []
+    parsed: dict[str, Any] | None = None
+
+    # --- Primary model attempt ---
     try:
         raw = call_ollama(CRITIC_MODEL, build_prompt(path.name, issue_text))
         parsed = parse_json(raw)
     except Exception as exc:
         parse_failures.append(f"{CRITIC_MODEL}: {type(exc).__name__}: {exc}")
-        raw = call_ollama(FALLBACK_MODEL, build_prompt(path.name, issue_text))
+
+    # --- Fallback model attempt (only if primary failed) ---
+    if parsed is None:
         try:
+            raw = call_ollama(FALLBACK_MODEL, build_prompt(path.name, issue_text))
             parsed = parse_json(raw)
         except Exception as fallback_exc:
             parse_failures.append(f"{FALLBACK_MODEL}: {type(fallback_exc).__name__}: {fallback_exc}")
-            parsed = {
-                "summary": "Critic model outputs were not parseable JSON.",
-                "overall_score": 0,
-                "scores": {},
-                "strengths": [],
-                "weaknesses": ["Critic output parsing failed for both primary and fallback models."],
-                "must_fix": ["Repair critic model/output formatting before publishing."],
-                "rewrite_plan": [
-                    "Switch to a known-stable JSON-following model for critic.",
-                    "Add stricter response format controls and retries.",
-                ],
-                "verdict": "reject",
-            }
+
+    # --- Hardcoded reject sentinel if both models failed ---
+    if parsed is None:
+        parsed = {
+            "summary": "Critic model outputs were not parseable JSON.",
+            "overall_score": 0,
+            "scores": {},
+            "strengths": [],
+            "weaknesses": ["Critic output parsing failed for both primary and fallback models."],
+            "must_fix": ["Repair critic model/output formatting before publishing."],
+            "rewrite_plan": [
+                "Switch to a known-stable JSON-following model for critic.",
+                "Add stricter response format controls and retries.",
+            ],
+            "verdict": "reject",
+        }
 
     scores = parsed.get("scores", {}) if isinstance(parsed.get("scores"), dict) else {}
     normalized_scores = {
