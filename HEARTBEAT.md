@@ -1,6 +1,5 @@
-# Last Run Status: 2026-04-01 22:08:37 UTC
-- Agents fired: editor=✓
-- Files updated: 1
-- Errors: None
-- Duration: 11.94s
-- Models: research=mistral:7b, writer=mistral:7b, editor=mistral:7b, fallback=mistral:7b
+# Last Run Status: 2026-04-29 18:14:22 UTC
+- Origin: GitHub Actions (Generate Newsletter Issue)
+- Run ID: 25125861604
+- Runner: ubuntu-latest
+- Models: research=gpt-4o-mini, writer=gpt-4o-mini, editor=gpt-4o-mini, fallback=gpt-4o-mini
