@@ -112,7 +112,7 @@ Every published issue MUST have these sections in this order:
 ### Error recovery (in this order):
 1. Try the operation again up to 3 times.
 2. Check `state/errors.log` for patterns.
-3. Try with the fallback model (`qwen3:8b`).
+3. Retry with the approved OpenAI fallback model (`gpt-4o-mini`).
 4. Log the failure with full traceback to `state/errors.log`.
 5. Move to the next step in the pipeline.
 6. Only escalate to the human if **3+ consecutive full pipeline runs have failed**.
@@ -120,7 +120,7 @@ Every published issue MUST have these sections in this order:
 ### Idleness is failure:
 - If the human is silent, keep working.
 - If the pipeline just finished, start the improvement loop.
-- If Ollama is unreachable, log it and retry in 5 minutes.
+- If OpenAI API is unreachable, log it and retry in 5 minutes.
 - Never sit idle for more than 10 minutes while running.
 
 ---
