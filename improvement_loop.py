@@ -121,22 +121,88 @@ def load_critic(issue_path: Path) -> dict | None:
     return None
 
 
-def build_improvement_prompt(issue_text: str, issue_name: str, critic: dict | None) -> str:
+def load_gate(issue_path: Path) -> dict | None:
+    """Load the most recent quality-gate result for this issue date."""
+    date_match = re.search(r"(\d{4}-\d{2}-\d{2})", issue_path.stem)
+    suffix = date_match.group(1) if date_match else "latest"
+    candidate = STATE_DIR / f"quality-gate-{suffix}.json"
+    if candidate.exists():
+        try:
+            return json.loads(candidate.read_text(encoding="utf-8"))
+        except Exception:
+            return None
+    return None
+
+
+def _extract_banned_phrases(gate: dict | None) -> list[str]:
+    """Pull banned token strings from a quality-gate result dict."""
+    if not gate:
+        return []
+    # quality_gate.py stores errors under result["checks"]["errors"]
+    checks = gate.get("checks", {})
+    gate_errors: list[str] = checks.get("errors") or gate.get("errors") or []
+    phrases: list[str] = []
+    for e in gate_errors:
+        if "Banned token" in e or "meta-phrase" in e or "Leaked" in e:
+            # Strip the label prefix, keep the raw phrase
+            cleaned = re.sub(
+                r"^(Banned token found[:\s]*|Leaked meta-phrase pattern found[:\s]*)",
+                "",
+                e,
+                flags=re.IGNORECASE,
+            ).strip().strip('"').strip("'")
+            if cleaned:
+                phrases.append(cleaned)
+    return phrases
+
+
+def build_improvement_prompt(
+    issue_text: str,
+    issue_name: str,
+    critic: dict | None,
+    gate: dict | None = None,
+) -> str:
     goals = load_text(WORKSPACE / "GOALS.md")
     rewrite_plan = critic.get("rewrite_plan", []) if critic else []
     must_fix = critic.get("must_fix", []) if critic else []
     plan_lines = rewrite_plan or must_fix or ["General improvement of flow and clarity."]
+    weak_cats = critic.get("weak_categories", []) if critic else []
+
+    banned_phrases = _extract_banned_phrases(gate)
+
+    # --- Banned phrase section (highest priority) ---
+    banned_section = ""
+    if banned_phrases:
+        banned_list = "\n".join(f'  - "{p}"' for p in banned_phrases)
+        banned_section = (
+            "## BANNED PHRASES — HIGHEST PRIORITY\n"
+            "Search the ENTIRE document and DELETE every occurrence of each phrase below.\n"
+            "Do NOT paraphrase them. Eliminate the concept entirely and replace with direct, "
+            "specific operator-grade language:\n"
+            f"{banned_list}\n\n"
+        )
+
+    # --- Weak categories section ---
+    weak_section = ""
+    if weak_cats:
+        weak_section = (
+            "## WEAK CATEGORIES TO STRENGTHEN\n"
+            + "\n".join(f"  - {c}" for c in weak_cats[:8])
+            + "\n\n"
+        )
 
     context = (
         "# TARGETED IMPROVEMENT TASK\n"
-        "Rewrite the issue below so it is publishable.\n"
+        "Rewrite the issue below so it is publishable.\n\n"
         "## GOALS\n"
-        f"{goals[:2000]}\n"
-        "## MUST-FIX ITEMS\n"
-        + "\n".join(f"- {item}" for item in plan_lines[:6])
-        + "\n## ISSUE CONTENT\n"
+        f"{goals[:2000]}\n\n"
+        + banned_section
+        + weak_section
+        + "## MUST-FIX ITEMS\n"
+        + "\n".join(f"  - {item}" for item in plan_lines[:MAX_TARGETED_REWRITE_ITEMS])
+        + "\n\n## ISSUE CONTENT\n"
         f"{issue_text[:MAX_CONTEXT_CHARS]}\n\n"
-        "Return a JSON object with a \"content\" field containing the full improved Markdown."
+        'Return a JSON object with a "content" field containing the full improved Markdown.'
     )
     return EDITOR_SYSTEM + "\n\n" + context
 
@@ -146,8 +212,12 @@ def improve_issue(issue_path: Path) -> tuple[bool, str]:
     if not original.strip():
         return False, "empty issue payload"
     critic = load_critic(issue_path)
+    gate = load_gate(issue_path)
     try:
-        raw = call_openai(EDITOR_MODEL, build_improvement_prompt(original, issue_path.name, critic))
+        raw = call_openai(
+            EDITOR_MODEL,
+            build_improvement_prompt(original, issue_path.name, critic, gate),
+        )
         improved = extract_markdown_payload(raw)
         if not improved or len(improved) < 200:
             return False, "invalid editor payload"
