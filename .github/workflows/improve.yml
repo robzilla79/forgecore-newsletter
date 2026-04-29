@@ -14,10 +14,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      RESEARCH_MODEL: ${{ secrets.RESEARCH_MODEL || 'gpt-4o' }}
-      WRITER_MODEL: ${{ secrets.WRITER_MODEL || 'gpt-4o' }}
-      EDITOR_MODEL: ${{ secrets.EDITOR_MODEL || 'gpt-4o' }}
-      CRITIC_MODEL: ${{ secrets.CRITIC_MODEL || 'gpt-4o' }}
+      # Cost-optimized: gpt-4o-mini (~$0.002/run vs $0.10 with gpt-4o)
+      RESEARCH_MODEL: ${{ secrets.RESEARCH_MODEL || 'gpt-4o-mini' }}
+      WRITER_MODEL: ${{ secrets.WRITER_MODEL || 'gpt-4o-mini' }}
+      EDITOR_MODEL: ${{ secrets.EDITOR_MODEL || 'gpt-4o-mini' }}
+      CRITIC_MODEL: ${{ secrets.CRITIC_MODEL || 'gpt-4o-mini' }}
       FALLBACK_MODEL: ${{ secrets.FALLBACK_MODEL || 'gpt-4o-mini' }}
       SITE_DOMAIN: news.forgecore.co
       SITE_BASE_URL: https://news.forgecore.co
