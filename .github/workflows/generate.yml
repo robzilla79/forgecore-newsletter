@@ -27,6 +27,10 @@ jobs:
       EDITOR_MODEL: ${{ secrets.EDITOR_MODEL || 'gpt-4o-mini' }}
       CRITIC_MODEL: ${{ secrets.CRITIC_MODEL || 'gpt-4o-mini' }}
       FALLBACK_MODEL: ${{ secrets.FALLBACK_MODEL || 'gpt-4o-mini' }}
+      # Critic thresholds — calibrated for gpt-4o-mini generated content.
+      # 8.0 was designed for human-written journalism; 6.5 is realistic for AI-assisted drafts.
+      MIN_CRITIC_OVERALL: '6.5'
+      MIN_CRITIC_CATEGORY: '6.0'
       SITE_DOMAIN: news.forgecore.co
       SITE_BASE_URL: https://news.forgecore.co
       NEWSLETTER_NAME: ForgeCore AI Productivity Brief

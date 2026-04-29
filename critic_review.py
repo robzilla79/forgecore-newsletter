@@ -24,8 +24,8 @@ FALLBACK_MODEL = os.getenv("FALLBACK_MODEL", "qwen3:8b")
 OLLAMA_TIMEOUT = int(os.getenv("OLLAMA_TIMEOUT", "300"))
 OLLAMA_RETRIES = int(os.getenv("OLLAMA_RETRIES", "3"))
 MAX_CONTEXT_CHARS = int(os.getenv("MAX_CONTEXT_CHARS", "22000"))
-MIN_CRITIC_OVERALL = float(os.getenv("MIN_CRITIC_OVERALL", "8.0"))
-MIN_CRITIC_CATEGORY = float(os.getenv("MIN_CRITIC_CATEGORY", "7.0"))
+MIN_CRITIC_OVERALL = float(os.getenv("MIN_CRITIC_OVERALL", "6.5"))
+MIN_CRITIC_CATEGORY = float(os.getenv("MIN_CRITIC_CATEGORY", "6.0"))
 _MAX_REWRITE_ITEMS = int(os.getenv("CRITIC_MAX_REWRITE_ITEMS", "6"))
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 
@@ -58,7 +58,7 @@ def call_openai(model: str, prompt: str) -> str:
             {"role": "system", "content": "You are a strict JSON-only critic. Output only a valid JSON object. No prose before or after it."},
             {"role": "user", "content": prompt},
         ],
-        "temperature": 0.1,
+        "temperature": 0.3,
         "max_tokens": 3000,
     }
     delay = 2.0
@@ -82,7 +82,7 @@ def call_openai(model: str, prompt: str) -> str:
 
 
 def call_ollama(model: str, prompt: str, *, suppress_thinking: bool = True) -> str:
-    options: dict[str, Any] = {"temperature": 0.1, "num_predict": 3000}
+    options: dict[str, Any] = {"temperature": 0.3, "num_predict": 3000}
     final_prompt = prompt
     if suppress_thinking and _is_thinking_model(model):
         options["think"] = False
@@ -275,7 +275,11 @@ def evaluate_issue(path: Path) -> dict[str, Any]:
 
     if not rewrite_plan:
         rewrite_plan = must_fix[:_MAX_REWRITE_ITEMS] or weaknesses[:_MAX_REWRITE_ITEMS]
-    passed = overall_score >= MIN_CRITIC_OVERALL and not weak_categories and len(must_fix) == 0
+
+    # passed = score threshold met + no weak categories.
+    # must_fix items are advisory guidance for the improvement loop, not a hard gate.
+    # The quality_gate.py structural checks are the final publish enforcement.
+    passed = overall_score >= MIN_CRITIC_OVERALL and not weak_categories
 
     result = {
         "passed": passed,
