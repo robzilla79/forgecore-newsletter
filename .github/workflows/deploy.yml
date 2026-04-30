@@ -9,55 +9,77 @@ on:
       - 'static/**'
       - 'publish_site.py'
       - 'issue_contract.py'
+      - 'site/dist/**'
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  SITE_BASE_URL: https://news.forgecore.co
+  SITE_DOMAIN: news.forgecore.co
+  NEWSLETTER_NAME: ForgeCore AI Productivity Brief
+  NEWSLETTER_TAGLINE: Practical AI workflows, tools, and ROI cases for operators
+  PRIMARY_CTA_URL: https://forgecore-newsletter.beehiiv.com/
+  SPONSOR_EMAIL: sponsors@forgecore.co
+
+concurrency:
+  group: forgecore-deploy
+  cancel-in-progress: true
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    name: Build, deploy, and send FORGE/DAILY
+    timeout-minutes: 20
+    name: Build and deploy ForgeCore site
 
     steps:
-      - name: Checkout repo
+      - name: Checkout latest main
         uses: actions/checkout@v4
         with:
+          ref: main
           fetch-depth: 0
-          token: ${{ secrets.GH_PAT }}
+
+      - name: Sync to latest main
+        run: |
+          git fetch origin main
+          git checkout main
+          git reset --hard origin/main
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install jinja2 python-dotenv requests
+          pip install -r requirements.txt
 
       - name: Build static site
         run: python publish_site.py
         env:
-          SITE_BASE_URL: https://news.forgecore.co
-          NEWSLETTER_NAME: FORGE/DAILY
-          NEWSLETTER_TAGLINE: "AI news for people who don't need it explained twice."
-          PRIMARY_CTA_URL: https://forgecore-newsletter.beehiiv.com/
-          SPONSOR_EMAIL: sponsors@forgecore.co
           KIT_FORM_ID: ${{ secrets.KIT_FORM_ID }}
+
+      - name: Verify build output
+        run: |
+          test -f site/dist/index.html
+          find site/dist -maxdepth 3 -type f | sort | head -100
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy site/dist --project-name=forgecore-newsletter --commit-dirty=true
+          command: pages deploy site/dist --project-name=forgecore-newsletter --commit-dirty=true --branch=main
 
-      - name: Send issue to Kit subscribers
+      - name: Publish to Kit subscribers
         run: python kit_publish.py
+        continue-on-error: true
         env:
           KIT_API_KEY: ${{ secrets.KIT_API_KEY }}
           KIT_FORM_ID: ${{ secrets.KIT_FORM_ID }}
-          KIT_FROM_NAME: Em @ FORGE/DAILY
-          KIT_REPLY_TO: rsmith64@gmail.com
-          KIT_SEND_MODE: public
-          SITE_BASE_URL: https://news.forgecore.co
-          NEWSLETTER_NAME: FORGE/DAILY
-          SPONSOR_EMAIL: sponsors@forgecore.co
+          KIT_FROM_NAME: ForgeCore
+          KIT_REPLY_TO: sponsors@forgecore.co
+          KIT_SEND_MODE: draft
