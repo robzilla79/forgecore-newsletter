@@ -54,6 +54,25 @@ def today_str() -> str:
     return utc_now().strftime('%Y-%m-%d')
 
 
+def issue_slot() -> str:
+    return os.getenv('ISSUE_SLOT', '').strip().lower()
+
+
+def issue_id_for_today() -> str:
+    slot = issue_slot()
+    base = today_str()
+    return f'{base}-{slot}' if slot in {'am', 'pm'} else base
+
+
+def issue_path_for_today() -> Path:
+    return WORKSPACE / 'content' / 'issues' / f'{issue_id_for_today()}.md'
+
+
+def artifact_suffix_for_issue(path: Path | None = None) -> str:
+    target = path or issue_path_for_today()
+    return target.stem or 'latest'
+
+
 def load_text(path: Path, default: str = '') -> str:
     try:
         return path.read_text(encoding='utf-8') if path.exists() else default
