@@ -1,0 +1,51 @@
+{
+  "passed": false,
+  "issue": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-04-30.md",
+  "model": "gpt-4o-mini",
+  "fallback_model": "gpt-4o-mini",
+  "overall_score": 3.0,
+  "min_overall_required": 6.5,
+  "min_category_required": 6.0,
+  "scores": {
+    "headline_strength": 4.0,
+    "hook_strength": 0.0,
+    "specificity": 2.0,
+    "originality": 3.0,
+    "readability": 5.0,
+    "tone": 4.0,
+    "utility": 3.0,
+    "non_repetition": 6.0
+  },
+  "weak_categories": [
+    "headline_strength",
+    "hook_strength",
+    "specificity",
+    "originality",
+    "readability",
+    "tone",
+    "utility"
+  ],
+  "strengths": [
+    "Some specific performance metrics for Ollama updates.",
+    "Clear structure in sections."
+  ],
+  "weaknesses": [
+    "No concrete content in the hook.",
+    "Incomplete research topics lacking actionable insights.",
+    "Generic summaries without unique angles."
+  ],
+  "must_fix": [
+    "Provide a strong hook with concrete content.",
+    "Complete the research topics with specific examples and actionable insights.",
+    "Enhance the depth of the top story to provide real operator value."
+  ],
+  "rewrite_plan": [
+    "Revise the hook to include specific, actionable insights.",
+    "Complete the research topics with detailed case studies and examples.",
+    "Add more depth to the top story, focusing on practical applications for operators."
+  ],
+  "summary": "The issue lacks depth and actionable insights, making it unfit for publication.",
+  "verdict": "reject",
+  "run_token": "pass-3-1777573459404535563",
+  "artifact_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/critic-review-2026-04-30.json"
+}
