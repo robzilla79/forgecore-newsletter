@@ -239,3 +239,33 @@
 ---
 
 [2026-04-02 00:07:27 UTC] Improvement pass complete: 0/3 issues updated (model=mistral:7b, origin=improve)
+
+
+---
+
+[2026-04-30 23:14:21 UTC] Improving /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-04-30.md using targeted critic/gate guidance ...
+
+
+---
+
+[2026-04-30 23:14:47 UTC] Improved /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-04-30.md: rewritten issue saved
+
+
+---
+
+[2026-04-30 23:14:55 UTC] Improving /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-04-30.md using targeted critic/gate guidance ...
+
+
+---
+
+[2026-04-30 23:15:11 UTC] No improvement applied to /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-04-30.md: invalid improved markdown: too short: 470 words
+
+
+---
+
+[2026-04-30 23:15:11 UTC] Improving /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-04-30.md using targeted critic/gate guidance ...
+
+
+---
+
+[2026-04-30 23:15:31 UTC] Improved /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-04-30.md: rewritten issue saved
