@@ -22,7 +22,20 @@ EDITOR_MODEL = os.getenv("EDITOR_MODEL", WRITER_MODEL)
 ISSUE_SLOT = os.getenv("ISSUE_SLOT", "").strip().lower()
 
 ALLOWED = {"scout", "analyst", "author", "editor"}
+STRUCTURED_AGENTS = {"scout", "analyst"}
+MARKDOWN_AGENTS = {"author", "editor"}
 SYSTEMS = {"scout": SCOUT_SYSTEM, "analyst": ANALYST_SYSTEM, "author": AUTHOR_SYSTEM, "editor": EDITOR_SYSTEM}
+
+REQUIRED_SECTIONS = [
+    "## Hook",
+    "## Top Story",
+    "## Why It Matters",
+    "## Highlights",
+    "## Tool of the Week",
+    "## Workflow",
+    "## CTA",
+    "## Sources",
+]
 
 
 def issue_id() -> str:
@@ -81,9 +94,12 @@ def context(agent: str) -> str:
     return "\n\n".join(parts)[:22000]
 
 
-def call_model(model: str, prompt: str) -> str:
-    client = OpenAI()
-    result = client.chat.completions.create(
+def openai_client() -> OpenAI:
+    return OpenAI()
+
+
+def call_structured_model(model: str, prompt: str) -> str:
+    result = openai_client().chat.completions.create(
         model=model,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.15,
@@ -92,24 +108,39 @@ def call_model(model: str, prompt: str) -> str:
     return result.choices[0].message.content or "{}"
 
 
-def build_prompt(agent: str) -> str:
+def call_markdown_model(model: str, prompt: str) -> str:
+    result = openai_client().chat.completions.create(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.2,
+    )
+    return (result.choices[0].message.content or "").strip()
+
+
+def build_structured_prompt(agent: str) -> str:
     schema = {
         "summary": "Short description of action taken",
         "files": [{"path": "relative/path.md", "mode": "append|overwrite", "content": "Markdown or code"}],
         "memory_update": "Optional concise MEMORY.md replacement or empty string",
     }
-    target = f"content/issues/{issue_id()}.md"
     hints = {
-        "scout": "Write a high-signal raw intel synthesis. Rank promising angles and identify one strong Tool of the Week candidate.",
+        "scout": "Write a high-signal raw intel synthesis. Rank promising operator-first angles and identify one strong Tool of the Week candidate.",
         "analyst": "Write a strong editorial brief with thesis, why now, section plan, CTA direction, and distribution angles.",
-        "author": f"Write a complete newsletter issue of at least 600 words. Write it to {target}.",
-        "editor": f"Edit the complete draft at {target}. Preserve every required section and write the final Markdown back to {target}.",
     }
     return SYSTEMS[agent] + "\n\nReturn only one valid JSON object matching this schema:\n" + json.dumps(schema, indent=2) + f"\n\nTask:\n{hints[agent]}\n\nContext:\n{context(agent)}"
 
 
+def build_markdown_prompt(agent: str) -> str:
+    target = f"content/issues/{issue_id()}.md"
+    if agent == "author":
+        task = f"Write the full final newsletter issue as Markdown for {target}. Return ONLY Markdown. Do not wrap it in JSON. Do not include file paths, notes, explanations, or code fences around the whole article."
+    else:
+        task = f"Edit the existing draft for {target}. Return ONLY the complete final Markdown issue. Do not wrap it in JSON. Do not include notes, explanations, or file-operation text."
+    return SYSTEMS[agent] + f"\n\nTask:\n{task}\n\nContext:\n{context(agent)}"
+
+
 def output_path(agent: str, proposed: str) -> Path:
-    if agent in {"author", "editor"}:
+    if agent in MARKDOWN_AGENTS:
         return issue_file()
     rel = proposed.strip().replace("\\", "/")
     if not rel:
@@ -121,7 +152,7 @@ def output_path(agent: str, proposed: str) -> Path:
     return (WORKSPACE / path).resolve()
 
 
-def apply(agent: str, result: dict[str, Any]) -> int:
+def apply_structured(agent: str, result: dict[str, Any]) -> int:
     count = 0
     for item in result.get("files", []):
         path = output_path(agent, str(item.get("path", "")))
@@ -137,15 +168,44 @@ def apply(agent: str, result: dict[str, Any]) -> int:
     return count
 
 
+def clean_markdown(text: str) -> str:
+    cleaned = text.strip()
+    if cleaned.startswith("```markdown"):
+        cleaned = cleaned[len("```markdown"):].strip()
+    elif cleaned.startswith("```"):
+        cleaned = cleaned[3:].strip()
+    if cleaned.endswith("```"):
+        cleaned = cleaned[:-3].strip()
+    return cleaned + "\n"
+
+
+def validate_markdown(agent: str, text: str) -> None:
+    if not text.strip().startswith("# "):
+        raise ValueError(f"{agent} did not return a Markdown issue title")
+    missing = [section for section in REQUIRED_SECTIONS if section not in text]
+    if missing:
+        raise ValueError(f"{agent} Markdown missing required sections: {', '.join(missing)}")
+    if len(text.split()) < 500:
+        raise ValueError(f"{agent} Markdown too short: {len(text.split())} words")
+
+
 def run(agent: str) -> int:
     start = time.time()
     model = choose_model(agent)
     progress(f"[{agent}] Starting with {model} (issue={issue_id()})")
     try:
-        raw = call_model(model, build_prompt(agent))
-        parsed = json.loads(raw)
-        count = apply(agent, parsed)
-        progress(f"{agent}: {parsed.get('summary', 'Done')} (files={count}, duration={time.time() - start:.2f}s)")
+        if agent in MARKDOWN_AGENTS:
+            markdown = clean_markdown(call_markdown_model(model, build_markdown_prompt(agent)))
+            validate_markdown(agent, markdown)
+            write_text(issue_file(), markdown)
+            count = 1
+            summary = f"Wrote Markdown issue to content/issues/{issue_id()}.md"
+        else:
+            raw = call_structured_model(model, build_structured_prompt(agent))
+            parsed = json.loads(raw)
+            count = apply_structured(agent, parsed)
+            summary = str(parsed.get("summary", "Done"))
+        progress(f"{agent}: {summary} (files={count}, duration={time.time() - start:.2f}s)")
         return 0
     except Exception as exc:
         error(agent, f"{type(exc).__name__}: {exc}")
