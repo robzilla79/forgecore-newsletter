@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Quality gate: validate the current slot-specific issue before it ships."""
+"""Quality gate: validate the current slot-specific issue before it ships.
+
+Hard structural failures still block publishing. Critic-only failures are warnings
+when ALLOW_FALLBACK_PUBLISH=1 so AM/PM slots are not skipped for merely weak copy.
+"""
 from __future__ import annotations
 
 import json
@@ -16,6 +20,7 @@ REQUIRED_CTA_URL = "https://forgecore-newsletter.beehiiv.com/"
 REQUIRED_SPONSOR_EMAIL = "sponsors@forgecore.co"
 MIN_CRITIC_OVERALL = float(os.getenv("MIN_CRITIC_OVERALL", "6.5"))
 REQUIRE_CRITIC_REVIEW = os.getenv("REQUIRE_CRITIC_REVIEW", "1") == "1"
+ALLOW_FALLBACK_PUBLISH = os.getenv("ALLOW_FALLBACK_PUBLISH", "1") == "1"
 RUN_TOKEN = os.getenv("RUN_TOKEN", "").strip()
 
 LEAKED_PHRASE_PATTERNS = [
@@ -80,8 +85,9 @@ def load_issue_critic(issue_path: Path, *, run_token: str = "") -> tuple[dict | 
     return data, candidate.as_posix()
 
 
-def collect_errors(text: str, critic: dict | None, critic_expected_path: str | None) -> list[str]:
+def collect_errors_and_warnings(text: str, critic: dict | None, critic_expected_path: str | None) -> tuple[list[str], list[str]]:
     errors: list[str] = []
+    warnings: list[str] = []
 
     for header in REQUIRED_SECTIONS:
         if header not in text:
@@ -152,21 +158,27 @@ def collect_errors(text: str, critic: dict | None, critic_expected_path: str | N
         if len(source_lines) < MIN_SOURCE_LINKS:
             errors.append(f"Sources section is too short: {len(source_lines)} entries")
 
+    def critic_problem(message: str) -> None:
+        if ALLOW_FALLBACK_PUBLISH:
+            warnings.append(message)
+        else:
+            errors.append(message)
+
     if REQUIRE_CRITIC_REVIEW and critic is None:
-        errors.append(f"Critic review missing for current issue: expected {critic_expected_path}")
+        critic_problem(f"Critic review missing for current issue: expected {critic_expected_path}")
 
     if critic:
         overall = float(critic.get("overall_score", 0.0) or 0.0)
         if overall < MIN_CRITIC_OVERALL:
-            errors.append(f"Critic overall score too low: {overall:.2f} < {MIN_CRITIC_OVERALL:.2f}")
+            critic_problem(f"Critic overall score too low: {overall:.2f} < {MIN_CRITIC_OVERALL:.2f}")
         weak_categories = critic.get("weak_categories", [])
         if weak_categories:
-            errors.append("Critic flagged weak categories: " + ", ".join(weak_categories))
+            critic_problem("Critic flagged weak categories: " + ", ".join(weak_categories))
         verdict = str(critic.get("verdict", "")).strip().lower()
         if verdict == "reject":
-            errors.append("Critic verdict is reject")
+            critic_problem("Critic verdict is reject")
 
-    return errors
+    return errors, warnings
 
 
 def main() -> int:
@@ -182,7 +194,7 @@ def main() -> int:
     missing = find_matching_patterns(text, MISSING_CONTENT_PATTERNS)
     dupes = find_duplicate_paragraphs(text)
     critic, critic_path = load_issue_critic(path, run_token=RUN_TOKEN)
-    errors = collect_errors(text, critic, critic_path)
+    errors, warnings = collect_errors_and_warnings(text, critic, critic_path)
     if contract_error:
         errors.append(f"Issue contract failed before gate: {contract_error}")
         if "placeholder/meta upstream content blocked" in contract_error.lower():
@@ -202,9 +214,16 @@ def main() -> int:
         "critic_expected_path": critic_path,
         "critic_review": critic or {},
         "errors": errors,
+        "warnings": warnings,
         "contract_error": contract_error,
+        "fallback_publish_enabled": ALLOW_FALLBACK_PUBLISH,
     }
-    result = {"passed": not errors, "checks": checks, "issue": path.as_posix()}
+    result = {
+        "passed": not errors,
+        "fallback_published": bool(warnings and not errors),
+        "checks": checks,
+        "issue": path.as_posix(),
+    }
     suffix = artifact_suffix_for_issue(path)
     out_path = WORKSPACE / "state" / f"quality-gate-{suffix}.json"
     result["run_token"] = RUN_TOKEN
