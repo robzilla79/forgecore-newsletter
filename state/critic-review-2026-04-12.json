@@ -28,25 +28,25 @@
   ],
   "strengths": [
     "Some specific performance metrics provided",
-    "Clear structure in sections"
+    "Clear structure in the top story"
   ],
   "weaknesses": [
-    "Lack of concrete content in the hook and many sections",
-    "Inadequate actionable insights",
-    "Repetitive mentions of missing content"
+    "Lack of concrete content in the hook and analyst updates",
+    "Incomplete research topics with no actionable insights",
+    "Generic summaries without unique angles"
   ],
   "must_fix": [
-    "Provide concrete content in the hook and missing sections",
-    "Add actionable insights and examples in research topics",
-    "Eliminate repetitive statements about missing content"
+    "Provide a concrete hook to engage readers",
+    "Complete the research topics with specific examples and actionable insights",
+    "Enhance the analyst updates with relevant data or insights"
   ],
   "rewrite_plan": [
-    "Rewrite the hook to include a compelling insight or question",
-    "Fill in missing details for each research topic with examples and actionable insights",
-    "Remove repetitive mentions of incomplete content and replace with actionable recommendations"
+    "Rewrite the hook to include a compelling question or statement",
+    "Fill in the gaps in research topics with detailed examples and actionable insights",
+    "Revise the analyst updates to provide concrete contributions"
   ],
   "summary": "The issue lacks depth and actionable insights, making it unfit for publication.",
   "verdict": "reject",
-  "run_token": "pass-3-1777563049573708898",
+  "run_token": "pass-4-1777568672633299565",
   "artifact_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/critic-review-2026-04-12.json"
 }
