@@ -155,13 +155,15 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy site/dist --project-name=forgecore-newsletter --commit-dirty=true --branch=main
 
-      - name: Dump errors.log on failure
+      - name: Dump recent logs on failure
         if: failure()
         run: |
-          echo "=== state/errors.log ==="
-          cat state/errors.log 2>/dev/null || echo "(no errors.log found)"
-          echo "=== state/progress-log.md ==="
-          cat state/progress-log.md 2>/dev/null || echo "(no progress-log.md found)"
+          echo "=== recent state/errors.log ==="
+          tail -n 80 state/errors.log 2>/dev/null || echo "(no errors.log found)"
+          echo "=== recent state/progress-log.md ==="
+          tail -n 80 state/progress-log.md 2>/dev/null || echo "(no progress-log.md found)"
+          echo "=== recent state/improvement-log.md ==="
+          tail -n 80 state/improvement-log.md 2>/dev/null || echo "(no improvement-log.md found)"
 
       - name: Upload progress log as artifact
         if: always()
