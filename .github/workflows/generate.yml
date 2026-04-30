@@ -1,12 +1,18 @@
 name: Generate Newsletter Issue
 
 on:
-  schedule:
-    # 7 AM CDT (12:00 UTC) and 7 PM CDT (00:00 UTC next day)
-    - cron: '0 12 * * *'
-    - cron: '0 0 * * *'
+  workflow_call:
+    inputs:
+      issue_slot:
+        required: false
+        type: string
+        default: ''
   workflow_dispatch:
     inputs:
+      issue_slot:
+        description: 'Issue slot: am or pm. Leave blank for legacy YYYY-MM-DD filename.'
+        required: false
+        default: ''
       force_run:
         description: 'Force run even if recent issue exists'
         required: false
@@ -17,7 +23,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: forgecore-newsletter-main
+  group: forgecore-newsletter-${{ inputs.issue_slot || github.event.inputs.issue_slot || 'manual' }}
   cancel-in-progress: true
 
 jobs:
@@ -25,14 +31,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      # Cost-optimized: gpt-4o-mini for all steps (~$0.01-0.05/run vs $0.50-1.00 with gpt-4o)
+      ISSUE_SLOT: ${{ inputs.issue_slot || github.event.inputs.issue_slot }}
       RESEARCH_MODEL: ${{ secrets.RESEARCH_MODEL || 'gpt-4o-mini' }}
       WRITER_MODEL: ${{ secrets.WRITER_MODEL || 'gpt-4o-mini' }}
       EDITOR_MODEL: ${{ secrets.EDITOR_MODEL || 'gpt-4o-mini' }}
       CRITIC_MODEL: ${{ secrets.CRITIC_MODEL || 'gpt-4o-mini' }}
       FALLBACK_MODEL: ${{ secrets.FALLBACK_MODEL || 'gpt-4o-mini' }}
-      # Critic thresholds — calibrated for gpt-4o-mini generated content.
-      # 8.0 was designed for human-written journalism; 6.5 is realistic for AI-assisted drafts.
       MIN_CRITIC_OVERALL: '6.5'
       MIN_CRITIC_CATEGORY: '6.0'
       SITE_DOMAIN: news.forgecore.co
@@ -54,7 +58,7 @@ jobs:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       KIT_API_KEY: ${{ secrets.KIT_API_KEY }}
       KIT_FORM_ID: ${{ secrets.KIT_FORM_ID }}
-      KIT_SEND_MODE: 'public'
+      KIT_SEND_MODE: 'draft'
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -85,43 +89,35 @@ jobs:
 
       - name: Run scout agent
         run: python agent_loop.py scout
-        continue-on-error: true
+        continue-on-error: false
 
       - name: Run analyst agent
         run: python agent_loop.py analyst
-        continue-on-error: true
+        continue-on-error: false
 
       - name: Run author agent
         run: python agent_loop.py author
-        continue-on-error: true
+        continue-on-error: false
 
       - name: Run editor agent
         run: python agent_loop.py editor
-        continue-on-error: true
+        continue-on-error: false
 
-      - name: Improve issue until quality gate passes (max 5 passes)
+      - name: Improve issue until quality gate passes
         run: python improve_until_passes.py
 
-      - name: Run quality gate (final check)
+      - name: Run quality gate
         run: python quality_gate.py
-        continue-on-error: false
 
-      - name: Publish site (render HTML)
-        if: success()
+      - name: Publish site
         run: python publish_site.py
-        continue-on-error: false
-
-      - name: Publish to Kit (auto-send to subscribers)
-        if: success()
-        run: python kit_publish.py
-        continue-on-error: true
 
       - name: Write CI HEARTBEAT
         if: always()
         run: |
           TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
-          printf '# Last Run Status: %s\n- Origin: GitHub Actions (%s)\n- Run ID: %s\n- Runner: ubuntu-latest\n- Models: research=%s, writer=%s, editor=%s, fallback=%s\n' \
-            "$TIMESTAMP" "${{ github.workflow }}" "${{ github.run_id }}" \
+          printf '# Last Run Status: %s\n- Origin: GitHub Actions (%s)\n- Run ID: %s\n- Issue slot: %s\n- Models: research=%s, writer=%s, editor=%s, fallback=%s\n' \
+            "$TIMESTAMP" "${{ github.workflow }}" "${{ github.run_id }}" "${ISSUE_SLOT:-default}" \
             "${RESEARCH_MODEL:-gpt-4o-mini}" "${WRITER_MODEL:-gpt-4o-mini}" \
             "${EDITOR_MODEL:-gpt-4o-mini}" "${FALLBACK_MODEL:-gpt-4o-mini}" \
             > HEARTBEAT.md
@@ -138,22 +134,8 @@ jobs:
             echo "Nothing to commit"
           else
             TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M UTC')
-            git commit -m "auto: newsletter issue $TIMESTAMP [bot]"
+            git commit -m "auto: ${ISSUE_SLOT:-manual} newsletter issue $TIMESTAMP [bot]"
             git push
-          fi
-
-      - name: Commit HEARTBEAT on failure
-        if: failure()
-        run: |
-          git config user.name "ForgeCore AI Bot"
-          git config user.email "bot@forgecore.co"
-          git pull --rebase origin main || true
-          git add HEARTBEAT.md state/errors.log state/progress-log.md state/improvement-log.md 2>/dev/null || true
-          if git diff --staged --quiet; then
-            echo "Failure logs unchanged"
-          else
-            git commit -m "heartbeat: generate run ${{ github.run_id }} (failed) [bot]"
-            git push || echo "Heartbeat push skipped because remote moved"
           fi
 
       - name: Deploy to Cloudflare Pages
