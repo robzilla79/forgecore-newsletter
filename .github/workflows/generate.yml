@@ -59,7 +59,14 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
+          ref: main
           fetch-depth: 0
+
+      - name: Sync to latest main
+        run: |
+          git fetch origin main
+          git checkout main
+          git reset --hard origin/main
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -125,6 +132,7 @@ jobs:
         run: |
           git config user.name "ForgeCore AI Bot"
           git config user.email "bot@forgecore.co"
+          git pull --rebase origin main
           git add content/issues/ research/ state/ site/dist/ HEARTBEAT.md
           if git diff --staged --quiet; then
             echo "Nothing to commit"
@@ -139,12 +147,13 @@ jobs:
         run: |
           git config user.name "ForgeCore AI Bot"
           git config user.email "bot@forgecore.co"
+          git pull --rebase origin main || true
           git add HEARTBEAT.md state/errors.log state/progress-log.md state/improvement-log.md 2>/dev/null || true
           if git diff --staged --quiet; then
             echo "Failure logs unchanged"
           else
             git commit -m "heartbeat: generate run ${{ github.run_id }} (failed) [bot]"
-            git push
+            git push || echo "Heartbeat push skipped because remote moved"
           fi
 
       - name: Deploy to Cloudflare Pages
