@@ -1,0 +1,104 @@
+{
+  "passed": false,
+  "checks": {
+    "exists": true,
+    "issue_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-04-12.md",
+    "word_count": 1452,
+    "required_sections_present": [
+      "## Hook",
+      "## Top Story",
+      "## Why It Matters",
+      "## Highlights",
+      "## Tool of the Week",
+      "## Workflow",
+      "## CTA",
+      "## Sources"
+    ],
+    "url_count": 6,
+    "source_links": [
+      "https://forgecore-newsletter.beehiiv.com/",
+      "https://ollama.com/blog/claude",
+      "https://ollama.com/blog/image-generation",
+      "https://ollama.com/blog/codex",
+      "https://ollama.com/blog/gpt-oss-safeguard",
+      "https://ollama.com/blog/mlx"
+    ],
+    "has_code_block": true,
+    "leaked_phrases": [],
+    "placeholder_language": [
+      "\\bmissing content\\b",
+      "\\bno concrete content returned\\b",
+      "\\bdescription incomplete in provided content\\b"
+    ],
+    "duplicate_paragraphs": [],
+    "critic_expected_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/critic-review-2026-04-12.json",
+    "critic_review": {
+      "passed": false,
+      "issue": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-04-12.md",
+      "model": "gpt-4o-mini",
+      "fallback_model": "gpt-4o-mini",
+      "overall_score": 3.0,
+      "min_overall_required": 6.5,
+      "min_category_required": 6.0,
+      "scores": {
+        "headline_strength": 4.0,
+        "hook_strength": 0.0,
+        "specificity": 2.0,
+        "originality": 3.0,
+        "readability": 5.0,
+        "tone": 4.0,
+        "utility": 2.0,
+        "non_repetition": 5.0
+      },
+      "weak_categories": [
+        "headline_strength",
+        "hook_strength",
+        "specificity",
+        "originality",
+        "readability",
+        "tone",
+        "utility",
+        "non_repetition"
+      ],
+      "strengths": [
+        "Some specific performance metrics provided",
+        "Clear structure in sections"
+      ],
+      "weaknesses": [
+        "Lack of concrete content in the hook and many sections",
+        "Inadequate actionable insights",
+        "Repetitive mentions of missing content"
+      ],
+      "must_fix": [
+        "Provide concrete content in the hook and missing sections",
+        "Add actionable insights and examples in research topics",
+        "Eliminate repetitive statements about missing content"
+      ],
+      "rewrite_plan": [
+        "Rewrite the hook to include a compelling insight or question",
+        "Fill in missing details for each research topic with examples and actionable insights",
+        "Remove repetitive mentions of incomplete content and replace with actionable recommendations"
+      ],
+      "summary": "The issue lacks depth and actionable insights, making it unfit for publication.",
+      "verdict": "reject",
+      "run_token": "pass-3-1777563049573708898",
+      "artifact_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/critic-review-2026-04-12.json"
+    },
+    "errors": [
+      "Placeholder language found (normalized-placeholder risk): \\bmissing content\\b",
+      "Placeholder language found (normalized-placeholder risk): \\bno concrete content returned\\b",
+      "Placeholder language found (normalized-placeholder risk): \\bdescription incomplete in provided content\\b",
+      "Hook section is missing or too short (need 12+ words)",
+      "Critic overall score too low: 3.00 < 6.50",
+      "Critic flagged weak categories: headline_strength, hook_strength, specificity, originality, readability, tone, utility, non_repetition",
+      "Critic must-fix items remain: Provide concrete content in the hook and missing sections; Add actionable insights and examples in research topics; Eliminate repetitive statements about missing content",
+      "Critic verdict is reject",
+      "Issue contract failed before gate: Placeholder/meta upstream content blocked by issue contract: \\bno concrete content returned\\b, \\bmissing content\\b, \\bdescription incomplete in provided content\\b",
+      "Placeholder/meta language was present upstream and blocked before normalization."
+    ],
+    "contract_error": "Placeholder/meta upstream content blocked by issue contract: \\bno concrete content returned\\b, \\bmissing content\\b, \\bdescription incomplete in provided content\\b"
+  },
+  "issue": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-04-12.md",
+  "run_token": "pass-3-1777563049573708898",
+  "artifact_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/quality-gate-2026-04-12.json"
+}

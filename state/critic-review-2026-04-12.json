@@ -1,0 +1,52 @@
+{
+  "passed": false,
+  "issue": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-04-12.md",
+  "model": "gpt-4o-mini",
+  "fallback_model": "gpt-4o-mini",
+  "overall_score": 3.0,
+  "min_overall_required": 6.5,
+  "min_category_required": 6.0,
+  "scores": {
+    "headline_strength": 4.0,
+    "hook_strength": 0.0,
+    "specificity": 2.0,
+    "originality": 3.0,
+    "readability": 5.0,
+    "tone": 4.0,
+    "utility": 2.0,
+    "non_repetition": 5.0
+  },
+  "weak_categories": [
+    "headline_strength",
+    "hook_strength",
+    "specificity",
+    "originality",
+    "readability",
+    "tone",
+    "utility",
+    "non_repetition"
+  ],
+  "strengths": [
+    "Some specific performance metrics provided",
+    "Clear structure in sections"
+  ],
+  "weaknesses": [
+    "Lack of concrete content in the hook and many sections",
+    "Inadequate actionable insights",
+    "Repetitive mentions of missing content"
+  ],
+  "must_fix": [
+    "Provide concrete content in the hook and missing sections",
+    "Add actionable insights and examples in research topics",
+    "Eliminate repetitive statements about missing content"
+  ],
+  "rewrite_plan": [
+    "Rewrite the hook to include a compelling insight or question",
+    "Fill in missing details for each research topic with examples and actionable insights",
+    "Remove repetitive mentions of incomplete content and replace with actionable recommendations"
+  ],
+  "summary": "The issue lacks depth and actionable insights, making it unfit for publication.",
+  "verdict": "reject",
+  "run_token": "pass-3-1777563049573708898",
+  "artifact_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/critic-review-2026-04-12.json"
+}
