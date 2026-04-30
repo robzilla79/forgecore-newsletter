@@ -1,0 +1,21 @@
+name: Generate AM Newsletter Issue
+
+on:
+  schedule:
+    - cron: '0 12 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: forgecore-newsletter-am
+  cancel-in-progress: true
+
+jobs:
+  generate-am:
+    uses: ./.github/workflows/generate.yml
+    secrets: inherit
+    with:
+      issue_slot: am
