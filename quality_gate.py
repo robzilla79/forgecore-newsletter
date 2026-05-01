@@ -164,23 +164,31 @@ def collect_errors_and_warnings(text: str, critic: dict | None, critic_expected_
         if len(source_lines) < MIN_SOURCE_LINKS:
             errors.append(f"Sources section is too short: {len(source_lines)} entries")
 
-    def critic_problem(message: str) -> None:
-        if ALLOW_FALLBACK_PUBLISH:
-            warnings.append(message)
-        else:
+    def critic_problem(message: str, *, hard: bool = False) -> None:
+        if hard or not ALLOW_FALLBACK_PUBLISH:
             errors.append(message)
+        else:
+            warnings.append(message)
 
     if REQUIRE_CRITIC_REVIEW and critic is None:
         critic_problem(f"Critic review missing for current issue: expected {critic_expected_path}")
 
     if critic:
         runtime_error = str(critic.get("runtime_error", "")).strip()
-        if runtime_error:
-            errors.append(f"Critic runtime failure: {runtime_error}")
+        weak_categories = critic.get("weak_categories", [])
+        if not isinstance(weak_categories, list):
+            weak_categories = []
+        runtime_failed = bool(runtime_error) or "critic_runtime_failure" in weak_categories
+        if runtime_failed:
+            critic_problem(
+                "Critic runtime failure; publish blocked until critic_review.py runs cleanly.",
+                hard=True,
+            )
+            if runtime_error:
+                errors.append(f"Critic runtime failure detail: {runtime_error}")
         overall = float(critic.get("overall_score", 0.0) or 0.0)
         if overall < MIN_CRITIC_OVERALL:
             critic_problem(f"Critic overall score too low: {overall:.2f} < {MIN_CRITIC_OVERALL:.2f}")
-        weak_categories = critic.get("weak_categories", [])
         if weak_categories:
             critic_problem("Critic flagged weak categories: " + ", ".join(weak_categories))
         verdict = str(critic.get("verdict", "")).strip().lower()
