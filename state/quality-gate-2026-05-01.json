@@ -48,8 +48,8 @@
         "originality": 2.0,
         "readability": 4.0,
         "tone": 3.0,
-        "utility": 2.0,
-        "non_repetition": 4.0
+        "utility": 3.0,
+        "non_repetition": 3.0
       },
       "weak_categories": [
         "headline_strength",
@@ -62,26 +62,26 @@
         "non_repetition"
       ],
       "strengths": [
-        "Some technical details about Ollama's updates."
+        "Some sections provide useful updates on Ollama's features."
       ],
       "weaknesses": [
-        "No actionable insights or concrete workflows.",
-        "Incomplete sections and missing content.",
-        "Generic and vague hook."
+        "No concrete content in the hook.",
+        "Incomplete sections with missing details.",
+        "Lack of actionable insights for solo operators."
       ],
       "must_fix": [
-        "Provide a clear hook with actionable content.",
-        "Complete the missing sections with specific examples and metrics.",
-        "Focus on a specific operator persona and their job-to-be-done."
+        "Provide a concrete hook with actionable insights.",
+        "Complete the missing content in research topics and updates.",
+        "Ensure all sections have specific, measurable outcomes for solo operators."
       ],
       "rewrite_plan": [
-        "Rewrite the hook to include a specific, actionable insight.",
-        "Fill in the gaps in the research topics with concrete examples and metrics.",
-        "Clarify the workflow section with a specific operator persona in mind."
+        "Develop a strong hook that outlines a specific workflow for solo operators.",
+        "Fill in the gaps in the research topics with actionable insights and examples.",
+        "Revise the overall structure to ensure clarity and focus on operator outcomes."
       ],
       "summary": "The issue lacks concrete content and actionable insights, making it unfit for publication.",
       "verdict": "reject",
-      "run_token": "pass-4-1777619831782832359",
+      "run_token": "pass-4-1777626916462085422",
       "artifact_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/critic-review-2026-05-01.json"
     },
     "errors": [
@@ -100,6 +100,6 @@
     "fallback_publish_enabled": true
   },
   "issue": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-01.md",
-  "run_token": "pass-4-1777619831782832359",
+  "run_token": "pass-4-1777626916462085422",
   "artifact_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/quality-gate-2026-05-01.json"
 }
