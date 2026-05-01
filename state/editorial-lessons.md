@@ -132,3 +132,75 @@
   - Placeholder language found (normalized-placeholder risk): \bno concrete content returned\b
 - Rules for future issues:
   - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
+
+
+---
+
+## 2026-05-01 16:15:43 UTC — /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-01.md
+- Improvement result: changed (rewritten issue saved)
+- Critic score: 0.0 | verdict: reject
+- Weaknesses found:
+  - Resolve critic runtime/model failure before publish.
+  - Re-run critic_review.py after fixing model and path handling.
+  - critic_review runtime failure: ValueError
+  - critic_runtime_failure
+  - Placeholder language found (normalized-placeholder risk): \bmissing content\b
+  - Placeholder language found (normalized-placeholder risk): \bno concrete content returned\b
+- Rules for future issues:
+  - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
+  - When placeholder text appears, rewrite the whole issue from scratch; never edit around it.
+
+
+---
+
+## 2026-05-01 16:16:04 UTC — /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-01.md
+- Improvement result: changed (rewritten issue saved)
+- Critic score: 10.0 | verdict: reject
+- Weaknesses found:
+  - Provide a concrete hook with actionable insights.
+  - Complete the research topics with specific case studies and metrics.
+  - Clarify the job-to-be-done for solo operators.
+  - Rewrite the hook to include a specific operator persona and actionable insights.
+  - Complete the missing sections with detailed examples and metrics.
+  - Ensure all recommendations are actionable and relevant for immediate implementation.
+- Rules for future issues:
+  - Start the Hook with the operator outcome or decision, not a product announcement.
+  - Name the exact operator persona, job-to-be-done, tool stack, and tradeoff.
+  - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
+
+
+---
+
+## 2026-05-01 16:16:24 UTC — /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-01.md
+- Improvement result: changed (rewritten issue saved)
+- Critic score: 10.0 | verdict: reject
+- Weaknesses found:
+  - Add concrete content to the hook.
+  - Provide actionable insights and workflows for solo operators.
+  - Complete the research topics with specific examples and metrics.
+  - Revise the hook to include a compelling and actionable introduction.
+  - Fill in the gaps in research topics with concrete examples and outcomes.
+  - Enhance the utility by providing clear implementation steps for solo operators.
+- Rules for future issues:
+  - Start the Hook with the operator outcome or decision, not a product announcement.
+  - Turn vague advice into 3-6 named steps plus one prompt, checklist, config, or command block.
+  - Name the exact operator persona, job-to-be-done, tool stack, and tradeoff.
+  - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
+
+
+---
+
+## 2026-05-01 16:16:44 UTC — /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-01.md
+- Improvement result: changed (rewritten issue saved)
+- Critic score: 10.0 | verdict: reject
+- Weaknesses found:
+  - Add specific use cases for solo operators.
+  - Provide measurable outcomes and implementation steps.
+  - Complete the missing content in research topics.
+  - Define a specific operator persona.
+  - Create a clear job-to-be-done for the updates.
+  - Fill in missing content with actionable insights.
+- Rules for future issues:
+  - Name the exact operator persona, job-to-be-done, tool stack, and tradeoff.
+  - Turn vague advice into 3-6 named steps plus one prompt, checklist, config, or command block.
+  - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
