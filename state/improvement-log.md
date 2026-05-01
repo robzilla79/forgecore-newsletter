@@ -509,3 +509,43 @@
 ---
 
 [2026-05-01 14:11:21 UTC] Improved /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-01.md: rewritten issue saved
+
+
+---
+
+[2026-05-01 15:17:04 UTC] Improving /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-01.md using targeted critic/gate guidance ...
+
+
+---
+
+[2026-05-01 15:17:18 UTC] Improved /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-01.md: rewritten issue saved
+
+
+---
+
+[2026-05-01 15:17:24 UTC] Improving /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-01.md using targeted critic/gate guidance ...
+
+
+---
+
+[2026-05-01 15:17:39 UTC] Improved /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-01.md: rewritten issue saved
+
+
+---
+
+[2026-05-01 15:17:44 UTC] Improving /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-01.md using targeted critic/gate guidance ...
+
+
+---
+
+[2026-05-01 15:17:55 UTC] No improvement applied to /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-01.md: invalid improved markdown: too short: 499 words
+
+
+---
+
+[2026-05-01 15:17:56 UTC] Improving /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-01.md using targeted critic/gate guidance ...
+
+
+---
+
+[2026-05-01 15:18:11 UTC] Improved /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-01.md: rewritten issue saved
