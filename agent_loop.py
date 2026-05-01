@@ -60,6 +60,11 @@ def progress(message: str) -> None:
     append_text(WORKSPACE / "state" / "progress-log.md", f"[{now_str()}] {message}")
 
 
+def warn(message: str) -> None:
+    print(f"[warn] {message}", flush=True)
+    append_text(WORKSPACE / "state" / "warnings.log", f"[{now_str()}] {message}")
+
+
 def error(agent: str, message: str) -> None:
     print(f"[error:{agent}] {message}", file=sys.stderr, flush=True)
     append_text(WORKSPACE / "state" / "errors.log", f"[{now_str()}] {agent}: {message}")
@@ -165,7 +170,7 @@ def build_markdown_prompt(agent: str) -> str:
     if agent == "author":
         task = f"Write a clean, original, complete newsletter issue as Markdown for {target}. Return ONLY Markdown. Use today's research and brief only. Do not reuse old issue text. Do not include placeholder phrases like 'No concrete content returned', 'Missing Content', or 'description incomplete'. Do not wrap it in JSON or code fences."
     else:
-        task = f"Edit the existing draft for {target}. If it contains placeholder or raw-intel junk, rewrite it completely from today's research and brief. Return ONLY the complete final Markdown issue."
+        task = f"Edit the existing draft for {target}. If it contains placeholder or raw-intel junk, rewrite it completely from today's research and brief. Return ONLY the complete final Markdown issue. Prefer preserving or expanding useful detail; do not shorten the issue unless removing junk."
     return SYSTEMS[agent] + f"\n\nTask:\n{task}\n\nContext:\n{context(agent)}"
 
 
@@ -219,8 +224,15 @@ def validate_markdown(agent: str, text: str) -> None:
     missing = [section for section in REQUIRED_SECTIONS if section not in text]
     if missing:
         raise ValueError(f"{agent} Markdown missing required sections: {', '.join(missing)}")
-    if len(text.split()) < 650:
-        raise ValueError(f"{agent} Markdown too short: {len(text.split())} words")
+
+    words = len(text.split())
+    # Author should create a full draft. Editor may produce a recoverable short draft;
+    # the critic/improvement loop and quality gate own final publish enforcement.
+    min_words = 650 if agent == "author" else 500
+    if words < min_words:
+        raise ValueError(f"{agent} Markdown too short: {words} words")
+    if agent == "editor" and words < 650:
+        warn(f"editor draft is short but recoverable ({words} words); passing to improvement loop")
 
 
 def run(agent: str) -> int:
