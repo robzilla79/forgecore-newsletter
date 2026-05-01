@@ -30,6 +30,7 @@ MAX_TARGETED_REWRITE_ITEMS = int(os.getenv("MAX_TARGETED_REWRITE_ITEMS", "6"))
 
 STATE_DIR = WORKSPACE / "state"
 IMPROVE_LOG = STATE_DIR / "improvement-log.md"
+EDITORIAL_LESSONS = STATE_DIR / "editorial-lessons.md"
 
 
 def log(message: str) -> None:
@@ -92,6 +93,54 @@ def extract_critic_items(critic: dict[str, Any] | None) -> list[str]:
     return items[:MAX_TARGETED_REWRITE_ITEMS]
 
 
+def lesson_rule_from_item(item: str) -> str:
+    lower = item.lower()
+    if "hook" in lower:
+        return "Start the Hook with the operator outcome or decision, not a product announcement."
+    if "headline" in lower or "title" in lower:
+        return "Make the headline name the workflow, operator, tool choice, or measurable outcome."
+    if "workflow" in lower or "step" in lower:
+        return "Turn vague advice into 3-6 named steps plus one prompt, checklist, config, or command block."
+    if "specific" in lower or "generic" in lower:
+        return "Name the exact operator persona, job-to-be-done, tool stack, and tradeoff."
+    if "source" in lower or "unsupported" in lower:
+        return "Remove unsupported claims or tie them to a real source URL from today's research."
+    if "cta" in lower:
+        return "CTA must tell the reader what to try this week and include subscribe plus sponsor links."
+    if "tradeoff" in lower:
+        return "Include practical tradeoffs: cost, speed, privacy, quality, maintenance, or learning curve."
+    return "Convert weak prose into a concrete operator decision, workflow, or tool tradeoff."
+
+
+def persist_editorial_lessons(issue_path: Path, critic: dict[str, Any] | None, gate: dict[str, Any] | None, changed: bool, reason: str) -> None:
+    critic_items = extract_critic_items(critic)
+    gate_errors = extract_gate_errors(gate)
+    gate_warnings = extract_gate_warnings(gate)
+    priorities = (critic_items + gate_errors + gate_warnings)[:MAX_TARGETED_REWRITE_ITEMS]
+    if not priorities and not changed:
+        return
+    lines = [
+        f"## {now_str()} — {issue_path.as_posix()}",
+        f"- Improvement result: {'changed' if changed else 'unchanged'} ({reason})",
+    ]
+    if critic:
+        lines.append(f"- Critic score: {critic.get('overall_score', 'unknown')} | verdict: {critic.get('verdict', 'unknown')}")
+    if priorities:
+        lines.append("- Weaknesses found:")
+        for item in priorities:
+            lines.append(f"  - {item}")
+        lines.append("- Rules for future issues:")
+        seen_rules: set[str] = set()
+        for item in priorities:
+            rule = lesson_rule_from_item(item)
+            if rule not in seen_rules:
+                seen_rules.add(rule)
+                lines.append(f"  - {rule}")
+    else:
+        lines.append("- Rule for future issues: Preserve the structure that passed and keep the workflow specific.")
+    append_text(EDITORIAL_LESSONS, "\n".join(lines))
+
+
 def call_editor(prompt: str) -> str:
     client = OpenAI()
     result = client.chat.completions.create(
@@ -122,6 +171,7 @@ def build_prompt(issue_path: Path, issue_text: str, critic: dict[str, Any] | Non
         priorities = ["Improve headline, hook, specificity, operator usefulness, and workflow clarity."]
 
     priority_block = "\n".join(f"- {item}" for item in priorities[:MAX_TARGETED_REWRITE_ITEMS])
+    lessons = load_text(EDITORIAL_LESSONS)[-5000:]
     return (
         EDITOR_SYSTEM
         + "\n\n# TARGETED IMPROVEMENT TASK\n"
@@ -129,6 +179,8 @@ def build_prompt(issue_path: Path, issue_text: str, critic: dict[str, Any] | Non
         + "Return ONLY the complete final Markdown issue. Do not wrap it in JSON. Do not include notes.\n\n"
         + "## Must-fix priorities\n"
         + priority_block
+        + "\n\n## Recent editorial lessons to apply\n"
+        + (lessons or "No prior lessons yet.")
         + "\n\n## Current issue\n"
         + issue_text[:MAX_CONTEXT_CHARS]
     )
@@ -157,13 +209,17 @@ def improve_issue(issue_path: Path) -> tuple[bool, str]:
         improved = clean_markdown(raw)
         ok, reason = structurally_valid(improved)
         if not ok:
+            persist_editorial_lessons(issue_path, critic, gate, False, f"invalid improved markdown: {reason}")
             return False, f"invalid improved markdown: {reason}"
         if improved.strip() == original.strip():
+            persist_editorial_lessons(issue_path, critic, gate, False, "rewrite is identical")
             return False, "rewrite is identical"
         write_text(issue_path, improved)
+        persist_editorial_lessons(issue_path, critic, gate, True, "rewritten issue saved")
         return True, "rewritten issue saved"
     except Exception as exc:
         err(f"{type(exc).__name__}: {exc}")
+        persist_editorial_lessons(issue_path, critic, gate, False, f"{type(exc).__name__}: {exc}")
         return False, f"{type(exc).__name__}: {exc}"
 
 
