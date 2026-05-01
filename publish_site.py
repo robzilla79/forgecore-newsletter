@@ -50,7 +50,20 @@ BAD_MARKERS = (
 def list_issue_files() -> list[Path]:
     if not CONTENT_DIR.exists():
         return []
-    return sorted(CONTENT_DIR.glob("*.md"), key=lambda p: p.name, reverse=True)
+    return sorted(CONTENT_DIR.glob("*.md"), key=issue_sort_key, reverse=True)
+
+
+def issue_sort_key(path: Path) -> tuple[str, int, str]:
+    stem = path.stem.lower()
+    match = re.search(r"(\d{4}-\d{2}-\d{2})", stem)
+    date_key = match.group(1) if match else "0000-00-00"
+    if stem.endswith("-pm"):
+        slot_rank = 2
+    elif stem.endswith("-am"):
+        slot_rank = 1
+    else:
+        slot_rank = 0
+    return (date_key, slot_rank, path.name)
 
 
 def title_from_markdown(text: str, fallback: str) -> str:
