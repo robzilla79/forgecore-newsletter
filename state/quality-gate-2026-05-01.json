@@ -42,14 +42,14 @@
       "min_overall_required": 6.5,
       "min_category_required": 6.0,
       "scores": {
-        "headline_strength": 5.0,
-        "hook_strength": 0.0,
-        "specificity": 5.0,
-        "originality": 5.0,
-        "readability": 5.0,
-        "tone": 5.0,
-        "utility": 0.0,
-        "non_repetition": 0.0
+        "headline_strength": 3.0,
+        "hook_strength": 1.0,
+        "specificity": 2.0,
+        "originality": 2.0,
+        "readability": 4.0,
+        "tone": 3.0,
+        "utility": 2.0,
+        "non_repetition": 1.0
       },
       "weak_categories": [
         "headline_strength",
@@ -62,26 +62,26 @@
         "non_repetition"
       ],
       "strengths": [
-        "Some sections provide useful updates on Ollama's features."
+        "Some sections provide useful information about Ollama's features."
       ],
       "weaknesses": [
         "No concrete content in the hook.",
-        "Lack of actionable insights for solo operators.",
-        "Incomplete research topics and analyst updates."
+        "Incomplete sections with missing details.",
+        "Lack of actionable insights for solo operators."
       ],
       "must_fix": [
-        "Provide a concrete hook that outlines a specific workflow or outcome for solo operators.",
-        "Fill in the gaps in research topics with actionable insights and metrics.",
-        "Ensure all sections are complete and provide value to the reader."
+        "Provide a clear hook with actionable content.",
+        "Complete the missing sections with specific examples and metrics.",
+        "Ensure the issue addresses a specific operator persona and job-to-be-done."
       ],
       "rewrite_plan": [
-        "Rewrite the hook to include a specific workflow or outcome.",
-        "Complete the research topics with actionable insights.",
-        "Add detailed analyst updates with concrete examples."
+        "Revise the hook to include a concrete workflow or actionable insight.",
+        "Fill in the gaps in the research topics with specific case studies and metrics.",
+        "Clarify the utility of each feature for solo operators."
       ],
       "summary": "The issue lacks concrete content and actionable insights, making it unfit for publication.",
       "verdict": "reject",
-      "run_token": "pass-4-1777632510093322174",
+      "run_token": "pass-4-1777636097484085640",
       "artifact_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/critic-review-2026-05-01.json"
     },
     "errors": [
@@ -100,6 +100,6 @@
     "fallback_publish_enabled": true
   },
   "issue": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-01.md",
-  "run_token": "pass-4-1777632510093322174",
+  "run_token": "pass-4-1777636097484085640",
   "artifact_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/quality-gate-2026-05-01.json"
 }
