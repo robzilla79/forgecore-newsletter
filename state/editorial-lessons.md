@@ -269,3 +269,35 @@
   - Critic flagged weak categories: critic_runtime_failure
 - Rules for future issues:
   - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
+
+
+---
+
+## 2026-05-01 19:45:41 UTC — /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-01.md
+- Improvement result: unchanged (rewrite is identical)
+- Critic score: 0.0 | verdict: reject
+- Weaknesses found:
+  - Resolve critic runtime/model failure before publish.
+  - Re-run critic_review.py after fixing model and path handling.
+  - critic_review runtime failure: ValueError
+  - critic_runtime_failure
+  - Critic overall score too low: 0.00 < 6.50
+  - Critic flagged weak categories: critic_runtime_failure
+- Rules for future issues:
+  - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
+
+
+---
+
+## 2026-05-01 19:45:58 UTC — /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-01.md
+- Improvement result: unchanged (rewrite is identical)
+- Critic score: 0.0 | verdict: reject
+- Weaknesses found:
+  - Resolve critic runtime/model failure before publish.
+  - Re-run critic_review.py after fixing model and path handling.
+  - critic_review runtime failure: ValueError
+  - critic_runtime_failure
+  - Critic overall score too low: 0.00 < 6.50
+  - Critic flagged weak categories: critic_runtime_failure
+- Rules for future issues:
+  - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
