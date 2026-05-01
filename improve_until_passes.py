@@ -7,8 +7,8 @@ Runs inside generate.yml after the editor agent. Loops up to MAX_ITERATIONS:
 3. if either fails, runs targeted improvement_loop.py
 
 Important production rule:
-- Critic-only stagnation may unblock publish.
-- Structural quality gate errors must keep improving until they pass or max iterations is reached.
+- Critic and quality gate must both pass before publish.
+- Runtime failures in critic/gate are hard-blocking.
 """
 from __future__ import annotations
 
@@ -20,7 +20,6 @@ import sys
 from pathlib import Path
 
 MAX_ITERATIONS = int(os.getenv("IMPROVE_MAX_ITERATIONS", "5"))
-NO_PROGRESS_LIMIT = int(os.getenv("IMPROVE_NO_PROGRESS_LIMIT", "2"))
 STATE_DIR = Path("state")
 
 
@@ -159,8 +158,6 @@ def main() -> int:
     print(f"[improve_until_passes] Starting critic-driven improvement loop (max {MAX_ITERATIONS} passes)")
 
     best_score: float = -1.0
-    no_progress_count: int = 0
-    min_threshold = float(os.getenv("MIN_CRITIC_OVERALL", "6.5"))
 
     for i in range(1, MAX_ITERATIONS + 1):
         token = _new_run_token(i)
@@ -175,9 +172,6 @@ def main() -> int:
         current_score = float(critic.get("overall_score") or 0.0)
         if current_score > best_score:
             best_score = current_score
-            no_progress_count = 0
-        else:
-            no_progress_count += 1
 
         if critic.get("passed") and gate.get("passed"):
             print(f"[improve_until_passes] Critic and quality gate PASSED on pass {i}. Proceeding to publish.")
@@ -185,19 +179,10 @@ def main() -> int:
 
         if i == MAX_ITERATIONS:
             print(
-                f"[improve_until_passes] Reached max passes (best score={best_score:.1f}). "
-                f"Proceeding to final quality gate enforcement."
+                f"[improve_until_passes] Reached max passes (best score={best_score:.1f}) "
+                "without both critic and quality gate passing. Hard-blocking publish."
             )
-            return 0
-
-        # Only use the no-progress escape hatch when structural quality gate has no errors.
-        # If the issue still has placeholders, missing hook, missing links, etc., keep improving.
-        if not errors and i >= 2 and no_progress_count >= NO_PROGRESS_LIMIT:
-            print(
-                f"[improve_until_passes] Critic score stuck at {best_score:.1f} for {no_progress_count} passes "
-                f"(threshold={min_threshold:.1f}) and quality gate has no structural errors. Accepting best effort."
-            )
-            return 0
+            return 1
 
         print(f"[improve_until_passes] Running targeted improvement agent (pass {i}/{MAX_ITERATIONS - 1} remaining)...")
         try:

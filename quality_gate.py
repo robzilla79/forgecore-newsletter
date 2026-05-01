@@ -22,7 +22,7 @@ REQUIRED_CTA_URL = "https://forgecore-newsletter.beehiiv.com/"
 REQUIRED_SPONSOR_EMAIL = "sponsors@forgecore.co"
 MIN_CRITIC_OVERALL = float(os.getenv("MIN_CRITIC_OVERALL", "6.5"))
 REQUIRE_CRITIC_REVIEW = os.getenv("REQUIRE_CRITIC_REVIEW", "1") == "1"
-ALLOW_FALLBACK_PUBLISH = os.getenv("ALLOW_FALLBACK_PUBLISH", "1") == "1"
+ALLOW_FALLBACK_PUBLISH = os.getenv("ALLOW_FALLBACK_PUBLISH", "0") == "1"
 RUN_TOKEN = os.getenv("RUN_TOKEN", "").strip()
 
 LEAKED_PHRASE_PATTERNS = [
@@ -174,6 +174,9 @@ def collect_errors_and_warnings(text: str, critic: dict | None, critic_expected_
         critic_problem(f"Critic review missing for current issue: expected {critic_expected_path}")
 
     if critic:
+        runtime_error = str(critic.get("runtime_error", "")).strip()
+        if runtime_error:
+            errors.append(f"Critic runtime failure: {runtime_error}")
         overall = float(critic.get("overall_score", 0.0) or 0.0)
         if overall < MIN_CRITIC_OVERALL:
             critic_problem(f"Critic overall score too low: {overall:.2f} < {MIN_CRITIC_OVERALL:.2f}")

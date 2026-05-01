@@ -2,7 +2,7 @@ name: Continuous Improvement Loop
 
 on:
   schedule:
-    - cron: '*/10 * * * *'
+    - cron: '0 * * * *'
   workflow_dispatch:
 
 concurrency:
@@ -32,7 +32,8 @@ jobs:
       PRIMARY_CTA_URL: https://forgecore-newsletter.beehiiv.com/
       SPONSOR_EMAIL: sponsors@forgecore.co
       MAX_CONTEXT_CHARS: '22000'
-      AUTO_REPAIR_PATHS: '1'
+      AUTO_REPAIR_PATHS: '0'
+      ALLOW_FALLBACK_PUBLISH: '0'
       MAX_TARGETED_REWRITE_ITEMS: '6'
       MAX_ARTICLES_PER_RUN: '4'
       MAX_FEED_ITEMS_PER_SOURCE: '4'
@@ -64,6 +65,17 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Select current issue slot (AM/PM)
+        run: |
+          HOUR=$(TZ=America/Chicago date +%H)
+          if [ "$HOUR" -lt 12 ]; then
+            SLOT=am
+          else
+            SLOT=pm
+          fi
+          echo "ISSUE_SLOT=$SLOT" >> "$GITHUB_ENV"
+          echo "Selected slot: $SLOT (America/Chicago hour=$HOUR)"
+
       - name: Run improvement controller
         id: improve_controller
         env:
@@ -73,6 +85,10 @@ jobs:
       - name: Publish site (render HTML)
         if: steps.improve_controller.outcome == 'success'
         run: python publish_site.py
+
+      - name: Verify publish
+        if: steps.improve_controller.outcome == 'success'
+        run: python verify_publish.py
 
       - name: Write CI HEARTBEAT
         if: always()

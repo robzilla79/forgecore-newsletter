@@ -43,9 +43,17 @@ def is_valid_issue(path: Path) -> bool:
     return all(section.lower() in lower for section in REQUIRED_SECTIONS)
 
 
-def issue_sort_key(path: Path) -> tuple[str, str]:
-    match = re.search(r"(\d{4}-\d{2}-\d{2})", path.stem)
-    return (match.group(1) if match else "0000-00-00", path.name)
+def issue_sort_key(path: Path) -> tuple[str, int, str]:
+    stem = path.stem.lower()
+    match = re.search(r"(\d{4}-\d{2}-\d{2})", stem)
+    date_key = match.group(1) if match else "0000-00-00"
+    if stem.endswith("-pm"):
+        slot_rank = 2
+    elif stem.endswith("-am"):
+        slot_rank = 1
+    else:
+        slot_rank = 0
+    return (date_key, slot_rank, path.name)
 
 
 def main() -> int:
