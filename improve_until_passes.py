@@ -5,12 +5,10 @@ Runs inside generate.yml after the editor agent. Loops up to MAX_ITERATIONS:
 1. runs the critic review
 2. runs the quality gate
 3. if either fails, runs targeted improvement_loop.py
-Exits 0 only when the critic and quality gate both pass.
 
-No-progress safety valve: if the critic score does not improve for
-NO_PROGRESS_LIMIT consecutive passes, the loop exits 0 (best-effort accept)
-rather than hard-blocking publish. The quality_gate.py structural checks are
-the final publish enforcement.
+Important production rule:
+- Critic-only stagnation may unblock publish.
+- Structural quality gate errors must keep improving until they pass or max iterations is reached.
 """
 from __future__ import annotations
 
@@ -21,8 +19,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-MAX_ITERATIONS = 5
-# Exit 0 (best-effort) if score does not improve for this many consecutive passes.
+MAX_ITERATIONS = int(os.getenv("IMPROVE_MAX_ITERATIONS", "5"))
 NO_PROGRESS_LIMIT = int(os.getenv("IMPROVE_NO_PROGRESS_LIMIT", "2"))
 STATE_DIR = Path("state")
 
@@ -32,7 +29,6 @@ def _load_json(path: Path) -> dict:
 
 
 def _extract_first_json_object(text: str) -> dict:
-    """Parse the first balanced JSON object from mixed stdout text."""
     text = (text or "").strip()
     if not text:
         raise ValueError("empty stdout")
@@ -78,8 +74,6 @@ def _extract_first_json_object(text: str) -> dict:
 
 def run_json_script(script_name: str, run_token: str) -> dict:
     STATE_DIR.mkdir(parents=True, exist_ok=True)
-    # Use a 1-second buffer so fast-writing artifacts on high-resolution
-    # filesystems don't falsely trip the staleness guard.
     started = time.time() - 1.0
     env = {**os.environ, "RUN_TOKEN": run_token}
     result = subprocess.run([sys.executable, script_name], capture_output=True, text=True, env=env)
@@ -131,10 +125,14 @@ def run_improvement() -> dict:
     return payload
 
 
-def summarise(critic: dict, gate: dict, iteration: int) -> None:
-    checks = gate.get("checks", {})
-    # quality_gate.py stores errors under result["checks"]["errors"] — not result["errors"]
-    gate_errors = checks.get("errors") or []
+def gate_errors(gate: dict) -> list[str]:
+    checks = gate.get("checks", {}) if isinstance(gate.get("checks"), dict) else {}
+    values = checks.get("errors") or gate.get("errors") or []
+    return [str(item) for item in values if str(item).strip()]
+
+
+def summarise(critic: dict, gate: dict, iteration: int) -> list[str]:
+    errors = gate_errors(gate)
     critic_score = critic.get("overall_score", "?")
     critic_weak = critic.get("weak_categories", [])
     critic_passed = critic.get("passed", False)
@@ -142,14 +140,15 @@ def summarise(critic: dict, gate: dict, iteration: int) -> None:
     print(
         f"[improve_until_passes] Pass {iteration}/{MAX_ITERATIONS} | "
         f"critic_passed={critic_passed} | critic_score={critic_score} | "
-        f"gate_passed={gate_passed} | gate_errors={len(gate_errors)}"
+        f"gate_passed={gate_passed} | gate_errors={len(errors)}"
     )
     for item in critic.get("must_fix", [])[:4]:
         print(f"  critic must-fix: {item}")
     for item in critic_weak[:4]:
         print(f"  critic weak category: {item}")
-    for item in gate_errors[:4]:
+    for item in errors[:4]:
         print(f"  gate error: {item}")
+    return errors
 
 
 def _new_run_token(iteration: int) -> str:
@@ -171,7 +170,7 @@ def main() -> int:
         except RuntimeError as exc:
             print(f"[improve_until_passes] FAIL-FAST: stale critic/gate artifact or invalid JSON: {exc}")
             return 1
-        summarise(critic, gate, i)
+        errors = summarise(critic, gate, i)
 
         current_score = float(critic.get("overall_score") or 0.0)
         if current_score > best_score:
@@ -184,19 +183,19 @@ def main() -> int:
             print(f"[improve_until_passes] Critic and quality gate PASSED on pass {i}. Proceeding to publish.")
             return 0
 
-        # No-progress safety valve: if score hasn't moved for NO_PROGRESS_LIMIT consecutive
-        # passes, accept best effort and unblock publish. quality_gate.py is the final enforcer.
-        if i >= 2 and no_progress_count >= NO_PROGRESS_LIMIT:
-            print(
-                f"[improve_until_passes] Score stuck at {best_score:.1f} for {no_progress_count} passes "
-                f"(threshold={min_threshold:.1f}). Accepting best-effort result — quality gate is final enforcer."
-            )
-            return 0
-
         if i == MAX_ITERATIONS:
             print(
                 f"[improve_until_passes] Reached max passes (best score={best_score:.1f}). "
-                f"Accepting best-effort result — quality gate is final enforcer."
+                f"Proceeding to final quality gate enforcement."
+            )
+            return 0
+
+        # Only use the no-progress escape hatch when structural quality gate has no errors.
+        # If the issue still has placeholders, missing hook, missing links, etc., keep improving.
+        if not errors and i >= 2 and no_progress_count >= NO_PROGRESS_LIMIT:
+            print(
+                f"[improve_until_passes] Critic score stuck at {best_score:.1f} for {no_progress_count} passes "
+                f"(threshold={min_threshold:.1f}) and quality gate has no structural errors. Accepting best effort."
             )
             return 0
 
@@ -204,8 +203,6 @@ def main() -> int:
         try:
             change = run_improvement()
             if not change.get("changed"):
-                # Improvement agent found nothing to change — log and continue so
-                # the next critic/gate pass can re-evaluate rather than FAIL-FASTing.
                 print(f"[improve_until_passes] Improvement agent made no changes: {change.get('reason', 'no reason provided')}")
             else:
                 print(f"[improve_until_passes] Improvement updated {change.get('issue_path')}")
