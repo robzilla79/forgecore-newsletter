@@ -150,6 +150,13 @@ def summarise(critic: dict, gate: dict, iteration: int) -> list[str]:
     return errors
 
 
+def critic_runtime_failed(critic: dict) -> bool:
+    weak = critic.get("weak_categories", [])
+    if not isinstance(weak, list):
+        weak = []
+    return bool(str(critic.get("runtime_error", "")).strip()) or "critic_runtime_failure" in weak
+
+
 def _new_run_token(iteration: int) -> str:
     return f"pass-{iteration}-{time.time_ns()}"
 
@@ -168,6 +175,9 @@ def main() -> int:
             print(f"[improve_until_passes] FAIL-FAST: stale critic/gate artifact or invalid JSON: {exc}")
             return 1
         errors = summarise(critic, gate, i)
+        if critic_runtime_failed(critic):
+            print("[improve_until_passes] FAIL-FAST: critic runtime failure cannot be accepted as best effort.")
+            return 1
 
         current_score = float(critic.get("overall_score") or 0.0)
         if current_score > best_score:
