@@ -269,3 +269,23 @@
 ---
 
 [2026-04-30 23:15:31 UTC] Improved /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-04-30.md: rewritten issue saved
+
+
+---
+
+[2026-05-01 00:10:37 UTC] Improving /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-01.md using targeted critic/gate guidance ...
+
+
+---
+
+[2026-05-01 00:11:01 UTC] Improved /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-01.md: rewritten issue saved
+
+
+---
+
+[2026-05-01 00:11:10 UTC] Improving /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-01.md using targeted critic/gate guidance ...
+
+
+---
+
+[2026-05-01 00:11:26 UTC] Improved /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-01.md: rewritten issue saved
