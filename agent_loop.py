@@ -11,7 +11,6 @@ from typing import Any
 from openai import OpenAI
 
 from templates.system_prompts import ANALYST_SYSTEM, AUTHOR_SYSTEM, EDITOR_SYSTEM, SCOUT_SYSTEM
-from issue_contract import latest_brief_path
 from utils import WORKSPACE, append_text, load_project_env, load_text, now_str, today_str, write_text
 
 load_project_env()
@@ -51,8 +50,20 @@ def issue_id() -> str:
     return f"{base}-{ISSUE_SLOT}" if ISSUE_SLOT in {"am", "pm"} else base
 
 
+def slot_suffix() -> str:
+    return f"-{ISSUE_SLOT}" if ISSUE_SLOT in {"am", "pm"} else ""
+
+
 def issue_file() -> Path:
     return WORKSPACE / "content" / "issues" / f"{issue_id()}.md"
+
+
+def scout_file() -> Path:
+    return WORKSPACE / "research" / "raw" / f"RAW-INTEL-{today_str()}{slot_suffix()}.md"
+
+
+def brief_file() -> Path:
+    return WORKSPACE / "research" / "briefs" / f"EDITORIAL-BRIEF-{today_str()}{slot_suffix()}.md"
 
 
 def progress(message: str) -> None:
@@ -99,6 +110,30 @@ def gather_research() -> str:
     return "\n\n".join(blocks)
 
 
+def load_fresh_scout() -> str:
+    path = scout_file()
+    if not path.exists():
+        if ISSUE_SLOT in {"am", "pm"}:
+            raise RuntimeError(f"Fresh scout memo missing for this slot: {path.as_posix()}. Run scout first.")
+        fallback = WORKSPACE / "research" / "raw" / f"RAW-INTEL-{today_str()}.md"
+        if fallback.exists():
+            return load_text(fallback)
+        raise RuntimeError(f"Fresh scout memo missing for today: {path.as_posix()}")
+    return load_text(path)
+
+
+def load_fresh_brief(required: bool) -> str:
+    path = brief_file()
+    if not path.exists():
+        if required:
+            raise RuntimeError(f"Fresh editorial brief missing for this slot: {path.as_posix()}. Run analyst first.")
+        return "No editorial brief yet. Analyst should create it from today's fresh research and scout memo only."
+    text = load_text(path)
+    if any(marker.lower() in text.lower() for marker in BAD_CONTEXT_MARKERS):
+        raise RuntimeError(f"Fresh editorial brief is contaminated: {path.as_posix()}")
+    return text
+
+
 def current_issue_context(agent: str) -> str:
     if agent == "author":
         return "No existing draft. Write a clean original issue from today's research and editorial brief only."
@@ -112,20 +147,28 @@ def current_issue_context(agent: str) -> str:
 
 def context(agent: str) -> str:
     research = gather_research()
+    brief_required = agent in {"author", "editor"}
     parts = [
         f"# TIMESTAMP\n{now_str()}",
         f"# ISSUE_SLOT\n{ISSUE_SLOT or 'default'}",
         f"# ISSUE_ID\n{issue_id()}",
         f"# TARGET_ISSUE_PATH\ncontent/issues/{issue_id()}.md",
-        f"# CRITICAL CONTEXT RULE\nUse only today's fresh research files and the current editorial brief. Do not copy, summarize, or improve old broken issue files. If context contains placeholder or missing-content language, treat it as a defect to avoid, not source material.",
+        f"# TARGET_SCOUT_PATH\n{scout_file().relative_to(WORKSPACE).as_posix()}",
+        f"# TARGET_BRIEF_PATH\n{brief_file().relative_to(WORKSPACE).as_posix()}",
+        f"# CRITICAL CONTEXT RULE\nUse only today's fresh research files and the deterministic slot-specific scout/brief files above. Do not copy, summarize, or improve old broken issue files. If context contains placeholder or missing-content language, treat it as a defect to avoid, not source material.",
         f"# GOALS\n{load_text(WORKSPACE / 'GOALS.md')}",
         f"# RULES\n{load_text(WORKSPACE / 'AGENTS.md')}",
         f"# SOUL\n{load_text(WORKSPACE / 'agents' / agent / 'SOUL.md')}",
         f"# MEMORY\n{load_text(WORKSPACE / 'agents' / agent / 'MEMORY.md')}",
         f"# FRESH_RESEARCH_ITEMS\n{research[:14000]}",
-        f"# BRIEF\n{load_text(latest_brief_path())[:7000]}",
-        f"# CURRENT_SLOT_ISSUE_CONTEXT\n{current_issue_context(agent)}",
     ]
+    if agent == "analyst":
+        parts.append(f"# FRESH_SCOUT_MEMO\n{load_fresh_scout()[:7000]}")
+    if agent in {"author", "editor"}:
+        parts.append(f"# FRESH_BRIEF\n{load_fresh_brief(required=brief_required)[:7000]}")
+    else:
+        parts.append(f"# BRIEF_STATUS\n{load_fresh_brief(required=False)[:1200]}")
+    parts.append(f"# CURRENT_SLOT_ISSUE_CONTEXT\n{current_issue_context(agent)}")
     return "\n\n".join(parts)[:24000]
 
 
@@ -155,12 +198,12 @@ def call_markdown_model(model: str, prompt: str) -> str:
 def build_structured_prompt(agent: str) -> str:
     schema = {
         "summary": "Short description of action taken",
-        "files": [{"path": "relative/path.md", "mode": "append|overwrite", "content": "Markdown or code"}],
+        "files": [{"path": "relative/path.md", "mode": "overwrite", "content": "Markdown"}],
         "memory_update": "Optional concise MEMORY.md replacement or empty string",
     }
     hints = {
-        "scout": "Write a fresh high-signal raw intel synthesis from today's research only. Rank promising operator-first angles and identify one strong Tool of the Week candidate.",
-        "analyst": "Write a fresh editorial brief from today's scout memo and research only. Include thesis, why now, section plan, CTA direction, and distribution angles.",
+        "scout": f"Write a fresh high-signal raw intel synthesis from today's research only. Save it to {scout_file().relative_to(WORKSPACE).as_posix()}. Rank promising operator-first angles and identify one strong Tool of the Week candidate.",
+        "analyst": f"Write a fresh editorial brief from today's scout memo and research only. Save it to {brief_file().relative_to(WORKSPACE).as_posix()}. Include thesis, why now, section plan, CTA direction, and distribution angles.",
     }
     return SYSTEMS[agent] + "\n\nReturn only one valid JSON object matching this schema:\n" + json.dumps(schema, indent=2) + f"\n\nTask:\n{hints[agent]}\n\nContext:\n{context(agent)}"
 
@@ -168,20 +211,21 @@ def build_structured_prompt(agent: str) -> str:
 def build_markdown_prompt(agent: str) -> str:
     target = f"content/issues/{issue_id()}.md"
     if agent == "author":
-        task = f"Write a clean, original, complete newsletter issue as Markdown for {target}. Return ONLY Markdown. Use today's research and brief only. Do not reuse old issue text. Do not include placeholder phrases like 'No concrete content returned', 'Missing Content', or 'description incomplete'. Do not wrap it in JSON or code fences."
+        task = f"Write a clean, original, complete newsletter issue as Markdown for {target}. Return ONLY Markdown. Use today's research and the fresh slot-specific brief only. Do not reuse old issue text. Do not include placeholder phrases like 'No concrete content returned', 'Missing Content', or 'description incomplete'. Do not wrap it in JSON or code fences."
     else:
-        task = f"Edit the existing draft for {target}. If it contains placeholder or raw-intel junk, rewrite it completely from today's research and brief. Return ONLY the complete final Markdown issue. Prefer preserving or expanding useful detail; do not shorten the issue unless removing junk."
+        task = f"Edit the existing draft for {target}. If it contains placeholder or raw-intel junk, rewrite it completely from today's research and fresh slot-specific brief. Return ONLY the complete final Markdown issue. Prefer preserving or expanding useful detail; do not shorten the issue unless removing junk."
     return SYSTEMS[agent] + f"\n\nTask:\n{task}\n\nContext:\n{context(agent)}"
 
 
 def output_path(agent: str, proposed: str) -> Path:
     if agent in MARKDOWN_AGENTS:
         return issue_file()
+    if agent == "scout":
+        return scout_file().resolve()
+    if agent == "analyst":
+        return brief_file().resolve()
     rel = proposed.strip().replace("\\", "/")
-    if not rel:
-        rel = "research/raw/RAW-INTEL-{date}.md" if agent == "scout" else "research/briefs/EDITORIAL-BRIEF-{date}.md"
-        rel = rel.format(date=today_str())
-    path = Path(rel)
+    path = Path(rel) if rel else Path("state/unknown-agent-output.md")
     if path.is_absolute():
         path = Path(path.name)
     return (WORKSPACE / path).resolve()
@@ -189,13 +233,15 @@ def output_path(agent: str, proposed: str) -> Path:
 
 def apply_structured(agent: str, result: dict[str, Any]) -> int:
     count = 0
-    for item in result.get("files", []):
+    files = result.get("files", [])
+    if not files:
+        raise ValueError(f"{agent} returned no files")
+    for item in files:
         path = output_path(agent, str(item.get("path", "")))
         content = str(item.get("content", "")).strip() + "\n"
-        if item.get("mode") == "append":
-            append_text(path, content)
-        else:
-            write_text(path, content)
+        if any(marker.lower() in content.lower() for marker in BAD_CONTEXT_MARKERS):
+            raise ValueError(f"{agent} returned contaminated structured content")
+        write_text(path, content)
         count += 1
     memory = str(result.get("memory_update", "")).strip()
     if memory:
