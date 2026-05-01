@@ -75,6 +75,11 @@ jobs:
       CLOUDFLARE_PAGES_PROJECT: forgecore-newsletter
       MIN_IMPROVEMENT_INTERVAL_MINUTES: '0'
       MAX_ISSUES_TO_IMPROVE: '1'
+      MIN_RESEARCH_FILES: '3'
+      MIN_RESEARCH_URLS: '5'
+      MIN_RESEARCH_DOMAINS: '3'
+      MIN_OPERATOR_SIGNALS: '4'
+      MAX_SINGLE_DOMAIN_SHARE: '0.65'
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       KIT_API_KEY: ${{ secrets.KIT_API_KEY }}
       KIT_FORM_ID: ${{ secrets.KIT_FORM_ID }}
@@ -105,6 +110,9 @@ jobs:
 
       - name: Run web research
         run: python web_research.py
+
+      - name: Research quality gate
+        run: python research_quality_gate.py
 
       - name: Run scout agent
         run: python agent_loop.py scout
