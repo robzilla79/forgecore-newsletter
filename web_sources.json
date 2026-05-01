@@ -1,18 +1,18 @@
 {
   "sources": [
-    {"name": "Anthropic News", "url": "https://www.anthropic.com/news/rss.xml", "tags": ["agents", "productivity"]},
+    {"name": "Zapier Blog", "url": "https://zapier.com/blog/feeds/latest/", "tags": ["automation", "workflows", "operators"]},
+    {"name": "Make Blog", "url": "https://www.make.com/en/blog/rss.xml", "tags": ["automation", "workflows", "operators"]},
+    {"name": "Airtable Blog", "url": "https://www.airtable.com/blog/rss.xml", "tags": ["systems", "operations", "databases"]},
+    {"name": "Notion Blog", "url": "https://www.notion.com/blog/rss.xml", "tags": ["productivity", "systems", "ai-tools"]},
+    {"name": "OpenAI Cookbook", "url": "https://cookbook.openai.com/rss.xml", "tags": ["implementation", "agents", "automation"]},
     {"name": "OpenAI News", "url": "https://openai.com/news/rss.xml", "tags": ["ai-tools", "automation"]},
-    {"name": "LangChain Blog", "url": "https://blog.langchain.dev/rss/", "tags": ["agents", "automation"]},
-    {"name": "Towards Data Science", "url": "https://towardsdatascience.com/feed", "tags": ["ai-tools", "productivity"]},
-    {"name": "The Rundown AI", "url": "https://www.therundown.ai/rss", "tags": ["ai-news", "tools"]},
-    {"name": "MIT Tech Review AI", "url": "https://www.technologyreview.com/topic/artificial-intelligence/feed", "tags": ["ai-news", "industry"]},
-    {"name": "VentureBeat AI", "url": "https://venturebeat.com/category/ai/feed/", "tags": ["ai-news", "industry", "automation"]},
-    {"name": "The Batch (deeplearning.ai)", "url": "https://www.deeplearning.ai/the-batch/feed/", "tags": ["models", "ai-news"]},
-    {"name": "AI Supremacy", "url": "https://aisupremacy.substack.com/feed", "tags": ["ai-news", "automation"]},
-    {"name": "TLDR AI Newsletter", "url": "https://tldr.tech/ai/rss", "tags": ["ai-tools", "productivity"]},
-    {"name": "Ben's Bites", "url": "https://bensbites.beehiiv.com/feed", "tags": ["ai-tools", "productivity"]},
-    {"name": "Hacker News AI", "url": "https://hnrss.org/newest?q=AI+agent+automation+workflow&count=20", "tags": ["ai-news", "tools"]},
-    {"name": "Google AI Blog", "url": "https://blog.google/technology/ai/rss/", "tags": ["models", "ai-tools"]},
-    {"name": "Microsoft AI Blog", "url": "https://blogs.microsoft.com/ai/feed/", "tags": ["ai-tools", "automation"]}
+    {"name": "Anthropic News", "url": "https://www.anthropic.com/news/rss.xml", "tags": ["agents", "productivity"]},
+    {"name": "LangChain Blog", "url": "https://blog.langchain.dev/rss/", "tags": ["agents", "automation", "implementation"]},
+    {"name": "Descript Blog", "url": "https://www.descript.com/blog/rss.xml", "tags": ["content", "video", "creator-workflows"]},
+    {"name": "Canva Blog", "url": "https://www.canva.com/newsroom/news/feed/", "tags": ["design", "creator-workflows", "marketing"]},
+    {"name": "Beehiiv Blog", "url": "https://blog.beehiiv.com/feed", "tags": ["newsletter", "growth", "creator-workflows"]},
+    {"name": "HubSpot Marketing Blog", "url": "https://blog.hubspot.com/marketing/rss.xml", "tags": ["marketing", "sales", "growth"]},
+    {"name": "Indie Hackers", "url": "https://www.indiehackers.com/feed", "tags": ["solo-founder", "operators", "business"]},
+    {"name": "Hacker News AI Workflows", "url": "https://hnrss.org/newest?q=AI+agent+automation+workflow+tool&count=20", "tags": ["tools", "automation", "implementation"]}
   ]
 }
