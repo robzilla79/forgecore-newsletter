@@ -155,3 +155,8 @@ GitHub Actions: active
 ---
 
 *This file self-destructs after bootstrap. The agent deletes it on first successful run.*
+
+
+## ChatGPT GitHub integration profile
+
+For ChatGPT write-capable GitHub tools and safety defaults, use `docs/chatgpt-github-tools.md` as the canonical repository policy snapshot.
