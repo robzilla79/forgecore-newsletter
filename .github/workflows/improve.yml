@@ -127,7 +127,7 @@ jobs:
           fi
 
       - name: Commit HEARTBEAT on failure
-        if: steps.improve_controller.outcome != 'success'
+        if: steps.select_issue.outputs.skip == 'false' && steps.improve_controller.outcome != 'success'
         run: |
           git config user.name "ForgeCore AI Bot"
           git config user.email "bot@forgecore.co"
