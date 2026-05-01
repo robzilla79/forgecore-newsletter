@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-import json
 import os
+import re
 import sys
 import time
 from pathlib import Path
-from typing import Any
 
 from openai import OpenAI
 
@@ -21,7 +20,7 @@ EDITOR_MODEL = os.getenv("EDITOR_MODEL", WRITER_MODEL)
 ISSUE_SLOT = os.getenv("ISSUE_SLOT", "").strip().lower()
 
 ALLOWED = {"scout", "analyst", "author", "editor"}
-STRUCTURED_AGENTS = {"scout", "analyst"}
+MEMO_AGENTS = {"scout", "analyst"}
 MARKDOWN_AGENTS = {"author", "editor"}
 SYSTEMS = {"scout": SCOUT_SYSTEM, "analyst": ANALYST_SYSTEM, "author": AUTHOR_SYSTEM, "editor": EDITOR_SYSTEM}
 
@@ -176,36 +175,31 @@ def openai_client() -> OpenAI:
     return OpenAI()
 
 
-def call_structured_model(model: str, prompt: str) -> str:
+def call_text_model(model: str, prompt: str, *, temperature: float) -> str:
     result = openai_client().chat.completions.create(
         model=model,
         messages=[{"role": "user", "content": prompt}],
-        temperature=0.15,
-        response_format={"type": "json_object"},
-    )
-    return result.choices[0].message.content or "{}"
-
-
-def call_markdown_model(model: str, prompt: str) -> str:
-    result = openai_client().chat.completions.create(
-        model=model,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.25,
+        temperature=temperature,
     )
     return (result.choices[0].message.content or "").strip()
 
 
-def build_structured_prompt(agent: str) -> str:
-    schema = {
-        "summary": "Short description of action taken",
-        "files": [{"path": "relative/path.md", "mode": "overwrite", "content": "Markdown"}],
-        "memory_update": "Optional concise MEMORY.md replacement or empty string",
-    }
-    hints = {
-        "scout": f"Write a fresh high-signal raw intel synthesis from today's research only. Save it to {scout_file().relative_to(WORKSPACE).as_posix()}. Rank promising operator-first angles and identify one strong Tool of the Week candidate.",
-        "analyst": f"Write a fresh editorial brief from today's scout memo and research only. Save it to {brief_file().relative_to(WORKSPACE).as_posix()}. Include thesis, why now, section plan, CTA direction, and distribution angles.",
-    }
-    return SYSTEMS[agent] + "\n\nReturn only one valid JSON object matching this schema:\n" + json.dumps(schema, indent=2) + f"\n\nTask:\n{hints[agent]}\n\nContext:\n{context(agent)}"
+def build_memo_prompt(agent: str) -> str:
+    if agent == "scout":
+        task = (
+            f"Write a fresh Markdown scout memo for {scout_file().relative_to(WORKSPACE).as_posix()}. "
+            "Return ONLY Markdown, never JSON. Rank 3-5 operator-first topic angles from today's research, "
+            "name the strongest angle, identify one Tool of the Week candidate, list source URLs, and explain why the topic helps solo operators save time, automate work, make money, or avoid bad tools."
+        )
+    elif agent == "analyst":
+        task = (
+            f"Write a fresh Markdown editorial brief for {brief_file().relative_to(WORKSPACE).as_posix()}. "
+            "Return ONLY Markdown, never JSON. Use today's scout memo and research only. Include: thesis, audience/persona, job-to-be-done, why now, section plan, workflow outline, tool recommendation, tradeoffs, CTA direction, and source URLs."
+        )
+    else:
+        raise ValueError(f"Unsupported memo agent: {agent}")
+
+    return SYSTEMS[agent] + f"\n\nTask:\n{task}\n\nContext:\n{context(agent)}"
 
 
 def build_markdown_prompt(agent: str) -> str:
@@ -215,38 +209,6 @@ def build_markdown_prompt(agent: str) -> str:
     else:
         task = f"Edit the existing draft for {target}. If it contains placeholder or raw-intel junk, rewrite it completely from today's research and fresh slot-specific brief. Return ONLY the complete final Markdown issue. Prefer preserving or expanding useful detail; do not shorten the issue unless removing junk."
     return SYSTEMS[agent] + f"\n\nTask:\n{task}\n\nContext:\n{context(agent)}"
-
-
-def output_path(agent: str, proposed: str) -> Path:
-    if agent in MARKDOWN_AGENTS:
-        return issue_file()
-    if agent == "scout":
-        return scout_file().resolve()
-    if agent == "analyst":
-        return brief_file().resolve()
-    rel = proposed.strip().replace("\\", "/")
-    path = Path(rel) if rel else Path("state/unknown-agent-output.md")
-    if path.is_absolute():
-        path = Path(path.name)
-    return (WORKSPACE / path).resolve()
-
-
-def apply_structured(agent: str, result: dict[str, Any]) -> int:
-    count = 0
-    files = result.get("files", [])
-    if not files:
-        raise ValueError(f"{agent} returned no files")
-    for item in files:
-        path = output_path(agent, str(item.get("path", "")))
-        content = str(item.get("content", "")).strip() + "\n"
-        if any(marker.lower() in content.lower() for marker in BAD_CONTEXT_MARKERS):
-            raise ValueError(f"{agent} returned contaminated structured content")
-        write_text(path, content)
-        count += 1
-    memory = str(result.get("memory_update", "")).strip()
-    if memory:
-        write_text(WORKSPACE / "agents" / agent / "MEMORY.md", memory + "\n")
-    return count
 
 
 def clean_markdown(text: str) -> str:
@@ -281,23 +243,55 @@ def validate_markdown(agent: str, text: str) -> None:
         warn(f"editor draft is short but recoverable ({words} words); passing to improvement loop")
 
 
+def validate_memo(agent: str, text: str) -> None:
+    lower = text.lower()
+
+    if not text.strip().startswith("#"):
+        raise ValueError(f"{agent} memo did not return Markdown with a title")
+
+    for marker in BAD_CONTEXT_MARKERS:
+        if marker.lower() in lower:
+            raise ValueError(f"{agent} memo returned contaminated marker: {marker}")
+
+    if "{\"" in text or '"files"' in text or '"summary"' in text:
+        raise ValueError(f"{agent} memo returned JSON-like control text")
+
+    urls = re.findall(r"https?://\S+", text)
+    min_words = 180 if agent == "scout" else 250
+
+    if len(text.split()) < min_words:
+        raise ValueError(f"{agent} memo too short: {len(text.split())} words")
+
+    if len(urls) < 3:
+        raise ValueError(f"{agent} memo needs at least 3 source URLs")
+
+
 def run(agent: str) -> int:
     start = time.time()
     model = choose_model(agent)
     progress(f"[{agent}] Starting with {model} (issue={issue_id()})")
     try:
         clean_old_slot_file_for_author(agent)
-        if agent in MARKDOWN_AGENTS:
-            markdown = clean_markdown(call_markdown_model(model, build_markdown_prompt(agent)))
+        if agent in MEMO_AGENTS:
+            memo = clean_markdown(call_text_model(model, build_memo_prompt(agent), temperature=0.15))
+            validate_memo(agent, memo)
+
+            path = scout_file() if agent == "scout" else brief_file()
+            write_text(path, memo)
+
+            count = 1
+            summary = f"Wrote Markdown {agent} memo to {path.relative_to(WORKSPACE).as_posix()}"
+
+        elif agent in MARKDOWN_AGENTS:
+            markdown = clean_markdown(call_text_model(model, build_markdown_prompt(agent), temperature=0.25))
             validate_markdown(agent, markdown)
             write_text(issue_file(), markdown)
+
             count = 1
             summary = f"Wrote clean Markdown issue to content/issues/{issue_id()}.md"
+
         else:
-            raw = call_structured_model(model, build_structured_prompt(agent))
-            parsed = json.loads(raw)
-            count = apply_structured(agent, parsed)
-            summary = str(parsed.get("summary", "Done"))
+            raise ValueError(f"Unsupported agent: {agent}")
         progress(f"{agent}: {summary} (files={count}, duration={time.time() - start:.2f}s)")
         return 0
     except Exception as exc:
