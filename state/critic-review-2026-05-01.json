@@ -7,14 +7,14 @@
   "min_overall_required": 6.5,
   "min_category_required": 6.0,
   "scores": {
-    "headline_strength": 3.0,
+    "headline_strength": 5.0,
     "hook_strength": 0.0,
-    "specificity": 2.0,
-    "originality": 2.0,
-    "readability": 4.0,
-    "tone": 3.0,
-    "utility": 3.0,
-    "non_repetition": 3.0
+    "specificity": 5.0,
+    "originality": 5.0,
+    "readability": 5.0,
+    "tone": 5.0,
+    "utility": 0.0,
+    "non_repetition": 0.0
   },
   "weak_categories": [
     "headline_strength",
@@ -31,21 +31,21 @@
   ],
   "weaknesses": [
     "No concrete content in the hook.",
-    "Incomplete sections with missing details.",
-    "Lack of actionable insights for solo operators."
+    "Lack of actionable insights for solo operators.",
+    "Incomplete research topics and analyst updates."
   ],
   "must_fix": [
-    "Provide a concrete hook with actionable insights.",
-    "Complete the missing content in research topics and updates.",
-    "Ensure all sections have specific, measurable outcomes for solo operators."
+    "Provide a concrete hook that outlines a specific workflow or outcome for solo operators.",
+    "Fill in the gaps in research topics with actionable insights and metrics.",
+    "Ensure all sections are complete and provide value to the reader."
   ],
   "rewrite_plan": [
-    "Develop a strong hook that outlines a specific workflow for solo operators.",
-    "Fill in the gaps in the research topics with actionable insights and examples.",
-    "Revise the overall structure to ensure clarity and focus on operator outcomes."
+    "Rewrite the hook to include a specific workflow or outcome.",
+    "Complete the research topics with actionable insights.",
+    "Add detailed analyst updates with concrete examples."
   ],
   "summary": "The issue lacks concrete content and actionable insights, making it unfit for publication.",
   "verdict": "reject",
-  "run_token": "pass-4-1777626916462085422",
+  "run_token": "pass-4-1777632510093322174",
   "artifact_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/critic-review-2026-05-01.json"
 }
