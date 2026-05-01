@@ -1,80 +1,62 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>ForgeCore AI Productivity Brief</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Practical AI workflows, tools, and ROI cases for solo operators.">
-  <meta name="robots" content="index, follow">
-  <link rel="canonical" href="https://news.forgecore.co/">
-  <meta name="theme-color" content="#09090b">
-  <meta property="og:type" content="website">
-  <meta property="og:site_name" content="FORGE/DAILY">
-  <meta property="og:title" content="ForgeCore AI Productivity Brief">
-  <meta property="og:description" content="Practical AI workflows, tools, and ROI cases for solo operators.">
-  <meta property="og:url" content="https://news.forgecore.co/">
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="alternate" type="application/rss+xml" title="FORGE/DAILY RSS" href="/rss.xml">
-  <link rel="stylesheet" href="/style.css?v=202605010011">
+  <title>ForgeCore | ForgeCore AI Productivity Brief</title>
+  <meta name="description" content="Practical AI workflows, tools, and ROI cases for operators">
+  <style>
+    :root { color-scheme: dark; --bg:#080b12; --panel:#111827; --text:#e5e7eb; --muted:#9ca3af; --accent:#38bdf8; --border:#1f2937; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background:radial-gradient(circle at top left,#152033 0,#080b12 42%); color:var(--text); line-height:1.65; }
+    a { color:var(--accent); text-decoration:none; }
+    a:hover { text-decoration:underline; }
+    .wrap { width:min(980px,92vw); margin:0 auto; }
+    header { padding:42px 0 28px; border-bottom:1px solid var(--border); }
+    .brand { font-weight:800; letter-spacing:-0.04em; font-size:clamp(2rem,5vw,4rem); color:white; }
+    .tagline { color:var(--muted); max-width:720px; font-size:1.08rem; }
+    .cta-bar { margin-top:22px; display:flex; gap:12px; flex-wrap:wrap; }
+    .button { display:inline-block; padding:11px 16px; border-radius:999px; background:var(--accent); color:#04111f; font-weight:800; }
+    .button.secondary { background:transparent; color:var(--text); border:1px solid var(--border); }
+    main { padding:34px 0 56px; }
+    .grid { display:grid; gap:18px; }
+    .card { padding:22px; border:1px solid var(--border); border-radius:18px; background:rgba(17,24,39,.82); box-shadow:0 20px 50px rgba(0,0,0,.22); }
+    .date { color:var(--muted); font-size:.92rem; text-transform:uppercase; letter-spacing:.08em; }
+    .card h2 { margin:.35rem 0 .6rem; font-size:1.45rem; line-height:1.2; }
+    article { max-width:780px; }
+    article h1 { font-size:clamp(2rem,5vw,3.6rem); line-height:1.05; letter-spacing:-0.04em; margin:0 0 12px; }
+    article h2 { margin-top:2rem; padding-top:1rem; border-top:1px solid var(--border); }
+    article p, article li { color:#d1d5db; }
+    pre { overflow:auto; padding:16px; border-radius:14px; background:#030712; border:1px solid var(--border); }
+    code { color:#bae6fd; }
+    footer { border-top:1px solid var(--border); padding:26px 0 42px; color:var(--muted); font-size:.95rem; }
+  </style>
 </head>
 <body>
-<div class="site-shell">
-  <header class="site-header">
-    <div class="header-inner">
-      <a href="/" class="site-logo" aria-label="FORGE/DAILY home">
-        <svg class="logo-mark" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="28" height="28" rx="6" fill="#f97316"/><path d="M14 5L7 9.5V19L14 23L21 19V9.5L14 5Z" fill="none" stroke="#000" stroke-width="1.8" stroke-linejoin="round"/><path d="M14 5V23M7 9.5L21 9.5" stroke="#000" stroke-width="1.8" stroke-linecap="round"/></svg>
-        <span class="logo-wordmark">FORGE<span>/DAILY</span></span>
-      </a>
-      <nav class="site-nav" aria-label="Main navigation">
-        <a href="/">Home</a>
-        <a href="/archive/">Archive</a>
-        <a href="/about/">About</a>
-        <a href="/advertise/">Advertise</a>
-      </nav>
-      <div class="header-actions">
-        <a href="https://forgecore-newsletter.beehiiv.com/" class="btn-subscribe" target="_blank" rel="noopener noreferrer">Subscribe Free</a>
-      </div>
+<header>
+  <div class="wrap">
+    <a class="brand" href="/">ForgeCore</a>
+    <p class="tagline">Practical AI workflows, tools, and ROI cases for operators</p>
+    <div class="cta-bar">
+      <a class="button" href="https://forgecore-newsletter.beehiiv.com/">Subscribe for weekly operator-grade AI workflows</a>
+      <a class="button secondary" href="mailto:sponsors@forgecore.co">Sponsor ForgeCore</a>
     </div>
-  </header>
-
-  <main class="site-main" id="main-content">
-    <div class="feed-header">
-      <div class="feed-header-title">Practical AI workflows for solo operators.</div>
-      <p class="feed-subscribe-text">Build systems, save time, choose better tools, and avoid wasting money.</p>
-      <form class="feed-subscribe" action="https://forgecore-newsletter.beehiiv.com/" method="get" target="_blank">
-        <input type="email" name="email" placeholder="Your email address" required>
-        <button type="submit">SUBSCRIBE</button>
-      </form>
-    </div>
-
-    <div class="section-label">Latest</div>
-    <ul class="feed-list">
-      <li class="feed-item">
-        <div class="feed-item-body">
-          <div class="feed-item-meta">2026-05-01 &bull; 4 min read</div>
-          <div class="feed-item-title"><a href="/2026-05-01-am/">Build a 3-Step AI Follow-Up System That Saves 5 Hours a Week</a></div>
-          <div class="feed-item-sub">A practical AI follow-up workflow for solo consultants and operators who want faster replies, fewer missed leads, and less admin drag.</div>
-        </div>
-      </li>
-      <li class="feed-item"><div class="feed-item-body"><div class="feed-item-meta">2026-04-09 &bull; 3 min read</div><div class="feed-item-title"><a href="/2026-04-09/">FORGE/DAILY — April 9, 2026</a></div><div class="feed-item-sub">Anthropic's Claude Mythos model card dropped more detail this week, and it's worth reading past the headline.</div></div></li>
-      <li class="feed-item"><div class="feed-item-body"><div class="feed-item-meta">2026-04-08 &bull; 3 min read</div><div class="feed-item-title"><a href="/2026-04-08/">FORGE/DAILY — April 8, 2026</a></div><div class="feed-item-sub">Meta shipped Muse Spark today. It's fine. That's not the interesting part.</div></div></li>
-      <li class="feed-item"><div class="feed-item-body"><div class="feed-item-meta">2026-04-07 &bull; 3 min read</div><div class="feed-item-title"><a href="/2026-04-07/">FORGE/DAILY — April 7, 2026</a></div><div class="feed-item-sub">A sharp AI update for operators who want signal, not hype.</div></div></li>
-      <li class="feed-item"><div class="feed-item-body"><div class="feed-item-meta">2026-04-06 &bull; 3 min read</div><div class="feed-item-title"><a href="/2026-04-06/">FORGE/DAILY — April 6, 2026</a></div><div class="feed-item-sub">Infrastructure spending, tool choices, and operator takeaways.</div></div></li>
-    </ul>
-  </main>
-
-  <footer class="site-footer">
-    <div class="footer-inner">
-      <p>&copy; 2026 ForgeCore &mdash; practical AI workflows for operators.</p>
-      <nav class="footer-nav" aria-label="Footer navigation">
-        <a href="https://forgecore-newsletter.beehiiv.com/" target="_blank" rel="noopener noreferrer">Join Free &rarr;</a>
-        <a href="/advertise/">Advertise</a>
-        <a href="/about/">About</a>
-        <a href="/rss.xml">RSS</a>
-        <a href="/archive/">Archive</a>
-      </nav>
-    </div>
-  </footer>
+  </div>
+</header>
+<main>
+  <div class="wrap">
+<h1>Latest ForgeCore Issues</h1>
+<div class="grid">
+<section class="card">
+  <div class="date">May 1, 2026</div>
+  <h2><a href="/2026-05-01-am/">Build a 3-Step AI Follow-Up System That Saves 5 Hours a Week</a></h2>
+  <p>A solo consultant does not lose deals because they lack ideas. They lose deals because follow-up gets buried under client work, inbox noise, and half-finished notes. This issue gives you a simple AI-assisted follow-up system you can buil...</p>
+</section>
 </div>
+  </div>
+</main>
+<footer>
+  <div class="wrap">ForgeCore helps solo operators use AI tools to build systems, save time, and create income.</div>
+</footer>
 </body>
 </html>
