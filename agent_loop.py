@@ -11,7 +11,7 @@ from typing import Any
 from openai import OpenAI
 
 from templates.system_prompts import ANALYST_SYSTEM, AUTHOR_SYSTEM, EDITOR_SYSTEM, SCOUT_SYSTEM
-from issue_contract import latest_brief_path, latest_raw_intel_path
+from issue_contract import latest_brief_path
 from utils import WORKSPACE, append_text, load_project_env, load_text, now_str, today_str, write_text
 
 load_project_env()
@@ -85,42 +85,39 @@ def clean_old_slot_file_for_author(agent: str) -> None:
 def gather_research() -> str:
     blocks: list[str] = []
     today_files = sorted((WORKSPACE / "research" / "raw").glob(f"{today_str()}-*.md"))
-    for path in today_files[:8]:
+    for path in today_files[:10]:
         text = load_text(path)
         if text.strip():
-            blocks.append(f"## {path.name}\n{text[:2200]}")
+            blocks.append(f"## {path.name}\n{text[:2400]}")
     if not blocks:
-        path = latest_raw_intel_path()
-        text = load_text(path)
-        if text.strip():
-            blocks.append(f"## {path.name}\n{text[:4000]}")
+        raise RuntimeError("No fresh research files found for today. Run web_research.py successfully before agents.")
     return "\n\n".join(blocks)
 
 
 def current_issue_context(agent: str) -> str:
     if agent == "author":
-        return "No existing draft. Write a clean original issue from the brief and research only."
+        return "No existing draft. Write a clean original issue from today's research and editorial brief only."
     if issue_file().exists():
         text = load_text(issue_file())
         if any(marker.lower() in text.lower() for marker in BAD_CONTEXT_MARKERS):
-            return "Existing draft is contaminated and must be ignored. Rewrite a clean complete issue from the brief and research only."
+            return "Existing draft is contaminated and must be ignored. Rewrite a clean complete issue from today's research and brief only."
         return text[:9000]
     return "No existing draft for this slot."
 
 
 def context(agent: str) -> str:
+    research = gather_research()
     parts = [
         f"# TIMESTAMP\n{now_str()}",
         f"# ISSUE_SLOT\n{ISSUE_SLOT or 'default'}",
         f"# ISSUE_ID\n{issue_id()}",
         f"# TARGET_ISSUE_PATH\ncontent/issues/{issue_id()}.md",
-        f"# CRITICAL CONTEXT RULE\nDo not copy, summarize, or improve old broken issue files. Use only today's research and the editorial brief. If context contains placeholder or missing-content language, treat it as a defect to avoid, not source material.",
+        f"# CRITICAL CONTEXT RULE\nUse only today's fresh research files and the current editorial brief. Do not copy, summarize, or improve old broken issue files. If context contains placeholder or missing-content language, treat it as a defect to avoid, not source material.",
         f"# GOALS\n{load_text(WORKSPACE / 'GOALS.md')}",
         f"# RULES\n{load_text(WORKSPACE / 'AGENTS.md')}",
         f"# SOUL\n{load_text(WORKSPACE / 'agents' / agent / 'SOUL.md')}",
         f"# MEMORY\n{load_text(WORKSPACE / 'agents' / agent / 'MEMORY.md')}",
-        f"# RAW_INTEL\n{load_text(latest_raw_intel_path())[:5000]}",
-        f"# RESEARCH_ITEMS\n{gather_research()[:12000]}",
+        f"# FRESH_RESEARCH_ITEMS\n{research[:14000]}",
         f"# BRIEF\n{load_text(latest_brief_path())[:7000]}",
         f"# CURRENT_SLOT_ISSUE_CONTEXT\n{current_issue_context(agent)}",
     ]
@@ -166,9 +163,9 @@ def build_structured_prompt(agent: str) -> str:
 def build_markdown_prompt(agent: str) -> str:
     target = f"content/issues/{issue_id()}.md"
     if agent == "author":
-        task = f"Write a clean, original, complete newsletter issue as Markdown for {target}. Return ONLY Markdown. Do not reuse old issue text. Do not include placeholder phrases like 'No concrete content returned', 'Missing Content', or 'description incomplete'. Do not wrap it in JSON or code fences."
+        task = f"Write a clean, original, complete newsletter issue as Markdown for {target}. Return ONLY Markdown. Use today's research and brief only. Do not reuse old issue text. Do not include placeholder phrases like 'No concrete content returned', 'Missing Content', or 'description incomplete'. Do not wrap it in JSON or code fences."
     else:
-        task = f"Edit the existing draft for {target}. If it contains placeholder or raw-intel junk, rewrite it completely from the brief and research. Return ONLY the complete final Markdown issue."
+        task = f"Edit the existing draft for {target}. If it contains placeholder or raw-intel junk, rewrite it completely from today's research and brief. Return ONLY the complete final Markdown issue."
     return SYSTEMS[agent] + f"\n\nTask:\n{task}\n\nContext:\n{context(agent)}"
 
 
