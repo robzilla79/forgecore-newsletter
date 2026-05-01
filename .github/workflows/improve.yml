@@ -66,28 +66,39 @@ jobs:
           pip install -r requirements.txt
 
       - name: Select current issue slot (AM/PM)
+        id: select_issue
         run: |
-          HOUR=$(TZ=America/Chicago date +%H)
-          if [ "$HOUR" -lt 12 ]; then
-            SLOT=am
-          else
+          TODAY=$(date -u '+%Y-%m-%d')
+          if [ -f "content/issues/${TODAY}-pm.md" ]; then
             SLOT=pm
+            SKIP=false
+          elif [ -f "content/issues/${TODAY}-am.md" ]; then
+            SLOT=am
+            SKIP=false
+          else
+            SLOT=
+            SKIP=true
+            echo "No current slot-specific issue exists for ${TODAY} (expected ${TODAY}-am.md or ${TODAY}-pm.md)."
           fi
           echo "ISSUE_SLOT=$SLOT" >> "$GITHUB_ENV"
-          echo "Selected slot: $SLOT (America/Chicago hour=$HOUR)"
+          echo "skip=$SKIP" >> "$GITHUB_OUTPUT"
+          if [ "$SKIP" = "false" ]; then
+            echo "Selected slot-specific issue: ${TODAY}-${SLOT}.md"
+          fi
 
       - name: Run improvement controller
         id: improve_controller
+        if: steps.select_issue.outputs.skip == 'false'
         env:
           IMPROVEMENT_ORIGIN: improve
         run: python improve_until_passes.py
 
       - name: Publish site (render HTML)
-        if: steps.improve_controller.outcome == 'success'
+        if: steps.select_issue.outputs.skip == 'false' && steps.improve_controller.outcome == 'success'
         run: python publish_site.py
 
       - name: Verify publish
-        if: steps.improve_controller.outcome == 'success'
+        if: steps.select_issue.outputs.skip == 'false' && steps.improve_controller.outcome == 'success'
         run: python verify_publish.py
 
       - name: Write CI HEARTBEAT
@@ -102,7 +113,7 @@ jobs:
           echo "[heartbeat] Written for $TIMESTAMP"
 
       - name: Commit improvements
-        if: steps.improve_controller.outcome == 'success'
+        if: steps.select_issue.outputs.skip == 'false' && steps.improve_controller.outcome == 'success'
         run: |
           git config user.name "ForgeCore AI Bot"
           git config user.email "bot@forgecore.co"
@@ -116,7 +127,7 @@ jobs:
           fi
 
       - name: Commit HEARTBEAT on failure
-        if: steps.improve_controller.outcome != 'success'
+        if: steps.select_issue.outputs.skip == 'false' && steps.improve_controller.outcome != 'success'
         run: |
           git config user.name "ForgeCore AI Bot"
           git config user.email "bot@forgecore.co"
@@ -129,7 +140,7 @@ jobs:
           fi
 
       - name: Deploy to Cloudflare Pages
-        if: steps.improve_controller.outcome == 'success'
+        if: steps.select_issue.outputs.skip == 'false' && steps.improve_controller.outcome == 'success'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
