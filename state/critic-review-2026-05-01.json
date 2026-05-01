@@ -23,6 +23,6 @@
   "summary": "critic_review failed: Fresh slot-specific context missing: /home/runner/work/forgecore-newsletter/forgecore-newsletter/research/briefs/EDITORIAL-BRIEF-2026-05-01.md, /home/runner/work/forgecore-newsletter/forgecore-newsletter/research/raw/RAW-INTEL-2026-05-01.md",
   "verdict": "reject",
   "runtime_error": "ValueError: Fresh slot-specific context missing: /home/runner/work/forgecore-newsletter/forgecore-newsletter/research/briefs/EDITORIAL-BRIEF-2026-05-01.md, /home/runner/work/forgecore-newsletter/forgecore-newsletter/research/raw/RAW-INTEL-2026-05-01.md",
-  "run_token": "pass-3-1777671466992792576",
+  "run_token": "pass-3-1777674911887463825",
   "artifact_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/critic-review-2026-05-01.json"
 }
