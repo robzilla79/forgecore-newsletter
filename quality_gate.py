@@ -3,6 +3,8 @@
 
 Hard structural failures still block publishing. Critic-only failures are warnings
 when ALLOW_FALLBACK_PUBLISH=1 so AM/PM slots are not skipped for merely weak copy.
+
+Important: this file is validation-only. It must never mutate issue Markdown.
 """
 from __future__ import annotations
 
@@ -11,7 +13,7 @@ import os
 import re
 from pathlib import Path
 
-from issue_contract import BANNED_TOKENS, REQUIRED_SECTIONS, ensure_issue_contract
+from issue_contract import BANNED_TOKENS, REQUIRED_SECTIONS
 from utils import WORKSPACE, artifact_suffix_for_issue, dump_json, issue_path_for_today, load_text
 
 MIN_WORDS = 500
@@ -88,6 +90,10 @@ def load_issue_critic(issue_path: Path, *, run_token: str = "") -> tuple[dict | 
 def collect_errors_and_warnings(text: str, critic: dict | None, critic_expected_path: str | None) -> tuple[list[str], list[str]]:
     errors: list[str] = []
     warnings: list[str] = []
+
+    if not text.strip():
+        errors.append("Issue file is empty")
+        return errors, warnings
 
     for header in REQUIRED_SECTIONS:
         if header not in text:
@@ -182,12 +188,7 @@ def collect_errors_and_warnings(text: str, critic: dict | None, critic_expected_
 
 
 def main() -> int:
-    contract_error = ""
     path = issue_path_for_today()
-    try:
-        path = ensure_issue_contract(path)
-    except Exception as exc:
-        contract_error = str(exc).strip() or "issue contract failed"
     text = load_text(path)
     urls = [u.rstrip(").,") for u in re.findall(r"https?://\S+", text)]
     leaked = find_matching_patterns(text, LEAKED_PHRASE_PATTERNS)
@@ -195,10 +196,6 @@ def main() -> int:
     dupes = find_duplicate_paragraphs(text)
     critic, critic_path = load_issue_critic(path, run_token=RUN_TOKEN)
     errors, warnings = collect_errors_and_warnings(text, critic, critic_path)
-    if contract_error:
-        errors.append(f"Issue contract failed before gate: {contract_error}")
-        if "placeholder/meta upstream content blocked" in contract_error.lower():
-            errors.append("Placeholder/meta language was present upstream and blocked before normalization.")
 
     checks = {
         "exists": path.exists(),
@@ -215,8 +212,8 @@ def main() -> int:
         "critic_review": critic or {},
         "errors": errors,
         "warnings": warnings,
-        "contract_error": contract_error,
         "fallback_publish_enabled": ALLOW_FALLBACK_PUBLISH,
+        "validation_only": True,
     }
     result = {
         "passed": not errors,
