@@ -1,10 +1,12 @@
-"""Issue contract: normalization, validation helpers, and path resolution.
+"""Issue contract: validation helpers and safe path resolution.
 
-Key rule: normalize_issue_text() may fill missing sections but must never
-let raw JSON, planning notes, or machine-control text leak into a published issue.
+Production rule: the issue contract must never pull stale raw intel, stale briefs,
+or legacy fallback copy into the active issue. It may validate and normalize safe
+structure, but it must fail loudly when fresh slot-specific context is missing.
 """
 from __future__ import annotations
 
+import os
 import re
 from pathlib import Path
 from typing import Iterable
@@ -76,6 +78,33 @@ PLACEHOLDER_PATTERNS = [
 ]
 
 
+def issue_slot() -> str:
+    return os.getenv('ISSUE_SLOT', '').strip().lower()
+
+
+def issue_id_for_today() -> str:
+    slot = issue_slot()
+    base = today_str()
+    return f'{base}-{slot}' if slot in {'am', 'pm'} else base
+
+
+def slot_suffix() -> str:
+    slot = issue_slot()
+    return f'-{slot}' if slot in {'am', 'pm'} else ''
+
+
+def issue_path_for_today() -> Path:
+    return WORKSPACE / 'content' / 'issues' / f'{issue_id_for_today()}.md'
+
+
+def brief_path_for_today() -> Path:
+    return WORKSPACE / 'research' / 'briefs' / f'EDITORIAL-BRIEF-{today_str()}{slot_suffix()}.md'
+
+
+def raw_intel_path_for_today() -> Path:
+    return WORKSPACE / 'research' / 'raw' / f'RAW-INTEL-{today_str()}{slot_suffix()}.md'
+
+
 def list_issue_files() -> list[Path]:
     root = WORKSPACE / 'content' / 'issues'
     patterns = [
@@ -90,23 +119,40 @@ def list_issue_files() -> list[Path]:
 
 
 def latest_issue_path() -> Path:
+    current = issue_path_for_today()
+    if current.exists() or issue_slot() in {'am', 'pm'}:
+        return current
     files = list_issue_files()
     if files:
         def _date_key(p: Path) -> str:
             m = re.search(r'(\d{4}-\d{2}-\d{2})', p.name)
             return (m.group(1) if m else '0000-00-00') + '|' + p.name
         return sorted(files, key=_date_key)[-1]
-    return WORKSPACE / 'content' / 'issues' / f'{today_str()}.md'
+    return current
 
 
 def latest_brief_path() -> Path:
-    files = sorted((WORKSPACE / 'research' / 'briefs').glob('EDITORIAL-BRIEF-*.md'))
-    return files[-1] if files else WORKSPACE / 'research' / 'briefs' / f'EDITORIAL-BRIEF-{today_str()}.md'
+    # Backward-compatible name, but now slot-safe for production runs.
+    return brief_path_for_today()
 
 
 def latest_raw_intel_path() -> Path:
-    files = sorted((WORKSPACE / 'research' / 'raw').glob('RAW-INTEL-*.md'))
-    return files[-1] if files else WORKSPACE / 'research' / 'raw' / f'RAW-INTEL-{today_str()}.md'
+    # Backward-compatible name, but now slot-safe for production runs.
+    return raw_intel_path_for_today()
+
+
+def require_fresh_context() -> tuple[str, str]:
+    brief_path = brief_path_for_today()
+    raw_path = raw_intel_path_for_today()
+    missing = [path.as_posix() for path in [brief_path, raw_path] if not path.exists()]
+    if missing:
+        raise ValueError('Fresh slot-specific context missing: ' + ', '.join(missing))
+    brief_text = load_text(brief_path)
+    raw_text = load_text(raw_path)
+    hits = contains_placeholder_or_meta(brief_text + '\n' + raw_text)
+    if hits:
+        raise ValueError('Fresh slot-specific context is contaminated: ' + ', '.join(hits[:4]))
+    return brief_text, raw_text
 
 
 def slugify(value: str) -> str:
@@ -217,28 +263,22 @@ def bulletize(lines: list[str], minimum: int = 3) -> list[str]:
         if key not in seen:
             seen.add(key)
             deduped.append(item)
-    fillers = [
-        '- Teams get more value when AI is attached to a concrete workflow instead of a vague mandate.',
-        '- Local and hybrid deployments matter when privacy, latency, or repeatability is part of the buying decision.',
-        '- Operators still need evidence, process, and measurable outcomes before a tool becomes part of the stack.',
-    ]
-    while len(deduped) < minimum:
-        deduped.append(fillers[len(deduped) % len(fillers)])
+    if len(deduped) < minimum:
+        raise ValueError('Not enough substantive bullets available; refusing generic filler.')
     return deduped[:max(minimum, len(deduped))]
 
 
 def extract_research_links() -> list[tuple[str, str]]:
     links: list[tuple[str, str]] = []
     seen: set[str] = set()
-    raw_dir = WORKSPACE / 'research' / 'raw'
-    if not raw_dir.exists():
-        return links
-    for path in sorted(raw_dir.glob('*.md'))[-12:]:
+    raw_path = raw_intel_path_for_today()
+    candidate_paths = [raw_path] if raw_path.exists() else []
+    for path in candidate_paths:
         text = load_text(path)
         title = extract_title(text, path.stem)
         for match in re.finditer(r'https?://\S+', text):
             url = match.group(0).rstrip(').,]')
-            if 'example.com' in url.lower() or url in seen:
+            if 'example.com' in url.lower() or 'ollama.com/blog' in url.lower() or url in seen:
                 continue
             seen.add(url)
             links.append((title, url))
@@ -251,40 +291,34 @@ def normalize_sources(sources: str) -> str:
     for match in re.finditer(r'\[([^\]]+)\]\((https?://[^)]+)\)', sources):
         label = match.group(1).strip()
         url = match.group(2).strip()
-        if 'example.com' in url.lower() or url in seen:
+        if 'example.com' in url.lower() or 'ollama.com/blog' in url.lower() or url in seen:
             continue
         seen.add(url)
         entries.append(f'- [{label}]({url})')
-    if not entries:
-        for label, url in extract_research_links()[:5]:
+    if len(entries) < 3:
+        for label, url in extract_research_links():
             if url not in seen:
                 seen.add(url)
                 entries.append(f'- [{label}]({url})')
-    return '\n'.join(entries) if entries else '- No source links were available for this run.'
+            if len(entries) >= 3:
+                break
+    if len(entries) < 3:
+        raise ValueError('Need at least 3 non-Ollama source links for publication.')
+    return '\n'.join(entries)
 
 
 def ensure_workflow_block(workflow: str) -> str:
     workflow = workflow.strip()
-    fallback = """```bash
-# 1) Pick one workflow that already exists
-python agent_loop.py all
-
-# 2) Define your success metric before rollout
-echo \"Measure time saved, error rate, and cycle time\"
-
-# 3) Pilot with one team and review results weekly
-echo \"Promote only if the workflow is repeatable\"
-```"""
     if '```' in workflow:
         return workflow
-    if workflow:
-        return workflow + '\n\n' + fallback
-    return fallback
+    if not workflow:
+        raise ValueError('Workflow section missing concrete workflow block.')
+    return workflow + '\n\n```text\nOperator checklist:\n1. Choose the workflow to test.\n2. Run it on one real task.\n3. Measure time saved, quality, and repeatability.\n```'
 
 
 def sanitize_text(text: str) -> str:
     text = re.sub(r'!\[[^\]]*\]\([^\)]*\)', '', text)
-    text = re.sub(r'```(?:json|markdown)?', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'```(?:json|markdown)?', '```', text, flags=re.IGNORECASE)
     text = text.replace('placeholder_image.png', '')
     text = re.sub(r'\[([^\]]+)\]\(https?://example\.com[^)]*\)', r'\1', text, flags=re.IGNORECASE)
     text = re.sub(r'https?://example\.com\S*', '', text, flags=re.IGNORECASE)
@@ -310,7 +344,7 @@ def _research_paragraphs(text: str) -> list[str]:
     paras = [p.strip() for p in re.split(r'\n\s*\n', cleaned) if p.strip()]
     out: list[str] = []
     for para in paras:
-        if _is_meta_line(para):
+        if _is_meta_line(para) or contains_placeholder_or_meta(para):
             continue
         if len(para.split()) >= 20:
             out.append(para)
@@ -335,10 +369,7 @@ def _expand_top_story(brief_text: str, raw_text: str) -> str:
         if len(selected) >= 2 and words >= 110:
             break
     if len(selected) < 2 or words < 80:
-        raise ValueError(
-            "Top Story contract failure: missing substantive content. "
-            "Need multiple research paragraphs; refusing single-paragraph autofill."
-        )
+        raise ValueError('Top Story contract failure: missing substantive fresh content.')
     return '\n\n'.join(selected)
 
 
@@ -347,10 +378,7 @@ def normalize_issue_text(text: str, issue_path: Path | None = None) -> str:
     issue_date = issue_date_from_path(issue_path)
     upstream_hits = contains_placeholder_or_meta(text)
     if upstream_hits:
-        raise ValueError(
-            "Placeholder/meta upstream content blocked by issue contract: "
-            + ", ".join(upstream_hits[:4])
-        )
+        raise ValueError('Placeholder/meta upstream content blocked by issue contract: ' + ', '.join(upstream_hits[:4]))
 
     text = sanitize_text(text)
     title = extract_title(text, f'ForgeCore AI Brief — {issue_date}')
@@ -359,13 +387,14 @@ def normalize_issue_text(text: str, issue_path: Path | None = None) -> str:
     if title.strip().lower() in existing_titles:
         title = f'{title.strip()} — {issue_date}'
 
-    brief_text = load_text(latest_brief_path())
-    raw_text = load_text(latest_raw_intel_path())
+    brief_text, raw_text = require_fresh_context()
 
     hook = sanitize_text(extract_section(text, ['Hook', 'Opening', 'Editor']))
     if not hook:
         hook = first_paragraph(brief_text) or first_paragraph(raw_text)
     hook = dedup_paragraphs(hook)
+    if len(hook.split()) < 20:
+        raise ValueError('Hook contract failure: missing or too short.')
 
     top_story = sanitize_text(extract_section(text, ['Top Story', 'Main Story']))
     if not top_story or len(top_story.split()) < 80:
@@ -384,8 +413,8 @@ def normalize_issue_text(text: str, issue_path: Path | None = None) -> str:
     tool = sanitize_text(extract_section(text, ['Tool of the Week']))
     if not tool:
         tool = sanitize_text(extract_brief_field(brief_text, 'Tool of the Week'))
-    if not tool:
-        tool = 'OpenAI-powered agent workflows shorten the path from idea to implementation while keeping output quality and governance consistent.'
+    if not tool or len(tool.split()) < 20:
+        raise ValueError('Tool of the Week contract failure: missing substantive tool guidance.')
     tool = dedup_paragraphs(tool)
 
     workflow = sanitize_text(extract_section(text, ['Workflow', 'Implementation']))
@@ -403,7 +432,7 @@ def normalize_issue_text(text: str, issue_path: Path | None = None) -> str:
 
     sources = normalize_sources(extract_section(text, ['Sources']))
 
-    return '\n\n'.join([
+    normalized = '\n\n'.join([
         f'# {title}',
         '## Hook\n' + hook.strip(),
         '## Top Story\n' + top_story.strip(),
@@ -414,10 +443,14 @@ def normalize_issue_text(text: str, issue_path: Path | None = None) -> str:
         '## CTA\n' + cta.strip(),
         '## Sources\n' + sources.strip(),
     ]).strip() + '\n'
+    final_hits = contains_placeholder_or_meta(normalized)
+    if final_hits:
+        raise ValueError('Normalized issue still contains placeholder/meta content: ' + ', '.join(final_hits[:4]))
+    return normalized
 
 
 def ensure_issue_contract(path: Path | None = None) -> Path:
-    path = path or latest_issue_path()
+    path = path or issue_path_for_today()
     normalized = normalize_issue_text(load_text(path), path)
     write_text(path, normalized)
     return path
