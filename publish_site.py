@@ -9,6 +9,7 @@ writes static HTML.
 from __future__ import annotations
 
 import html
+import json
 import os
 import re
 from datetime import datetime, timezone
@@ -73,6 +74,17 @@ def title_from_markdown(text: str, fallback: str) -> str:
     return fallback.replace("-", " ").title()
 
 
+def issue_iso_date(slug: str) -> str:
+    match = re.match(r"(\d{4})-(\d{2})-(\d{2})", slug)
+    if not match:
+        return datetime.now(timezone.utc).date().isoformat()
+    year, month, day = match.groups()
+    try:
+        return datetime(int(year), int(month), int(day), tzinfo=timezone.utc).date().isoformat()
+    except ValueError:
+        return datetime.now(timezone.utc).date().isoformat()
+
+
 def date_from_slug(slug: str) -> str:
     match = re.match(r"(\d{4})-(\d{2})-(\d{2})", slug)
     if not match:
@@ -99,6 +111,18 @@ def excerpt_from_markdown(text: str) -> str:
     if len(excerpt) > 240:
         excerpt = excerpt[:237].rstrip() + "..."
     return excerpt or NEWSLETTER_TAGLINE
+
+
+def meta_description(value: str) -> str:
+    description = " ".join((value or NEWSLETTER_TAGLINE).split())
+    if len(description) > 156:
+        description = description[:153].rstrip() + "..."
+    return description
+
+
+def canonical_url(path: str = "") -> str:
+    clean_path = path.strip("/")
+    return f"{SITE_BASE_URL}/{clean_path}/" if clean_path else f"{SITE_BASE_URL}/"
 
 
 def is_valid_issue(text: str) -> bool:
@@ -177,9 +201,27 @@ def markdown_to_html(markdown: str) -> str:
     return "\n".join(blocks)
 
 
-def base_template(title: str, body: str, description: str = "") -> str:
+def base_template(
+    title: str,
+    body: str,
+    description: str = "",
+    *,
+    canonical_path: str = "",
+    og_type: str = "website",
+    schema: dict | None = None,
+) -> str:
+    description = meta_description(description)
+    url = canonical_url(canonical_path)
     escaped_title = html.escape(title)
-    escaped_description = html.escape(description or NEWSLETTER_TAGLINE)
+    escaped_description = html.escape(description)
+    escaped_url = html.escape(url)
+    schema_html = ""
+    if schema:
+        schema_html = (
+            '<script type="application/ld+json">'
+            + html.escape(json.dumps(schema, ensure_ascii=False, separators=(",", ":")))
+            + "</script>"
+        )
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -187,6 +229,16 @@ def base_template(title: str, body: str, description: str = "") -> str:
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{escaped_title}</title>
   <meta name="description" content="{escaped_description}">
+  <link rel="canonical" href="{escaped_url}">
+  <meta property="og:type" content="{html.escape(og_type)}">
+  <meta property="og:title" content="{escaped_title}">
+  <meta property="og:description" content="{escaped_description}">
+  <meta property="og:url" content="{escaped_url}">
+  <meta property="og:site_name" content="ForgeCore">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="{escaped_title}">
+  <meta name="twitter:description" content="{escaped_description}">
+  {schema_html}
   <style>
     :root {{ color-scheme: dark; --bg:#080b12; --panel:#111827; --text:#e5e7eb; --muted:#9ca3af; --accent:#38bdf8; --border:#1f2937; }}
     * {{ box-sizing:border-box; }}
@@ -245,6 +297,7 @@ def issue_meta(path: Path) -> dict[str, str]:
         "slug": slug,
         "title": title_from_markdown(text, slug),
         "date": date_from_slug(slug),
+        "iso_date": issue_iso_date(slug),
         "excerpt": excerpt_from_markdown(text),
         "text": text,
     }
@@ -261,15 +314,42 @@ def render_home(issues: list[dict[str, str]]) -> str:
 </section>"""
         )
     body = "<h1>Latest ForgeCore Issues</h1>\n<div class=\"grid\">\n" + "\n".join(cards) + "\n</div>"
-    return base_template(f"ForgeCore | {NEWSLETTER_NAME}", body, NEWSLETTER_TAGLINE)
+    schema = {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "ForgeCore",
+        "url": canonical_url(),
+        "description": NEWSLETTER_TAGLINE,
+    }
+    return base_template(f"ForgeCore | {NEWSLETTER_NAME}", body, NEWSLETTER_TAGLINE, schema=schema)
 
 
 def render_issue(issue: dict[str, str]) -> str:
+    article_url = canonical_url(issue["slug"])
     article = f"""<article>
   <div class="date">{html.escape(issue['date'])}</div>
   {markdown_to_html(issue['text'])}
 </article>"""
-    return base_template(f"{issue['title']} | ForgeCore", article, issue["excerpt"])
+    schema = {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": issue["title"],
+        "description": meta_description(issue["excerpt"]),
+        "datePublished": issue["iso_date"],
+        "dateModified": datetime.now(timezone.utc).date().isoformat(),
+        "author": {"@type": "Organization", "name": "ForgeCore"},
+        "publisher": {"@type": "Organization", "name": "ForgeCore"},
+        "mainEntityOfPage": {"@type": "WebPage", "@id": article_url},
+        "url": article_url,
+    }
+    return base_template(
+        f"{issue['title']} | ForgeCore",
+        article,
+        issue["excerpt"],
+        canonical_path=issue["slug"],
+        og_type="article",
+        schema=schema,
+    )
 
 
 def render_rss(issues: list[dict[str, str]]) -> str:
