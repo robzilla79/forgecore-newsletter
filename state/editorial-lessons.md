@@ -435,3 +435,56 @@
   - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
   - Name the exact operator persona, job-to-be-done, tool stack, and tradeoff.
   - Make the headline name the workflow, operator, tool choice, or measurable outcome.
+
+
+---
+
+## 2026-05-02 04:30:38 UTC — /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-02-am.md
+- Improvement result: changed (rewritten issue saved)
+- Critic score: 10.0 | verdict: needs_revision
+- Weaknesses found:
+  - Enhance the hook to create a stronger emotional connection.
+  - Revise the headline to make it more engaging and action-oriented.
+  - 1. Rewrite the hook to emphasize the urgency of adapting to AI changes.
+  - 2. Create a more compelling headline that highlights the benefits of AEO analysis.
+  - 3. Ensure measurable outcomes are clearly stated in the 'Why It Matters' section.
+  - The hook lacks urgency and emotional appeal.
+- Rules for future issues:
+  - Start the Hook with the operator outcome or decision, not a product announcement.
+  - Make the headline name the workflow, operator, tool choice, or measurable outcome.
+  - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
+
+
+---
+
+## 2026-05-02 04:31:08 UTC — /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-02-am.md
+- Improvement result: changed (rewritten issue saved)
+- Critic score: 10.0 | verdict: needs_revision
+- Weaknesses found:
+  - Clarify the urgency and importance of AEO analysis in the hook
+  - Streamline the workflow and checklist sections for better readability
+  - Revise the CTAs to avoid repetition and enhance motivation
+  - Revise the hook to emphasize urgency and importance
+  - Condense the workflow and checklist for clarity
+  - Enhance the CTAs to be more compelling and less repetitive
+- Rules for future issues:
+  - Start the Hook with the operator outcome or decision, not a product announcement.
+  - Turn vague advice into 3-6 named steps plus one prompt, checklist, config, or command block.
+  - CTA must tell the reader what to try this week and include subscribe plus sponsor links.
+
+
+---
+
+## 2026-05-02 04:31:34 UTC — /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-02-am.md
+- Improvement result: changed (rewritten issue saved)
+- Critic score: 10.0 | verdict: needs_revision
+- Weaknesses found:
+  - Enhance originality by including unique case studies or examples of successful AEO implementation
+  - Add specific metrics or outcomes that solo marketers can expect from using AEO analysis
+  - Incorporate unique case studies or examples to enhance originality
+  - Specify measurable outcomes or metrics related to AEO analysis
+  - Reduce repetitive explanations to improve clarity and engagement
+  - Lacks unique insights or examples
+- Rules for future issues:
+  - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
+  - Name the exact operator persona, job-to-be-done, tool stack, and tradeoff.
