@@ -80,6 +80,7 @@ jobs:
       MIN_RESEARCH_DOMAINS: '3'
       MIN_OPERATOR_SIGNALS: '4'
       MAX_SINGLE_DOMAIN_SHARE: '0.65'
+      MAX_AFFILIATE_LINKS_PER_ISSUE: '1'
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       KIT_API_KEY: ${{ secrets.KIT_API_KEY }}
       KIT_FORM_ID: ${{ secrets.KIT_FORM_ID }}
@@ -131,6 +132,9 @@ jobs:
 
       - name: Run quality gate
         run: python quality_gate.py
+
+      - name: Activate approved affiliate links
+        run: python affiliate_linker.py
 
       - name: Run monetization guard
         run: python monetization_guard.py

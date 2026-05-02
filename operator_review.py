@@ -171,6 +171,7 @@ def duplicate_risks(issues: list[dict[str, Any]]) -> list[str]:
 def state_summary() -> list[str]:
     quality = latest_json("quality-gate-")
     critic = latest_json("critic-review-")
+    affiliate = latest_json("affiliate-linker-")
     monetization = latest_json("monetization-guard-")
     lines: list[str] = []
     if quality:
@@ -190,6 +191,16 @@ def state_summary() -> list[str]:
         )
     else:
         lines.append("Critic latest: no artifact found")
+    if affiliate:
+        activated = affiliate.get("activated_links", []) or []
+        tools = ", ".join(item.get("tool", "unknown") for item in activated if isinstance(item, dict)) or "none"
+        lines.append(
+            "Affiliate linker latest: "
+            f"{'changed' if affiliate.get('changed') else 'no change'}; "
+            f"activated={len(activated)} ({tools})"
+        )
+    else:
+        lines.append("Affiliate linker latest: no artifact found")
     if monetization:
         lines.append(
             "Monetization guard latest: "
@@ -210,7 +221,7 @@ def recommendation(issues: list[dict[str, Any]], site_label: str, duplicate_item
         return "Review duplicate-topic risk and keep the dedupe threshold active for the next two cycles."
     if latest and (latest.get("words", 0) < 750 or latest.get("urls", 0) < 3):
         return "Tighten article depth: latest issue is thin or undersourced."
-    return "Hold the pipeline steady for the next cycle, then continue replacing affiliate placeholders with real approved partner URLs."
+    return "Monitor affiliate linker performance and add remaining approved partner URLs as they arrive."
 
 
 def build_report() -> str:
@@ -260,7 +271,7 @@ def build_report() -> str:
     for check in site_checks:
         lines.append(f"- {check}")
 
-    lines.extend(["", "## Quality / Critic / Monetization Artifacts", ""])
+    lines.extend(["", "## Quality / Critic / Affiliate / Monetization Artifacts", ""])
     for line in state_summary():
         lines.append(f"- {line}")
 
@@ -276,7 +287,7 @@ def build_report() -> str:
         "## Operator Notes",
         "",
         "- This report does not generate, edit, publish, or deploy newsletter content.",
-        "- It is a daily dashboard for spotting quality drift, duplicate topics, monetization guard status, and deployment problems.",
+        "- It is a daily dashboard for spotting quality drift, duplicate topics, affiliate activation, monetization guard status, and deployment problems.",
     ])
     return "\n".join(lines).rstrip() + "\n"
 
