@@ -9,3 +9,23 @@
 ---
 
 [2026-05-02 04:30:11 UTC] editor draft is short but recoverable (628 words); passing to improvement loop
+
+
+---
+
+[2026-05-02 10:41:52 UTC] scout memo included 2 source URLs; appended 3 deterministic URLs from today's research
+
+
+---
+
+[2026-05-02 10:42:52 UTC] editor duplicate-topic rejection on attempt 1/2: editor generated a topic too similar to recent issue 2026-05-02-am.md: 'How Solo Marketers Can Use AEO Competitor Analysis to Boost Brand Visibility' vs 'How Solo Marketers Can Use AEO Analysis to Boost Brand Visibility' (similarity=0.83)
+
+
+---
+
+[2026-05-02 10:43:05 UTC] editor duplicate-topic rejection on attempt 2/2: editor generated a topic too similar to recent issue 2026-05-02-am.md: 'How Solo Marketers Can Use AEO Competitor Analysis to Boost Brand Visibility' vs 'How Solo Marketers Can Use AEO Analysis to Boost Brand Visibility' (similarity=0.83)
+
+
+---
+
+[2026-05-02 10:43:05 UTC] editor exhausted duplicate-topic retries; preserving valid Author draft and passing it to improvement loop

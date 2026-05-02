@@ -488,3 +488,57 @@
 - Rules for future issues:
   - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
   - Name the exact operator persona, job-to-be-done, tool stack, and tradeoff.
+
+
+---
+
+## 2026-05-02 10:43:24 UTC — /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-02-pm.md
+- Improvement result: changed (rewritten issue saved)
+- Critic score: 8.0 | verdict: publishable
+- Weaknesses found:
+  - Enhance the headline to better capture attention and convey urgency.
+  - Revise the headline for stronger impact.
+  - Clarify the monetization trust by providing more context on tool effectiveness.
+  - Headline could be more compelling
+  - Monetization trust could be improved with clearer tool recommendations
+  - Workflow code block is missing
+- Rules for future issues:
+  - Make the headline name the workflow, operator, tool choice, or measurable outcome.
+  - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
+  - Turn vague advice into 3-6 named steps plus one prompt, checklist, config, or command block.
+
+
+---
+
+## 2026-05-02 10:43:54 UTC — /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-02-pm.md
+- Improvement result: changed (rewritten issue saved)
+- Critic score: 10.0 | verdict: needs_revision
+- Weaknesses found:
+  - Clarify measurable outcomes from implementing AEO analysis
+  - Enhance execution steps to ensure they are actionable this week
+  - 1. Define specific measurable outcomes for AEO analysis.
+  - 2. Simplify and clarify execution steps in the workflow.
+  - 3. Reduce repetition in the highlights and why it matters sections.
+  - Lacks specific measurable outcomes for the AEO analysis
+- Rules for future issues:
+  - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
+  - Turn vague advice into 3-6 named steps plus one prompt, checklist, config, or command block.
+  - Name the exact operator persona, job-to-be-done, tool stack, and tradeoff.
+
+
+---
+
+## 2026-05-02 10:44:17 UTC — /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-02-pm.md
+- Improvement result: changed (rewritten issue saved)
+- Critic score: 10.0 | verdict: needs_revision
+- Weaknesses found:
+  - Clarify measurable outcomes for solo marketers to expect from AEO analysis.
+  - Enhance the headline to better capture attention and convey value.
+  - Revise the headline to make it more compelling and specific.
+  - Strengthen the hook to better engage the reader.
+  - Add concrete examples of measurable outcomes from implementing AEO analysis.
+  - Lacks a strong, compelling headline.
+- Rules for future issues:
+  - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
+  - Make the headline name the workflow, operator, tool choice, or measurable outcome.
+  - Start the Hook with the operator outcome or decision, not a product announcement.

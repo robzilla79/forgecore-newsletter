@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "issue": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-02-pm.md",
+  "registry": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/monetization/affiliate-registry.json",
+  "errors": [],
+  "warnings": [],
+  "run_token": "",
+  "validation_only": true,
+  "artifact_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/monetization-guard-2026-05-02-pm.json"
+}

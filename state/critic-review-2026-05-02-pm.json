@@ -19,24 +19,25 @@
   },
   "weak_categories": [],
   "strengths": [
-    "Provides a structured approach to AEO competitor analysis.",
-    "Includes actionable steps and tools for implementation."
+    "Provides a clear workflow for AEO competitor analysis.",
+    "Includes measurable outcomes like increased traffic and time savings."
   ],
   "weaknesses": [
-    "Lacks a clear measurable outcome for the operator.",
-    "The CTA is somewhat generic and could be more compelling."
+    "Lacks a strong, specific operator persona.",
+    "Does not clearly define the job-to-be-done for the reader."
   ],
   "must_fix": [
-    "Clarify the measurable outcome of implementing AEO analysis (e.g., specific engagement metrics).",
-    "Enhance the CTA to provide a more direct action for the reader."
+    "Clearly define the target operator persona to enhance relatability.",
+    "Specify the job-to-be-done to clarify the issue's purpose."
   ],
   "rewrite_plan": [
-    "Define a specific measurable outcome for marketing managers (e.g., expected increase in engagement or visibility).",
-    "Revise the CTA to be more actionable and compelling."
+    "Define a specific operator persona (e.g., solo digital marketers).",
+    "Clarify the job-to-be-done in the introduction.",
+    "Enhance the hook to better capture attention."
   ],
-  "summary": "The issue provides actionable insights for marketing managers to enhance brand visibility through AEO competitor analysis, but lacks clarity in execution and specificity in outcomes.",
+  "summary": "The issue provides actionable insights for solo marketers on AEO competitor analysis but lacks clarity in execution and measurable outcomes.",
   "verdict": "needs_revision",
   "consistency_note": "Critic output was internally inconsistent: high overall score (10.00) with weak categories specificity. Overall score takes precedence for publish gating.",
-  "run_token": "pass-1-1777716192033190788",
+  "run_token": "pass-4-1777718657437828506",
   "artifact_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/critic-review-2026-05-02-pm.json"
 }
