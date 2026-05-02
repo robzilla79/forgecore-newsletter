@@ -29,6 +29,8 @@ load_project_env()
 EDITOR_MODEL = os.getenv("EDITOR_MODEL", "gpt-4o-mini")
 MAX_CONTEXT_CHARS = int(os.getenv("MAX_CONTEXT_CHARS", "22000"))
 MAX_TARGETED_REWRITE_ITEMS = int(os.getenv("MAX_TARGETED_REWRITE_ITEMS", "6"))
+REQUIRED_CTA_URL = "https://forgecore-newsletter.beehiiv.com/"
+REQUIRED_SPONSOR_EMAIL = "sponsors@forgecore.co"
 
 STATE_DIR = WORKSPACE / "state"
 IMPROVE_LOG = STATE_DIR / "improvement-log.md"
@@ -179,6 +181,14 @@ def workflow_has_code_block(markdown: str) -> bool:
     return "```" in workflow
 
 
+def cta_is_complete(markdown: str) -> bool:
+    cta = section_body(markdown, "## CTA")
+    if len(cta.split()) < 8:
+        return False
+    lower = cta.lower()
+    return REQUIRED_CTA_URL in cta and REQUIRED_SPONSOR_EMAIL in cta and "sponsor this issue" in lower
+
+
 def ensure_tool_recommendation(markdown: str) -> str:
     if has_tool_recommendation(markdown):
         return markdown
@@ -231,6 +241,23 @@ def ensure_sources(markdown: str) -> str:
     return replace_section(markdown, "## Sources", source_lines)
 
 
+def ensure_cta(markdown: str) -> str:
+    if cta_is_complete(markdown):
+        return markdown
+    body = section_body(markdown, "## CTA")
+    body = re.sub(r"\s+", " ", body).strip()
+    if len(body.split()) < 8 or "sponsor this issue" not in body.lower():
+        body = (
+            "Run this workflow once this week and measure whether it gives you a clearer tool decision, faster research cycle, or better follow-up system. "
+            f"Subscribe for more operator-grade AI workflows: {REQUIRED_CTA_URL}"
+        )
+    if REQUIRED_CTA_URL not in body:
+        body += f" Subscribe here: {REQUIRED_CTA_URL}"
+    if REQUIRED_SPONSOR_EMAIL not in body or "sponsor this issue" not in body.lower():
+        body += f" Sponsor this issue: email {REQUIRED_SPONSOR_EMAIL}."
+    return replace_section(markdown, "## CTA", body)
+
+
 def enforce_deterministic_guardrails(markdown: str) -> tuple[str, list[str]]:
     changed: list[str] = []
     current = markdown
@@ -239,6 +266,7 @@ def enforce_deterministic_guardrails(markdown: str) -> tuple[str, list[str]]:
         ("trust warning", ensure_trust_warning),
         ("workflow code block", ensure_workflow_block),
         ("source URLs", ensure_sources),
+        ("CTA", ensure_cta),
     ]
     for label, fn in updates:
         updated = fn(current)
