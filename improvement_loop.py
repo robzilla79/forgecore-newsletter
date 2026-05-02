@@ -149,7 +149,48 @@ def section_body(text: str, section: str) -> str:
     return match.group(1).strip() if match else ""
 
 
+def split_sections(markdown: str) -> tuple[str, dict[str, list[str]]]:
+    title_match = re.search(r"^#\s+.+$", markdown, flags=re.MULTILINE)
+    title = title_match.group(0).strip() if title_match else "# ForgeCore Operator Workflow"
+    sections: dict[str, list[str]] = {section: [] for section in REQUIRED_ISSUE_SECTIONS}
+    matches = list(re.finditer(r"^##\s+.+$", markdown, flags=re.MULTILINE))
+    for idx, match in enumerate(matches):
+        heading = match.group(0).strip()
+        normalized = next((section for section in REQUIRED_ISSUE_SECTIONS if section.lower() == heading.lower()), None)
+        if not normalized:
+            continue
+        start = match.end()
+        end = matches[idx + 1].start() if idx + 1 < len(matches) else len(markdown)
+        body = markdown[start:end].strip()
+        if body:
+            sections[normalized].append(body)
+    return title, sections
+
+
+def collapse_duplicate_sections(markdown: str) -> str:
+    title, sections = split_sections(markdown)
+    out = [title]
+    for section in REQUIRED_ISSUE_SECTIONS:
+        bodies = sections.get(section, [])
+        if not bodies:
+            out.append(f"{section}\n")
+            continue
+        if section in {"## Workflow", "## CTA", "## Sources"}:
+            combined: list[str] = []
+            seen: set[str] = set()
+            for body in bodies:
+                key = re.sub(r"\s+", " ", body).strip().lower()
+                if key and key not in seen:
+                    seen.add(key)
+                    combined.append(body)
+            out.append(f"{section}\n" + "\n\n".join(combined))
+        else:
+            out.append(f"{section}\n" + bodies[0])
+    return "\n\n".join(part.strip() for part in out if part.strip()) + "\n"
+
+
 def replace_section(markdown: str, section: str, replacement_body: str) -> str:
+    markdown = collapse_duplicate_sections(markdown)
     pattern = rf"^{re.escape(section)}\n(.+?)(?=^## |\Z)"
     replacement = f"{section}\n{replacement_body.strip()}\n\n"
     if re.search(pattern, markdown, flags=re.MULTILINE | re.DOTALL):
@@ -206,7 +247,7 @@ def ensure_required_sections(markdown: str) -> str:
     for section in REQUIRED_ISSUE_SECTIONS:
         if section not in current:
             current = current.rstrip() + f"\n\n{section}\n"
-    return current.rstrip() + "\n"
+    return collapse_duplicate_sections(current.rstrip() + "\n")
 
 
 def ensure_tool_recommendation(markdown: str) -> str:
@@ -289,6 +330,7 @@ def enforce_deterministic_guardrails(markdown: str) -> tuple[str, list[str]]:
         ("workflow code block", ensure_workflow_block),
         ("source URLs", ensure_sources),
         ("CTA", ensure_cta),
+        ("duplicate sections", collapse_duplicate_sections),
     ]
     for label, fn in updates:
         updated = fn(current)
