@@ -21,6 +21,7 @@ STATE_DIR = WORKSPACE / "state"
 DIST_DIR = WORKSPACE / "site" / "dist"
 REPORT_DIR = WORKSPACE / "state" / "operator-reviews"
 LATEST_REPORT = WORKSPACE / "state" / "operator-review-latest.md"
+KIT_SENT_LOG = STATE_DIR / "kit_sent.json"
 
 REQUIRED_SECTIONS = [
     "## Hook",
@@ -113,6 +114,20 @@ def latest_json(prefix: str) -> dict[str, Any]:
     return load_json(files[0]) if files else {}
 
 
+def kit_status_for_latest(latest_slug: str) -> str:
+    sent = load_json(KIT_SENT_LOG)
+    if not sent:
+        return "Kit latest: no draft/send log found"
+    if latest_slug in sent:
+        item = sent.get(latest_slug, {}) if isinstance(sent.get(latest_slug), dict) else {}
+        return (
+            "Kit latest: synced; "
+            f"mode={item.get('mode', 'unknown')}; "
+            f"broadcast_id={item.get('broadcast_id', 'unknown')}"
+        )
+    return f"Kit latest: no entry for `{latest_slug}`"
+
+
 def site_status(latest_slug: str) -> tuple[str, list[str]]:
     checks: list[str] = []
     homepage = DIST_DIR / "index.html"
@@ -168,7 +183,7 @@ def duplicate_risks(issues: list[dict[str, Any]]) -> list[str]:
     return risks[:6]
 
 
-def state_summary() -> list[str]:
+def state_summary(latest_slug: str) -> list[str]:
     quality = latest_json("quality-gate-")
     critic = latest_json("critic-review-")
     affiliate = latest_json("affiliate-linker-")
@@ -210,6 +225,8 @@ def state_summary() -> list[str]:
         )
     else:
         lines.append("Monetization guard latest: no artifact found")
+    if latest_slug:
+        lines.append(kit_status_for_latest(latest_slug))
     return lines
 
 
@@ -221,7 +238,7 @@ def recommendation(issues: list[dict[str, Any]], site_label: str, duplicate_item
         return "Review duplicate-topic risk and keep the dedupe threshold active for the next two cycles."
     if latest and (latest.get("words", 0) < 750 or latest.get("urls", 0) < 3):
         return "Tighten article depth: latest issue is thin or undersourced."
-    return "Monitor affiliate linker performance and add remaining approved partner URLs as they arrive."
+    return "Monitor Kit drafts, affiliate linker performance, and remaining approved partner URLs as they arrive."
 
 
 def build_report() -> str:
@@ -271,8 +288,8 @@ def build_report() -> str:
     for check in site_checks:
         lines.append(f"- {check}")
 
-    lines.extend(["", "## Quality / Critic / Affiliate / Monetization Artifacts", ""])
-    for line in state_summary():
+    lines.extend(["", "## Quality / Critic / Affiliate / Monetization / Kit Artifacts", ""])
+    for line in state_summary(latest_slug):
         lines.append(f"- {line}")
 
     lines.extend(["", "## Duplicate Topic Watchlist", ""])
@@ -287,7 +304,7 @@ def build_report() -> str:
         "## Operator Notes",
         "",
         "- This report does not generate, edit, publish, or deploy newsletter content.",
-        "- It is a daily dashboard for spotting quality drift, duplicate topics, affiliate activation, monetization guard status, and deployment problems.",
+        "- It is a daily dashboard for spotting quality drift, duplicate topics, affiliate activation, monetization guard status, Kit draft sync, and deployment problems.",
     ])
     return "\n".join(lines).rstrip() + "\n"
 
