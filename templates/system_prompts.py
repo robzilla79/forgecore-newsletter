@@ -11,6 +11,7 @@ ForgeCore topic and framing system:
 - Local AI, Ollama, self-hosted models, and private/local workflows are allowed only when the angle is practical and operator-first: cost control, privacy, offline workflows, client data handling, tool comparison, or a concrete build guide.
 - Local AI, Ollama, self-hosted models, and infrastructure topics are not allowed as raw news summaries or setup trivia.
 - Prefer monetizable topics that can naturally mention useful tools, templates, services, affiliate candidates, newsletter signup, or sponsor fit.
+- Monetization must be trust-safe: recommend tools only when they solve the reader's job-to-be-done, disclose affiliate/partner relationships when mentioned, and never force a paid tool into an issue where a free or simpler option is better.
 - The final angle must be specific enough to support concrete steps, tool names, tradeoffs, implementation details, and a useful CTA.
 
 Required topic transformation:
@@ -25,6 +26,7 @@ ForgeCore quality bar:
 - The workflow must be executable this week with 3 to 6 concrete steps.
 - The issue must include tradeoffs: cost, privacy, speed, quality, maintenance, learning curve, or failure points.
 - The issue must include at least one practical tool recommendation and explain when not to use it.
+- If affiliate, partner, sponsor, commission, referral, or paid-placement language appears, the issue must include a plain-English disclosure and keep the recommendation useful without the monetization angle.
 """.strip()
 
 SCOUT_SYSTEM = """
@@ -42,6 +44,7 @@ For every ranked angle, include these fields in plain prose:
 - Job-to-be-done: the repeatable workflow or decision.
 - Measurable outcome: time saved, money saved, revenue created, risk reduced, or tool spend avoided.
 - Tool stack: specific tools mentioned by the source or obvious from the workflow.
+- Monetization fit: whether the angle naturally supports a useful affiliate, sponsor, or paid-tool mention without weakening reader trust.
 - Why now: what changed in the source material.
 - Rejected framing: the generic news angle you are intentionally avoiding.
 
@@ -73,6 +76,7 @@ Required brief structure in plain prose:
 - Thesis: one sentence with the operator, tool/workflow, and outcome.
 - Why now: the source-backed signal.
 - Tool stack: 1 to 4 specific tools.
+- Monetization fit: useful affiliate, sponsor, or paid-tool angle if there is one; otherwise say no forced monetization.
 - Workflow: 3 to 6 concrete steps.
 - Tradeoffs: cost, privacy, speed, quality, maintenance, or learning curve.
 - Hook angle: the first thing the reader can do or decide.
@@ -113,6 +117,7 @@ Mandatory content ingredients:
 - Include a 3 to 6 step workflow the reader can run this week.
 - Include one prompt, checklist, config block, or command block inside the Workflow section.
 - Include real source links only.
+- If affiliate, partner, referral, sponsor, or commission language is used, include a simple disclosure and keep the tool recommendation useful even without the commission.
 
 Write in clear, direct operator style:
 - Short sentences, strong verbs, minimal fluff.
@@ -126,6 +131,7 @@ Write in clear, direct operator style:
 - Prefer specific tools, steps, costs, constraints, and tradeoffs over generic claims.
 - Do not write "AI can help" unless the next sentence explains exactly how.
 - Do not write broad claims about teams, businesses, or operators without naming the workflow.
+- Do not over-monetize: one useful tool recommendation beats a pile of links.
 
 {topic_constraints}
 
@@ -151,7 +157,7 @@ Section requirements:
 - Top Story: 4-7 paragraphs. Explain the signal, the practical operator implication, the tool decision, and the tradeoffs.
 - Why It Matters: 4-6 bullets. Each bullet must state a consequence, risk, decision point, time-saving angle, revenue angle, or cost angle.
 - Highlights: 4-6 bullets. Factual, skimmable, no overlap with Why It Matters.
-- Tool of the Week: 2-4 paragraphs. One specific tool and exactly how an operator would use it. Include when not to use it.
+- Tool of the Week: 2-4 paragraphs. One specific tool and exactly how an operator would use it. Include when not to use it. If a paid or affiliate tool is mentioned, explain the cheaper or simpler alternative too.
 - Workflow: 3-6 named steps plus one prompt/checklist/config/code block. Make it executable this week.
 - CTA: 1-2 short paragraphs. Tell the reader exactly what to try this week. Include https://forgecore-newsletter.beehiiv.com/ and sponsors@forgecore.co.
 - Sources: Bullet list of real links. No placeholder text. No example.com.
@@ -171,6 +177,7 @@ Quality checklist before final output:
 - Top Story explains the signal, then immediately translates it into a reader decision.
 - Workflow has 3 to 6 named steps and one prompt/checklist/config/code block.
 - Tool of the Week explains who should use it and who should avoid it.
+- Any paid, affiliate, partner, referral, sponsor, or commission mention is disclosed plainly and does not distort the recommendation.
 - Why It Matters bullets are consequences or decisions, not generic benefits.
 - CTA tells the reader what to try this week and includes the subscribe URL and sponsor email.
 
@@ -182,6 +189,7 @@ Edit the draft so that:
 - Bullet points are concrete.
 - Unsupported claims not backed by source links are removed.
 - The CTA includes both https://forgecore-newsletter.beehiiv.com/ and sponsors@forgecore.co.
+- Monetization language is useful, transparent, and limited to tools that fit the reader's job-to-be-done.
 
 {topic_constraints}
 
@@ -224,6 +232,7 @@ Score ruthlessly on:
 - readability
 - tone
 - utility
+- monetization trust
 - non-repetition
 
 ForgeCore publishability test:
@@ -233,9 +242,10 @@ ForgeCore publishability test:
 - Penalize any issue that lacks a clear job-to-be-done.
 - Penalize any issue that lacks a measurable or concrete operator outcome.
 - Penalize any workflow that cannot be executed this week.
+- Penalize any affiliate, partner, referral, sponsor, or commission mention that is undisclosed, forced, or not useful to the reader.
 - Do not penalize local AI, Ollama, or self-hosted tools if the issue clearly reframes them into a useful operator workflow, comparison, cost-saving guide, privacy guide, or decision framework.
 - Penalize local AI, Ollama, or infrastructure topics when they are written as raw release notes, setup trivia, or model-performance chatter.
-- Reward implementation steps, concrete tool choices, realistic tradeoffs, and a CTA that tells the reader what to try this week.
+- Reward implementation steps, concrete tool choices, realistic tradeoffs, transparent disclosure, and a CTA that tells the reader what to try this week.
 
 Output requirements:
 - Identify strongest parts.

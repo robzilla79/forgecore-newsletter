@@ -24,6 +24,28 @@ MIN_CRITIC_OVERALL = float(os.getenv("MIN_CRITIC_OVERALL", "6.5"))
 REQUIRE_CRITIC_REVIEW = os.getenv("REQUIRE_CRITIC_REVIEW", "1") == "1"
 ALLOW_FALLBACK_PUBLISH = os.getenv("ALLOW_FALLBACK_PUBLISH", "0") == "1"
 RUN_TOKEN = os.getenv("RUN_TOKEN", "").strip()
+AFFILIATE_TERMS = (
+    "affiliate",
+    "partner link",
+    "partner links",
+    "commission",
+    "referral link",
+    "sponsored link",
+)
+TRUST_WARNING_PATTERNS = (
+    r"\bdo not use\b",
+    r"\bdon't use\b",
+    r"\bavoid this\b",
+    r"\bnot a fit\b",
+    r"\bwho should avoid\b",
+    r"\buse .* instead if\b",
+)
+TOOL_RECOMMENDATION_PATTERNS = (
+    r"\btool of the week\b",
+    r"\brecommend\b",
+    r"\buse [A-Z][A-Za-z0-9 ._-]{2,}\b",
+    r"\btry [A-Z][A-Za-z0-9 ._-]{2,}\b",
+)
 
 LEAKED_PHRASE_PATTERNS = [
     r"\baudience\s+focus\b",
@@ -54,7 +76,7 @@ def word_count(text: str) -> int:
     return len(re.findall(r"\b\w+\b", text))
 
 
-def find_matching_patterns(text: str, patterns: list[str]) -> list[str]:
+def find_matching_patterns(text: str, patterns: list[str] | tuple[str, ...]) -> list[str]:
     return [p for p in patterns if re.search(p, text, flags=re.IGNORECASE | re.MULTILINE)]
 
 
@@ -67,6 +89,33 @@ def find_duplicate_paragraphs(text: str) -> list[str]:
             continue
         seen[key] = seen.get(key, 0) + 1
     return [key[:80] + "..." for key, count in seen.items() if count > 1]
+
+
+def section_body(text: str, section: str) -> str:
+    match = re.search(rf"^{re.escape(section)}\n(.+?)(?=^## |\Z)", text, flags=re.MULTILINE | re.DOTALL)
+    return match.group(1).strip() if match else ""
+
+
+def has_affiliate_reference(text: str) -> bool:
+    lower = text.lower()
+    return any(term in lower for term in AFFILIATE_TERMS)
+
+
+def has_affiliate_disclosure(text: str) -> bool:
+    lower = text.lower()
+    return (
+        "affiliate" in lower
+        and ("commission" in lower or "may earn" in lower or "we earn" in lower or "partner" in lower)
+    )
+
+
+def has_trust_warning(text: str) -> bool:
+    return bool(find_matching_patterns(text, TRUST_WARNING_PATTERNS))
+
+
+def has_tool_recommendation(text: str) -> bool:
+    tool_section = section_body(text, "## Tool of the Week")
+    return bool(tool_section and find_matching_patterns(tool_section, TOOL_RECOMMENDATION_PATTERNS))
 
 
 def critic_artifact_path(issue_path: Path) -> Path:
@@ -144,6 +193,16 @@ def collect_errors_and_warnings(text: str, critic: dict | None, critic_expected_
     if not top_story_match or len(top_story_match.group(1).split()) < 80:
         errors.append("Top Story section is too thin (need 80+ words)")
 
+    tool_text = section_body(text, "## Tool of the Week")
+    if not tool_text or len(tool_text.split()) < 35:
+        errors.append("Tool of the Week section is missing or too thin (need 35+ words)")
+    if not has_tool_recommendation(text):
+        errors.append("Tool of the Week must include a concrete tool recommendation")
+    if not has_trust_warning(text):
+        errors.append("Issue missing a trust warning such as 'do not use this if' or 'not a fit if'")
+    if has_affiliate_reference(text) and not has_affiliate_disclosure(text):
+        errors.append("Affiliate/partner reference found without clear commission disclosure")
+
     cta_match = re.search(r"^## CTA\n(.+?)(?=^## |\Z)", text, flags=re.MULTILINE | re.DOTALL)
     if not cta_match or len(cta_match.group(1).split()) < 8:
         errors.append("CTA section is missing or too short (need 8+ words)")
@@ -216,6 +275,10 @@ def main() -> int:
         "url_count": len(list(dict.fromkeys(urls))),
         "source_links": list(dict.fromkeys(urls)),
         "has_code_block": "```" in text,
+        "has_tool_recommendation": has_tool_recommendation(text),
+        "has_trust_warning": has_trust_warning(text),
+        "has_affiliate_reference": has_affiliate_reference(text),
+        "has_affiliate_disclosure": has_affiliate_disclosure(text),
         "leaked_phrases": leaked,
         "placeholder_language": missing,
         "duplicate_paragraphs": dupes,
