@@ -1,0 +1,122 @@
+[
+  {
+    "tool": "Castmagic",
+    "category": "content",
+    "primary_use_case": "Turn calls, podcasts, videos, and voice notes into transcripts, summaries, articles, newsletters, and social posts.",
+    "best_for": "Solo operators who already record conversations, interviews, coaching calls, sales calls, or founder notes and want to reuse that raw material.",
+    "not_a_fit_if": "You do not create audio or video, or you need a full publishing/distribution system instead of repurposing assets.",
+    "affiliate_url_env": "AFFILIATE_CASTMAGIC_URL",
+    "fallback_url": "https://www.castmagic.io/",
+    "free_or_cheaper_alternative": "ChatGPT with manual transcripts or built-in meeting transcript exports",
+    "disclosure_required": true,
+    "notes": "Strong fit for ForgeCore articles about content repurposing, founder-led marketing, newsletter production, and turning calls into reusable assets. Recommend only when the workflow starts from audio or video input."
+  },
+  {
+    "tool": "OpusClip",
+    "category": "content",
+    "primary_use_case": "Turn long-form videos into short clips for TikTok, YouTube Shorts, Instagram Reels, and LinkedIn.",
+    "best_for": "Creators, consultants, coaches, and founders with long-form video who need short-form distribution without hiring an editor.",
+    "not_a_fit_if": "You do not publish video, your source videos are weak, or short-form clips are not part of your customer acquisition channel.",
+    "affiliate_url_env": "AFFILIATE_OPUSCLIP_URL",
+    "fallback_url": "https://www.opus.pro/",
+    "free_or_cheaper_alternative": "CapCut or manual clipping inside YouTube Studio",
+    "disclosure_required": true,
+    "notes": "Best used in workflows about content distribution and audience growth. Avoid recommending it as a general AI productivity tool."
+  },
+  {
+    "tool": "Descript",
+    "category": "content",
+    "primary_use_case": "Edit podcasts, screen recordings, courses, and videos with text-based editing and AI cleanup tools.",
+    "best_for": "Solo creators and small teams that publish audio or video and want faster editing without a full professional editing stack.",
+    "not_a_fit_if": "You only need basic trimming, or you already use a professional editor and advanced NLE workflow.",
+    "affiliate_url_env": "AFFILIATE_DESCRIPT_URL",
+    "fallback_url": "https://www.descript.com/",
+    "free_or_cheaper_alternative": "Audacity for audio or CapCut for simple video edits",
+    "disclosure_required": true,
+    "notes": "Good fit for creator workflow articles, podcast-to-newsletter workflows, course production, and screen-recorded SOP production."
+  },
+  {
+    "tool": "Canva",
+    "category": "design",
+    "primary_use_case": "Create lead magnets, social graphics, thumbnails, carousels, simple landing page assets, and brand kits.",
+    "best_for": "Solo operators who need clean marketing assets quickly without becoming designers.",
+    "not_a_fit_if": "You need highly custom brand systems, production-grade illustration, or complex design collaboration.",
+    "affiliate_url_env": "AFFILIATE_CANVA_URL",
+    "fallback_url": "https://www.canva.com/",
+    "free_or_cheaper_alternative": "Canva free plan or Google Slides for basic assets",
+    "disclosure_required": true,
+    "notes": "Strong fit for ForgeCore workflows around lead magnets, simple productized assets, content upgrades, and visual systems."
+  },
+  {
+    "tool": "Beehiiv",
+    "category": "marketing",
+    "primary_use_case": "Run a newsletter, capture subscribers, send broadcasts, build referral loops, and monetize with newsletter-native tools.",
+    "best_for": "Creators, newsletter operators, and solo founders who want email publishing plus growth tools in one platform.",
+    "not_a_fit_if": "You only need a simple contact form, or your business already depends on a full CRM/marketing automation suite.",
+    "affiliate_url_env": "AFFILIATE_BEEHIIV_URL",
+    "fallback_url": "https://www.beehiiv.com/",
+    "free_or_cheaper_alternative": "Substack or a basic email form connected to MailerLite/Brevo",
+    "disclosure_required": true,
+    "notes": "High strategic fit because ForgeCore itself is newsletter-driven. Use for newsletter growth, creator media business, and owned audience workflows."
+  },
+  {
+    "tool": "Zapier",
+    "category": "automation",
+    "primary_use_case": "Connect apps and automate repeatable business workflows without custom code.",
+    "best_for": "Solo operators who need reliable app-to-app automations and want broad integration coverage.",
+    "not_a_fit_if": "The workflow is very high volume, highly custom, cost-sensitive, or better handled with code.",
+    "affiliate_url_env": "AFFILIATE_ZAPIER_URL",
+    "fallback_url": "https://zapier.com/",
+    "free_or_cheaper_alternative": "Make, n8n, or native app automations",
+    "disclosure_required": true,
+    "notes": "Good default recommendation for beginner-friendly automation workflows. Include cost warnings when task volume can get expensive."
+  },
+  {
+    "tool": "Make",
+    "category": "automation",
+    "primary_use_case": "Build visual multi-step automations across apps with more control over branching, data handling, and scenario logic.",
+    "best_for": "Builders and operators who want more control than simple trigger-action automations but still prefer no-code/low-code tools.",
+    "not_a_fit_if": "You want the simplest possible setup, or your team cannot maintain visual automation scenarios.",
+    "affiliate_url_env": "AFFILIATE_MAKE_URL",
+    "fallback_url": "https://www.make.com/",
+    "free_or_cheaper_alternative": "Zapier free plan, n8n self-hosted, or native app integrations",
+    "disclosure_required": true,
+    "notes": "Strong fit for deeper ForgeCore workflow articles where operators automate content ops, lead routing, reporting, or internal systems."
+  },
+  {
+    "tool": "Notion",
+    "category": "operations",
+    "primary_use_case": "Organize projects, docs, SOPs, content calendars, lightweight CRMs, and operating systems.",
+    "best_for": "Solo operators and small teams that need one flexible workspace for knowledge, tasks, and simple databases.",
+    "not_a_fit_if": "You need strict relational database behavior, advanced permissions, or specialized project management at scale.",
+    "affiliate_url_env": "AFFILIATE_NOTION_URL",
+    "fallback_url": "https://www.notion.com/",
+    "free_or_cheaper_alternative": "Google Docs, Google Sheets, Trello, or Airtable free tiers depending on the workflow",
+    "disclosure_required": true,
+    "notes": "Good fit for operating-system articles, content calendars, SOP libraries, and AI-assisted knowledge bases."
+  },
+  {
+    "tool": "Perplexity",
+    "category": "research",
+    "primary_use_case": "Research topics, compare sources, find recent information, and summarize web-backed answers.",
+    "best_for": "Operators who need faster research for content, market scans, tool comparisons, and decision support.",
+    "not_a_fit_if": "You need guaranteed exhaustive research, legal/medical/financial certainty, or private internal-source analysis.",
+    "affiliate_url_env": "AFFILIATE_PERPLEXITY_URL",
+    "fallback_url": "https://www.perplexity.ai/",
+    "free_or_cheaper_alternative": "Google Search plus manual source review or ChatGPT with browsing where available",
+    "disclosure_required": true,
+    "notes": "Good fit for research workflow articles. Always remind readers to verify important claims against primary sources."
+  },
+  {
+    "tool": "Semrush",
+    "category": "marketing",
+    "primary_use_case": "Research keywords, competitors, SEO opportunities, content gaps, and search visibility.",
+    "best_for": "Operators who rely on organic search and need structured SEO research beyond free keyword tools.",
+    "not_a_fit_if": "You are pre-traffic, publishing casually, or cannot turn SEO data into consistent content execution.",
+    "affiliate_url_env": "AFFILIATE_SEMRUSH_URL",
+    "fallback_url": "https://www.semrush.com/",
+    "free_or_cheaper_alternative": "Google Search Console, Google Trends, Ahrefs Webmaster Tools, or free keyword generators",
+    "disclosure_required": true,
+    "notes": "Use in articles about SEO systems, content planning, and competitive research. Avoid pushing it on beginners who do not yet need paid SEO tooling."
+  }
+]
