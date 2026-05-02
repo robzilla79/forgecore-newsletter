@@ -147,6 +147,21 @@ def recent_topic_context() -> str:
     return "\n".join(lines) if lines else "No recent published issues yet."
 
 
+def affiliate_registry_context() -> str:
+    path = WORKSPACE / "monetization" / "affiliate-registry.json"
+    if not path.exists():
+        return "Affiliate registry not found. Do not use affiliate or partner-link language."
+    text = load_text(path)
+    if len(text) > 6500:
+        text = text[:6500] + "\n..."
+    return (
+        "Use this registry only as monetization guidance. Do not force affiliate links. "
+        "Do not publish placeholder labels like AFFILIATE_CASTMAGIC as live links. "
+        "If a listed tool fits, mention it only with disclosure, bad-fit warning, and a simpler alternative.\n\n"
+        + text
+    )
+
+
 def enforce_not_duplicate_title(agent: str, markdown: str) -> None:
     if agent not in {"author", "editor"}:
         return
@@ -276,6 +291,7 @@ def context(agent: str, extra_context: str = "") -> str:
         f"# TARGET_BRIEF_PATH\n{brief_file().relative_to(WORKSPACE).as_posix()}",
         f"# CRITICAL CONTEXT RULE\nUse only today's fresh research files and the deterministic slot-specific scout/brief files above. Do not copy, summarize, or improve old broken issue files. If context contains placeholder or missing-content language, treat it as a defect to avoid, not source material.",
         f"# DUPLICATE TOPIC AVOIDANCE\nDo not choose, brief, draft, or polish a topic that substantially overlaps with any recent issue below. If today's strongest source matches a recent topic, choose a different source, persona, job-to-be-done, tool category, or workflow angle.\n{recent_topic_context()}",
+        f"# MONETIZATION REGISTRY\n{affiliate_registry_context()}",
         extra_context.strip(),
         f"# GOALS\n{load_text(WORKSPACE / 'GOALS.md')}",
         f"# RULES\n{load_text(WORKSPACE / 'AGENTS.md')}",
@@ -312,13 +328,13 @@ def build_memo_prompt(agent: str) -> str:
             f"Write a fresh Markdown scout memo for {scout_file().relative_to(WORKSPACE).as_posix()}. "
             "Return ONLY Markdown, never JSON. Rank 3-5 operator-first topic angles from today's research, "
             "name the strongest angle, identify one Tool of the Week candidate, list source URLs, and explain why the topic helps solo operators save time, automate work, make money, or avoid bad tools. "
-            "Reject any angle that overlaps with the recent published issues listed in context."
+            "Reject any angle that overlaps with the recent published issues listed in context. Use the monetization registry only to identify natural fit; do not force affiliate mentions."
         )
     elif agent == "analyst":
         task = (
             f"Write a fresh Markdown editorial brief for {brief_file().relative_to(WORKSPACE).as_posix()}. "
             "Return ONLY Markdown, never JSON. Use today's scout memo and research only. Include: thesis, audience/persona, job-to-be-done, why now, section plan, workflow outline, tool recommendation, tradeoffs, CTA direction, and source URLs. "
-            "Do not brief a topic already covered in recent published issues."
+            "Do not brief a topic already covered in recent published issues. Use approved monetization only when the registry says the tool fits the job-to-be-done."
         )
     else:
         raise ValueError(f"Unsupported memo agent: {agent}")
@@ -329,9 +345,9 @@ def build_memo_prompt(agent: str) -> str:
 def build_markdown_prompt(agent: str, extra_context: str = "") -> str:
     target = f"content/issues/{issue_id()}.md"
     if agent == "author":
-        task = f"Write a clean, original, complete newsletter issue as Markdown for {target}. Return ONLY Markdown. Use today's research and the fresh slot-specific brief only. Do not reuse old issue text. Do not choose a topic that overlaps with recent published issues. Do not include placeholder phrases like 'No concrete content returned', 'Missing Content', or 'description incomplete'. Do not wrap it in JSON or code fences."
+        task = f"Write a clean, original, complete newsletter issue as Markdown for {target}. Return ONLY Markdown. Use today's research and the fresh slot-specific brief only. Do not reuse old issue text. Do not choose a topic that overlaps with recent published issues. If an approved affiliate candidate genuinely fits, you may mention it with disclosure, bad-fit warning, and a simpler alternative, but do not publish placeholder affiliate labels as live links. Do not include placeholder phrases like 'No concrete content returned', 'Missing Content', or 'description incomplete'. Do not wrap it in JSON or code fences."
     else:
-        task = f"Edit the existing draft for {target}. If it contains placeholder or raw-intel junk, rewrite it completely from today's research and fresh slot-specific brief. Return ONLY the complete final Markdown issue. Preserve the selected non-duplicate topic. Prefer preserving or expanding useful detail; do not shorten the issue unless removing junk."
+        task = f"Edit the existing draft for {target}. If it contains placeholder or raw-intel junk, rewrite it completely from today's research and fresh slot-specific brief. Return ONLY the complete final Markdown issue. Preserve the selected non-duplicate topic. Keep monetization transparent and registry-approved; remove forced or placeholder affiliate language. Prefer preserving or expanding useful detail; do not shorten the issue unless removing junk."
     return SYSTEMS[agent] + f"\n\nTask:\n{task}\n\nContext:\n{context(agent, extra_context=extra_context)}"
 
 
