@@ -2,7 +2,8 @@
 """Smoke test for ForgeCore static publishing.
 
 Fails the workflow if publish_site.py did not render the newest valid issue
-onto the homepage, article route, RSS feed, and sitemap in the expected order.
+onto the homepage, article route, RSS feed, sitemap, and SEO metadata layer in
+the expected order.
 """
 from __future__ import annotations
 
@@ -71,6 +72,23 @@ def first_sitemap_issue_slug(xml: str) -> str:
     return issue_urls[0] if issue_urls else ""
 
 
+def require_metadata(html: str, slug: str) -> None:
+    expected_url = f"https://news.forgecore.co/{slug}/"
+    required_snippets = {
+        "canonical URL": f'<link rel="canonical" href="{expected_url}">',
+        "meta description": '<meta name="description" content="',
+        "Open Graph type": '<meta property="og:type" content="article">',
+        "Open Graph URL": f'<meta property="og:url" content="{expected_url}">',
+        "Twitter card": '<meta name="twitter:card" content="summary">',
+        "JSON-LD script": '<script type="application/ld+json">',
+        "Article schema": '"@type":"Article"',
+        "mainEntityOfPage": '"mainEntityOfPage"',
+    }
+    for label, snippet in required_snippets.items():
+        if snippet not in html:
+            raise SystemExit(f"Article page missing {label}: {slug}")
+
+
 def main() -> int:
     if not ISSUES_DIR.exists():
         raise SystemExit("content/issues directory missing")
@@ -114,6 +132,7 @@ def main() -> int:
         raise SystemExit("Homepage missing ForgeCore brand marker")
     if "<article" not in article_html:
         raise SystemExit(f"Article page missing article markup: {slug}")
+    require_metadata(article_html, slug)
 
     print(f"Publish verified: {slug}")
     return 0
