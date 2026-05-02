@@ -1,0 +1,4 @@
+manual PM run requested
+requested_at_utc=2026-05-02T15:35:00Z
+issue_slot=pm
+reason=Implement operator-first positioning and run PM issue
