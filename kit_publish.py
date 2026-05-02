@@ -23,6 +23,7 @@ Exit codes:
 
 from __future__ import annotations
 
+import html
 import json
 import os
 import re
@@ -40,11 +41,8 @@ from utils import issue_path_for_today, load_project_env
 
 load_project_env()
 
-# ---------------------------------------------------------------------------
-# Config
-# ---------------------------------------------------------------------------
 API_KEY = os.environ.get("KIT_API_KEY", "").strip()
-SEND_MODE = os.environ.get("KIT_SEND_MODE", "draft").strip().lower()  # public | draft
+SEND_MODE = os.environ.get("KIT_SEND_MODE", "draft").strip().lower()
 SITE_BASE_URL = os.environ.get("SITE_BASE_URL", "https://news.forgecore.co").strip().rstrip("/")
 NEWSLETTER_NAME = os.environ.get("NEWSLETTER_NAME", "ForgeCore AI Productivity Brief").strip()
 SPONSOR_EMAIL = os.environ.get("SPONSOR_EMAIL", "sponsors@forgecore.co").strip()
@@ -54,10 +52,10 @@ STATE_DIR = Path("state")
 SENT_LOG = STATE_DIR / "kit_sent.json"
 ISSUES_DIR = Path("content/issues")
 
+BASE_TEXT = "font-family: Arial, Helvetica, sans-serif; color:#111827; line-height:1.62; font-size:16px;"
+LINK_STYLE = "color:#2563eb; text-decoration:underline;"
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
+
 def log(msg: str) -> None:
     print(f"[kit] {msg}", flush=True)
 
@@ -137,13 +135,14 @@ def preview_from_markdown(text: str, fallback: str) -> str:
 
 
 def inline_md(text: str) -> str:
-    text = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", text)
-    text = re.sub(r"__(.+?)__", r"<strong>\1</strong>", text)
-    text = re.sub(r"\*(.+?)\*", r"<em>\1</em>", text)
-    text = re.sub(r"_(.+?)_", r"<em>\1</em>", text)
-    text = re.sub(r"`(.+?)`", r"<code>\1</code>", text)
-    text = re.sub(r"\[(.+?)\]\((.+?)\)", r'<a href="\2">\1</a>', text)
-    return text
+    escaped = html.escape(text)
+    escaped = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", escaped)
+    escaped = re.sub(r"__(.+?)__", r"<strong>\1</strong>", escaped)
+    escaped = re.sub(r"\*(.+?)\*", r"<em>\1</em>", escaped)
+    escaped = re.sub(r"_(.+?)_", r"<em>\1</em>", escaped)
+    escaped = re.sub(r"`(.+?)`", r"<code style='background:#f3f4f6;color:#111827;padding:2px 4px;border-radius:4px;'>\1</code>", escaped)
+    escaped = re.sub(r"\[(.+?)\]\((https?://[^\s)]+)\)", rf'<a href="\2" style="{LINK_STYLE}">\1</a>', escaped)
+    return escaped
 
 
 def markdown_to_html(md: str) -> str:
@@ -164,7 +163,13 @@ def markdown_to_html(md: str) -> str:
         if stripped.startswith("```"):
             close_ul()
             if in_code:
-                out.append("<pre style='background:#050505;border:1px solid #333;border-radius:12px;padding:14px;overflow:auto;'><code>" + "\n".join(code_lines) + "</code></pre>")
+                code = html.escape("\n".join(code_lines))
+                out.append(
+                    "<pre style='background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;"
+                    "padding:14px;overflow:auto;color:#111827;font-size:14px;line-height:1.5;'><code>"
+                    + code
+                    + "</code></pre>"
+                )
                 code_lines = []
                 in_code = False
             else:
@@ -177,29 +182,40 @@ def markdown_to_html(md: str) -> str:
         if hm:
             close_ul()
             lvl = len(hm.group(1))
-            out.append(f"<h{lvl}>{inline_md(hm.group(2))}</h{lvl}>")
+            text = inline_md(hm.group(2))
+            if lvl == 1:
+                out.append(f"<h1 style='color:#0f172a;font-size:30px;line-height:1.2;margin:24px 0 18px;font-weight:800;'>{text}</h1>")
+            elif lvl == 2:
+                out.append(f"<h2 style='color:#111827;font-size:22px;line-height:1.3;margin:30px 0 12px;font-weight:750;'>{text}</h2>")
+            else:
+                out.append(f"<h3 style='color:#111827;font-size:18px;line-height:1.35;margin:22px 0 10px;font-weight:700;'>{text}</h3>")
             continue
         if re.match(r"^[-*_]{3,}\s*$", stripped):
             close_ul()
-            out.append("<hr style='border:none;border-top:1px solid #333;margin:24px 0;'>")
+            out.append("<hr style='border:none;border-top:1px solid #e5e7eb;margin:28px 0;'>")
             continue
         bm = re.match(r"^[\-\*\+]\s+(.*)", stripped)
         if bm:
             if not in_ul:
-                out.append("<ul style='padding-left:20px;'>")
+                out.append("<ul style='padding-left:22px;margin:0 0 18px;color:#111827;'>")
                 in_ul = True
-            out.append(f"<li style='margin-bottom:8px;'>{inline_md(bm.group(1))}</li>")
+            out.append(f"<li style='margin-bottom:9px;color:#111827;'>{inline_md(bm.group(1))}</li>")
             continue
         if stripped.strip() == "":
             close_ul()
-            out.append("")
             continue
         close_ul()
-        out.append(f"<p style='margin:0 0 14px;'>{inline_md(stripped)}</p>")
+        out.append(f"<p style='{BASE_TEXT} margin:0 0 16px;'>{inline_md(stripped)}</p>")
 
     close_ul()
     if in_code:
-        out.append("<pre style='background:#050505;border:1px solid #333;border-radius:12px;padding:14px;overflow:auto;'><code>" + "\n".join(code_lines) + "</code></pre>")
+        code = html.escape("\n".join(code_lines))
+        out.append(
+            "<pre style='background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;"
+            "padding:14px;overflow:auto;color:#111827;font-size:14px;line-height:1.5;'><code>"
+            + code
+            + "</code></pre>"
+        )
     return "\n".join(out)
 
 
@@ -211,30 +227,36 @@ def build_email_html(body_md: str, issue_slug: str) -> str:
 <!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#0d0d0d;">
-<div style="max-width:680px;margin:0 auto;padding:32px 24px;font-family:Arial,Helvetica,sans-serif;color:#e5e7eb;background:#111827;line-height:1.6;">
-  <p style="font-size:12px;color:#9ca3af;margin-bottom:28px;">
-    Can't see this properly?
-    <a href="{web_url}" style="color:#38bdf8;">Read it on the web</a>.
-  </p>
-
-  {body_html}
-
-  <hr style="border:none;border-top:1px solid #374151;margin:40px 0;">
-  <p style="font-size:12px;color:#9ca3af;line-height:1.6;">
-    Sponsor ForgeCore: <a href="mailto:{SPONSOR_EMAIL}" style="color:#38bdf8;">{SPONSOR_EMAIL}</a><br>
-    You're receiving this because you subscribed to {NEWSLETTER_NAME}.<br>
-    <a href="{unsubscribe}" style="color:#9ca3af;">Unsubscribe</a>
-  </p>
-</div>
+<body style="margin:0;padding:0;background:#f3f4f6;color:#111827;">
+  <div style="display:none;max-height:0;overflow:hidden;color:#f3f4f6;opacity:0;">{html.escape(NEWSLETTER_NAME)} — practical AI workflows for operators.</div>
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f3f4f6;margin:0;padding:0;">
+    <tr>
+      <td align="center" style="padding:24px 12px;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:680px;background:#ffffff;border:1px solid #e5e7eb;border-radius:14px;">
+          <tr>
+            <td style="padding:28px 28px 8px;{BASE_TEXT}">
+              <p style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#6b7280;margin:0 0 18px;">
+                ForgeCore AI Productivity Brief ·
+                <a href="{web_url}" style="{LINK_STYLE}">Read on the web</a>
+              </p>
+              {body_html}
+              <hr style="border:none;border-top:1px solid #e5e7eb;margin:36px 0 20px;">
+              <p style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#6b7280;line-height:1.6;margin:0 0 8px;">
+                Sponsor ForgeCore: <a href="mailto:{SPONSOR_EMAIL}" style="{LINK_STYLE}">{SPONSOR_EMAIL}</a><br>
+                You're receiving this because you subscribed to {html.escape(NEWSLETTER_NAME)}.<br>
+                <a href="{unsubscribe}" style="color:#6b7280;text-decoration:underline;">Unsubscribe</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>
 """.strip()
 
 
-# ---------------------------------------------------------------------------
-# Kit API v4
-# ---------------------------------------------------------------------------
 def create_broadcast(subject: str, email_html: str, preview_text: str) -> dict:
     if SEND_MODE not in {"draft", "public"}:
         raise ValueError(f"Unsupported KIT_SEND_MODE={SEND_MODE!r}; expected draft or public")
@@ -264,9 +286,6 @@ def create_broadcast(subject: str, email_html: str, preview_text: str) -> dict:
     return resp.json()
 
 
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
 def main() -> None:
     if not API_KEY:
         log("SKIP: KIT_API_KEY not set. Add it as a GitHub secret to enable Kit drafts.")
