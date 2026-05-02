@@ -6,5 +6,13 @@
     "mode": "draft",
     "issue_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-02-am.md",
     "web_url": "https://news.forgecore.co/2026-05-02-am/"
+  },
+  "2026-05-02-pm": {
+    "broadcast_id": 23954211,
+    "subject": "How Solo Founders Can Automate Client Onboarding with AI",
+    "sent_at": "2026-05-02T18:53:30.176217+00:00",
+    "mode": "draft",
+    "issue_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-02-pm.md",
+    "web_url": "https://news.forgecore.co/2026-05-02-pm/"
   }
 }

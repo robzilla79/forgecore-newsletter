@@ -614,3 +614,21 @@
 - Rules for future issues:
   - Start the Hook with the operator outcome or decision, not a product announcement.
   - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
+
+
+---
+
+## 2026-05-02 18:53:25 UTC — /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-02-pm.md
+- Improvement result: changed (rewritten issue saved)
+- Critic score: 8.0 | verdict: publishable
+- Weaknesses found:
+  - Enhance the hook to make it more engaging
+  - Add unique insights or case studies to improve originality
+  - Hook could be more compelling
+  - Originality could be improved with unique insights
+  - Tool of the Week must include a concrete tool recommendation
+  - CTA section missing required Kit subscribe URL from PRIMARY_CTA_URL
+- Rules for future issues:
+  - Start the Hook with the operator outcome or decision, not a product announcement.
+  - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
+  - CTA must tell the reader what to try this week and include subscribe plus sponsor links.
