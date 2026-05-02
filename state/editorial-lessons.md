@@ -579,3 +579,21 @@
   - Make the headline name the workflow, operator, tool choice, or measurable outcome.
   - Turn vague advice into 3-6 named steps plus one prompt, checklist, config, or command block.
   - CTA must tell the reader what to try this week and include subscribe plus sponsor links.
+
+
+---
+
+## 2026-05-02 13:11:55 UTC — /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-02-am.md
+- Improvement result: changed (rewritten issue saved)
+- Critic score: 10.0 | verdict: needs_revision
+- Weaknesses found:
+  - Enhance the hook to better capture attention
+  - Clarify measurable outcomes for the reader
+  - Revise the hook to make it more engaging
+  - Add specific metrics or examples of success from AEO analysis
+  - Strengthen the narrative to connect the importance of AEO to immediate benefits
+  - Weak initial hook
+- Rules for future issues:
+  - Start the Hook with the operator outcome or decision, not a product announcement.
+  - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
+  - Name the exact operator persona, job-to-be-done, tool stack, and tradeoff.
