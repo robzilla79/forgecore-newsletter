@@ -145,6 +145,10 @@ jobs:
       - name: Verify publish
         run: python verify_publish.py
 
+      - name: Create Kit draft
+        run: python kit_publish.py
+        continue-on-error: true
+
       - name: Summarize failure artifacts
         if: failure()
         run: |
