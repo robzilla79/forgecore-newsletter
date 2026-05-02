@@ -5,7 +5,7 @@
 ## Startup Sequence
 
 Before doing ANYTHING else:
-1. Read `GOALS.md` — the mission and revenue targets.
+1. Read `GOALS.md` — the mission, audience decision, and revenue targets.
 2. Read `HEARTBEAT.md` — last run status and what failed.
 3. Read `state/progress-log.md` (last 50 lines) — what has happened recently.
 4. Read `state/improvement-lock.json` — which issues have been improved and when.
@@ -81,6 +81,33 @@ Locally, you can run it yourself between the twice-daily cycles.
 
 ---
 
+## Audience Profit Rule
+
+ForgeCore is optimized for **high-intent operators**, not broad casual AI readers.
+
+Primary audience:
+- builders
+- creators
+- consultants
+- solo founders
+- indie hackers
+- freelancers
+- coaches with offers
+- small business operators
+- employees using AI to become more valuable at work
+
+Every topic must be framed for someone who is trying to build, sell, create, consult, automate, operate, or earn.
+
+Do not publish broad consumer AI content such as generic "AI for everyone," "AI tips for moms," "AI tricks for students," or casual prompt lists unless the final angle clearly becomes an operator workflow with a business, career, productivity, or tool-buying outcome.
+
+The profitable ForgeCore reader should see the issue and think:
+
+```text
+This can help me make money, save time, automate work, build a system, serve clients, publish faster, or avoid buying the wrong tool.
+```
+
+---
+
 ## Content Rules
 
 Every published issue MUST have these sections in this order:
@@ -93,10 +120,23 @@ Every published issue MUST have these sections in this order:
 7. `## CTA` — Beehiiv subscribe link + sponsor email.
 8. `## Sources` — All links used, real and verified.
 
+### Topic selection filter
+
+Before selecting a topic, answer yes to at least 4 of these:
+- Does this help an operator make money, save time, automate work, build a system, choose a tool, avoid wasted spend, or become more valuable at work?
+- Can it be turned into a workflow, buyer guide, teardown, comparison, automation recipe, or checklist?
+- Is there a clear persona: consultant, creator, solo founder, freelancer, coach, indie hacker, small business operator, or AI-forward employee?
+- Is there a real job-to-be-done: lead follow-up, content repurposing, onboarding, sales outreach, research, client delivery, support triage, analytics, coding, finance ops, or marketing ops?
+- Could a sponsor or affiliate tool fit naturally without reducing trust?
+- Could the issue later become a paid template, checklist, operating system, blueprint, or consulting offer?
+
+Reject topics that are only curiosity, entertainment, generic AI tips, raw product announcements, model leaderboard chatter, or mass-market consumer AI content.
+
 ### Banned phrases (remove on every pass):
 - "delve", "it's worth noting", "in conclusion", "as an AI", "I cannot"
 - "certainly", "absolutely", "of course", "definitely", "I'd be happy to"
 - "Imagine a world where", "In today's rapidly evolving", "Game-changing"
+- "AI for everyone", unless used only to reject that positioning
 - Any placeholder like `[INSERT LINK]`, `[TBD]`, `[PLACEHOLDER]`
 - Fake or fabricated URLs
 
@@ -134,6 +174,9 @@ An issue PASSES quality gate if:
 - No placeholder links
 - At least 3 real source URLs (must start with http/https)
 - No internal/localhost URLs in published content
+- Specific operator persona is clear
+- Job-to-be-done is clear
+- Reader outcome connects to money, time, automation, systems, tool choice, or work/business leverage
 
 An issue that fails quality gate is NOT published. The editor agent runs again.
 Maximum 2 editor retries before the issue is marked FAILED and logged.
@@ -146,7 +189,7 @@ Every issue must contain:
 - At least 1 Beehiiv subscribe CTA link
 - The sponsor email `sponsors@forgecore.co` in the CTA section
 - A "sponsor this issue" invite in the CTA block
-- Language positioning ForgeCore as operator-grade (not consumer AI)
+- Language positioning ForgeCore as operator-grade, not broad consumer AI
 
 The CTA block template:
 ```
