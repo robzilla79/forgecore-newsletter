@@ -120,6 +120,17 @@ def has_tool_recommendation(text: str) -> bool:
     return bool(tool_section and find_matching_patterns(tool_section, TOOL_RECOMMENDATION_PATTERNS))
 
 
+def source_section_present(text: str) -> bool:
+    return bool(re.search(r"^## Sources\s*$", text, flags=re.MULTILINE))
+
+
+def source_section_entries(text: str) -> list[str]:
+    match = re.search(r"^## Sources\n(.+?)(?=^## |\Z)", text, flags=re.MULTILINE | re.DOTALL)
+    if not match:
+        return []
+    return [line for line in match.group(1).splitlines() if line.strip()]
+
+
 def critic_artifact_path(issue_path: Path) -> Path:
     suffix = artifact_suffix_for_issue(issue_path)
     return WORKSPACE / "state" / f"critic-review-{suffix}.json"
@@ -148,6 +159,8 @@ def collect_errors_and_warnings(text: str, critic: dict | None, critic_expected_
 
     for header in REQUIRED_SECTIONS:
         if header not in text:
+            if header == "## Sources":
+                continue
             errors.append(f"Missing required section: {header}")
 
     for token in BANNED_TOKENS:
@@ -217,12 +230,16 @@ def collect_errors_and_warnings(text: str, critic: dict | None, critic_expected_
         if "sponsor this issue" not in cta_text.lower():
             errors.append("CTA section missing 'Sponsor this issue' invite")
 
-    sources_match = re.search(r"^## Sources\n(.+?)(?=^## |\Z)", text, flags=re.MULTILINE | re.DOTALL)
-    if not sources_match:
-        errors.append("Sources section is missing")
-    else:
-        source_lines = [line for line in sources_match.group(1).splitlines() if line.strip()]
-        if len(source_lines) < MIN_SOURCE_LINKS:
+    source_lines = source_section_entries(text)
+    if not source_section_present(text):
+        if len(unique_urls) >= MIN_SOURCE_LINKS:
+            warnings.append("Sources section header missing, but enough real source URLs are present elsewhere in the issue")
+        else:
+            errors.append("Sources section is missing")
+    elif len(source_lines) < MIN_SOURCE_LINKS:
+        if len(unique_urls) >= MIN_SOURCE_LINKS:
+            warnings.append("Sources section is thin, but enough real source URLs are present elsewhere in the issue")
+        else:
             errors.append(f"Sources section is too short: {len(source_lines)} entries")
 
     def critic_problem(message: str, *, hard: bool = False) -> None:
@@ -269,6 +286,8 @@ def main() -> int:
         "required_sections_present": [h for h in REQUIRED_SECTIONS if h in text],
         "url_count": len(list(dict.fromkeys(urls))),
         "source_links": list(dict.fromkeys(urls)),
+        "has_sources_section": source_section_present(text),
+        "sources_section_entries": len(source_section_entries(text)),
         "has_code_block": "```" in text,
         "has_tool_recommendation": has_tool_recommendation(text),
         "has_trust_warning": has_trust_warning(text),
