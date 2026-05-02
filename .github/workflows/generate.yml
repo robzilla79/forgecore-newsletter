@@ -138,6 +138,45 @@ jobs:
       - name: Verify publish
         run: python verify_publish.py
 
+      - name: Summarize failure artifacts
+        if: failure()
+        run: |
+          {
+            echo "## ForgeCore newsletter run failed"
+            echo ""
+            echo "Issue slot: ${ISSUE_SLOT:-manual}"
+            echo "Commit: ${GITHUB_SHA}"
+            echo "Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            echo ""
+            echo "### Generated issue files"
+            find content/issues -maxdepth 1 -type f -name '*.md' -print | sort || true
+            echo ""
+            echo "### State artifacts"
+            find state -maxdepth 1 -type f \( -name '*.json' -o -name '*.log' -o -name '*.md' \) -print | sort || true
+            echo ""
+            echo "### Research artifacts"
+            find research -maxdepth 2 -type f -print | sort || true
+          } | tee failure-summary.md
+
+      - name: Upload failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: forgecore-failure-${{ env.ISSUE_SLOT || 'manual' }}-${{ github.run_id }}
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            failure-summary.md
+            content/issues/*.md
+            research/raw/*.md
+            research/briefs/*.md
+            state/*.json
+            state/*.log
+            state/*.md
+            site/dist/index.html
+            site/dist/rss.xml
+            site/dist/sitemap.xml
+
       - name: Commit generated content
         if: success()
         run: |
