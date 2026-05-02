@@ -72,6 +72,10 @@ It builds:
 - article pages
 - RSS feed
 - sitemap
+- canonical URLs
+- meta descriptions
+- Open Graph/Twitter metadata
+- JSON-LD `WebSite` and `Article` schema
 
 ### 2. Quality gate is validation-only
 
@@ -84,6 +88,9 @@ It checks:
 - source links
 - CTA links
 - workflow code/checklist block
+- tool recommendation strength
+- trust warning / “do not use this if” language
+- affiliate or partner disclosure when monetization language appears
 - placeholder/meta leakage
 - critic artifacts
 
@@ -99,6 +106,9 @@ This prevents old broken drafts or old research from contaminating new issues.
 
 - no valid issue exists
 - the latest issue is not linked from `site/dist/index.html`
+- the latest issue is not first on the homepage
+- the latest issue is not first in RSS
+- the latest issue is not first in the sitemap issue URLs
 - the article route is missing
 - article markup is missing
 
@@ -312,6 +322,43 @@ Content requirements:
 
 ---
 
+## SEO and Monetization Guardrails
+
+ForgeCore monetization must help the reader first.
+
+### SEO rendering rules
+
+`publish_site.py` must render each valid issue with:
+
+- a canonical URL using `SITE_BASE_URL`
+- a concise meta description generated from the issue excerpt
+- Open Graph title, description, URL, site name, and type
+- Twitter summary card metadata
+- JSON-LD `Article` schema on article pages
+- JSON-LD `WebSite` schema on the homepage
+
+These are rendering outputs only. The renderer must not rewrite source Markdown to create metadata.
+
+### Trust-safe monetization rules
+
+The issue may include affiliate, sponsor, partner, referral, or paid-tool language only when it is useful to the reader.
+
+Required safeguards:
+
+- Tool recommendations must be tied to the job-to-be-done.
+- Paid or affiliate tools should include a cheaper, simpler, or free alternative when useful.
+- Any affiliate, partner, referral, sponsor, or commission mention must include plain disclosure language.
+- The issue must include a “do not use this if” / “not a fit if” warning so readers avoid bad-fit tools.
+- Monetization should never turn a practical workflow into a link farm.
+
+Suggested disclosure language:
+
+```text
+Disclosure: ForgeCore may earn a commission if you buy through partner links, but recommendations are based on workflow fit, not payout.
+```
+
+---
+
 ## Manual Run
 
 From repo root:
@@ -366,7 +413,11 @@ Good failures:
 - issue too short
 - missing required section
 - missing source links
+- missing tool recommendation
+- missing trust warning
+- affiliate/partner language without disclosure
 - homepage did not include latest issue
+- homepage/RSS/sitemap did not list latest issue first
 - article route missing
 
 Bad behavior that should be avoided:
@@ -375,6 +426,8 @@ Bad behavior that should be avoided:
 - silently skipping today’s issue
 - mutating issue content during rendering
 - mutating issue content during validation
+- hiding affiliate incentives
+- forcing monetized tools into bad-fit workflows
 - falling back to old raw intel
 - deploying a site that did not include the newest issue
 
@@ -407,8 +460,9 @@ Infrastructure:      Stable
 Research inputs:     Operator-focused
 Generation:          Fresh-input only
 Quality gate:        Validation-only
-Renderer:            Validation-only
+Renderer:            Validation-only + SEO metadata
 Publish verification: Enforced
+Monetization guardrails: Trust-safe affiliate/sponsor checks
 Deployment:          Cloudflare Pages
 Cost strategy:       Keep gpt-4o-mini until output data proves upgrade is needed
 ```
@@ -418,8 +472,7 @@ Cost strategy:       Keep gpt-4o-mini until output data proves upgrade is needed
 ## Next Planned Improvements
 
 - deterministic topic scoring before Scout
-- affiliate/monetization insertion rules
-- SEO metadata per issue
+- affiliate link inventory and approved-tool registry
 - newsletter send workflow
 - analytics feedback loop
 - revenue-focused CTA testing
