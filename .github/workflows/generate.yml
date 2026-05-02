@@ -18,6 +18,8 @@ on:
         required: false
       KIT_FORM_ID:
         required: false
+      KIT_SIGNUP_URL:
+        required: false
       RESEARCH_MODEL:
         required: false
       WRITER_MODEL:
@@ -65,7 +67,7 @@ jobs:
       NEWSLETTER_TAGLINE: Practical AI workflows, tools, and ROI cases for operators
       TARGET_AUDIENCE: Operators, founders, consultants, and technical teams adopting AI workflows.
       PRIMARY_CTA_TEXT: Subscribe for weekly operator-grade AI workflows
-      PRIMARY_CTA_URL: https://forgecore-newsletter.beehiiv.com/
+      PRIMARY_CTA_URL: ${{ secrets.KIT_SIGNUP_URL || 'https://news.forgecore.co/' }}
       SPONSOR_EMAIL: sponsors@forgecore.co
       ENABLE_CLOUDFLARE_DEPLOY: '1'
       MAX_CONTEXT_CHARS: '22000'
