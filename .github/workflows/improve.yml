@@ -29,7 +29,7 @@ jobs:
       NEWSLETTER_TAGLINE: Practical AI workflows, tools, and ROI cases for operators
       TARGET_AUDIENCE: Operators, founders, consultants, and technical teams adopting AI workflows.
       PRIMARY_CTA_TEXT: Subscribe for weekly operator-grade AI workflows
-      PRIMARY_CTA_URL: https://forgecore-newsletter.beehiiv.com/
+      PRIMARY_CTA_URL: ${{ secrets.KIT_SIGNUP_URL || 'https://news.forgecore.co/' }}
       SPONSOR_EMAIL: sponsors@forgecore.co
       MAX_CONTEXT_CHARS: '22000'
       AUTO_REPAIR_PATHS: '0'
@@ -41,12 +41,7 @@ jobs:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       KIT_API_KEY: ${{ secrets.KIT_API_KEY }}
       KIT_FORM_ID: ${{ secrets.KIT_FORM_ID }}
-      KIT_SEND_MODE: 'public'
-      BEEHIIV_EMBED_HTML: ${{ secrets.BEEHIIV_EMBED_HTML }}
-      BEEHIIV_API_KEY: ${{ secrets.BEEHIIV_API_KEY }}
-      BEEHIIV_PUBLICATION_ID: ${{ secrets.BEEHIIV_PUBLICATION_ID }}
-      BEEHIIV_PUBLICATION_URL: https://forgecore-newsletter.beehiiv.com/
-      BEEHIIV_SEND_MODE: 'draft'
+      KIT_SEND_MODE: 'draft'
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
