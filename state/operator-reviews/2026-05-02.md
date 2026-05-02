@@ -1,6 +1,6 @@
 # ForgeCore Operator Review — 2026-05-02
 
-Generated: 2026-05-02 05:24:00 UTC
+Generated: 2026-05-02 14:31:04 UTC
 
 ## Executive Status
 
@@ -11,8 +11,8 @@ Generated: 2026-05-02 05:24:00 UTC
 
 ## Latest Issues
 
-- `2026-05-02-pm` — How Marketing Managers Can Leverage AEO Competitor Analysis to Boost Brand Visibility in AI Responses (907 words, 5 URLs) — OK
-- `2026-05-02-am` — How Solo Marketers Can Use AEO Analysis to Boost Brand Visibility (772 words, 6 URLs) — OK
+- `2026-05-02-pm` — Enhance Your Brand Visibility with AEO Competitor Analysis (944 words, 6 URLs) — OK
+- `2026-05-02-am` — Mastering AEO Competitor Analysis: A Solo Marketer's Playbook (800 words, 6 URLs) — OK
 - `2026-05-01-am` — Build a 3-Step AI Follow-Up System That Saves 5 Hours a Week (970 words, 8 URLs) — OK
 - `2026-05-01` — How Solo Operators Can Leverage Ollama's New Features to Streamline Workflows (514 words, 5 URLs) — OK
 - `2026-04-30` — How Solo Operators Can Use Ollama's New Features to Streamline AI Workflows ## Hook (1459 words, 6 URLs) — OK
@@ -26,10 +26,13 @@ Generated: 2026-05-02 05:24:00 UTC
 - RSS exists
 - sitemap exists
 
-## Quality / Critic Artifacts
+## Quality / Critic / Affiliate / Monetization / Kit Artifacts
 
 - Quality gate latest: failed; errors=0, warnings=0
 - Critic latest: score=10.0; verdict=reject; weak=headline_strength, hook_strength, specificity, originality, readability, tone, utility, non_repetition
+- Affiliate linker latest: changed; activated=1 (beehiiv)
+- Monetization guard latest: passed; errors=0, warnings=0
+- Kit latest: no entry for `2026-05-02-pm`
 
 ## Duplicate Topic Watchlist
 
@@ -38,4 +41,4 @@ Generated: 2026-05-02 05:24:00 UTC
 ## Operator Notes
 
 - This report does not generate, edit, publish, or deploy newsletter content.
-- It is a daily dashboard for spotting quality drift, duplicate topics, and deployment problems.
+- It is a daily dashboard for spotting quality drift, duplicate topics, affiliate activation, monetization guard status, Kit draft sync, and deployment problems.
