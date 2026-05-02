@@ -2,8 +2,10 @@
 """
 kit_publish.py
 
-Publishes the current ForgeCore issue to Kit (formerly ConvertKit) as a
-broadcast draft by default.
+Publishes the current ForgeCore issue to Kit (formerly ConvertKit).
+
+Default behavior is to create a broadcast draft. In production AM/PM
+newsletter runs, set KIT_SEND_MODE=public to publish/send immediately.
 
 Required env vars:
   KIT_API_KEY        - API key from Kit -> Settings -> Developer -> API Key
@@ -15,8 +17,14 @@ Optional env vars:
   NEWSLETTER_NAME    - Used as subject fallback
   SPONSOR_EMAIL      - Used in footer
 
+Safety rules for KIT_SEND_MODE=public:
+  - only slot-specific issues may send: YYYY-MM-DD-am.md or YYYY-MM-DD-pm.md
+  - ISSUE_SLOT must match the issue slot
+  - only one AM and one PM issue may be sent per issue date
+  - already-sent issue slugs are skipped idempotently
+
 Exit codes:
-  0 - created, skipped because already sent, or skipped because no credentials
+  0 - created, skipped because already sent, skipped by send guard, or skipped because no credentials
   1 - API error
   2 - no issue found
 """
@@ -43,6 +51,7 @@ load_project_env()
 
 API_KEY = os.environ.get("KIT_API_KEY", "").strip()
 SEND_MODE = os.environ.get("KIT_SEND_MODE", "draft").strip().lower()
+ISSUE_SLOT_ENV = os.environ.get("ISSUE_SLOT", "").strip().lower()
 SITE_BASE_URL = os.environ.get("SITE_BASE_URL", "https://news.forgecore.co").strip().rstrip("/")
 NEWSLETTER_NAME = os.environ.get("NEWSLETTER_NAME", "ForgeCore AI Productivity Brief").strip()
 SPONSOR_EMAIL = os.environ.get("SPONSOR_EMAIL", "sponsors@forgecore.co").strip()
@@ -51,6 +60,7 @@ API_BASE = "https://api.kit.com/v4"
 STATE_DIR = Path("state")
 SENT_LOG = STATE_DIR / "kit_sent.json"
 ISSUES_DIR = Path("content/issues")
+SLOT_ISSUE_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})-(am|pm)$")
 
 BASE_TEXT = "font-family: Arial, Helvetica, sans-serif; color:#111827; line-height:1.62; font-size:16px;"
 LINK_STYLE = "color:#2563eb; text-decoration:underline;"
@@ -100,6 +110,70 @@ def find_target_issue() -> Path | None:
     if current.exists():
         return current
     return find_latest_issue()
+
+
+def parse_slot_issue_slug(issue_slug: str) -> tuple[str, str] | None:
+    match = SLOT_ISSUE_RE.fullmatch(issue_slug.lower())
+    if not match:
+        return None
+    return match.group(1), match.group(2)
+
+
+def sent_public_slots_for_date(sent_log: dict, issue_date: str) -> set[str]:
+    slots: set[str] = set()
+    for slug, record in sent_log.items():
+        parsed = parse_slot_issue_slug(str(slug))
+        if not parsed:
+            continue
+        sent_date, sent_slot = parsed
+        if sent_date != issue_date:
+            continue
+        if isinstance(record, dict) and record.get("mode") == "public":
+            slots.add(sent_slot)
+    return slots
+
+
+def enforce_public_send_guard(issue_slug: str, sent_log: dict) -> None:
+    """Exit safely when a public send would violate ForgeCore send policy."""
+    if SEND_MODE != "public":
+        return
+
+    parsed = parse_slot_issue_slug(issue_slug)
+    if not parsed:
+        log(
+            "SKIP: KIT_SEND_MODE=public is only allowed for slot-specific issues "
+            "named YYYY-MM-DD-am.md or YYYY-MM-DD-pm.md."
+        )
+        sys.exit(0)
+
+    issue_date, issue_slot = parsed
+    if ISSUE_SLOT_ENV not in {"am", "pm"}:
+        log("SKIP: KIT_SEND_MODE=public requires ISSUE_SLOT=am or ISSUE_SLOT=pm.")
+        sys.exit(0)
+
+    if ISSUE_SLOT_ENV != issue_slot:
+        log(
+            f"SKIP: ISSUE_SLOT={ISSUE_SLOT_ENV!r} does not match issue slug slot "
+            f"{issue_slot!r} for {issue_slug}."
+        )
+        sys.exit(0)
+
+    sent_slots = sent_public_slots_for_date(sent_log, issue_date)
+    if issue_slot in sent_slots:
+        log(f"SKIP: {issue_date} {issue_slot.upper()} was already sent publicly.")
+        sys.exit(0)
+
+    if len(sent_slots) >= 2:
+        log(
+            f"SKIP: {issue_date} already has two public sends recorded "
+            f"({', '.join(sorted(sent_slots)).upper()})."
+        )
+        sys.exit(0)
+
+    allowed_after_send = sent_slots | {issue_slot}
+    if not allowed_after_send.issubset({"am", "pm"}) or len(allowed_after_send) > 2:
+        log("SKIP: public send would exceed the one-AM/one-PM daily send policy.")
+        sys.exit(0)
 
 
 def parse_frontmatter(text: str) -> tuple[dict, str]:
@@ -288,7 +362,7 @@ def create_broadcast(subject: str, email_html: str, preview_text: str) -> dict:
 
 def main() -> None:
     if not API_KEY:
-        log("SKIP: KIT_API_KEY not set. Add it as a GitHub secret to enable Kit drafts.")
+        log("SKIP: KIT_API_KEY not set. Add it as a GitHub secret to enable Kit publishing.")
         sys.exit(0)
 
     issue_path = find_target_issue()
@@ -303,6 +377,8 @@ def main() -> None:
     if issue_slug in sent_log:
         log(f"Issue {issue_slug} already sent to Kit (broadcast_id={sent_log[issue_slug].get('broadcast_id')}). Skipping.")
         sys.exit(0)
+
+    enforce_public_send_guard(issue_slug, sent_log)
 
     raw = issue_path.read_text(encoding="utf-8")
     meta, body_md = parse_frontmatter(raw)
@@ -325,6 +401,7 @@ def main() -> None:
         "sent_at": datetime.now(timezone.utc).isoformat(),
         "mode": SEND_MODE,
         "issue_path": issue_path.as_posix(),
+        "issue_slot": parse_slot_issue_slug(issue_slug)[1] if parse_slot_issue_slug(issue_slug) else "legacy",
         "web_url": f"{SITE_BASE_URL}/{issue_slug}/",
     }
     save_sent_log(sent_log)
