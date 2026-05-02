@@ -1,0 +1,87 @@
+{
+  "passed": true,
+  "fallback_published": false,
+  "checks": {
+    "exists": true,
+    "issue_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-02-am.md",
+    "word_count": 739,
+    "required_sections_present": [
+      "## Hook",
+      "## Top Story",
+      "## Why It Matters",
+      "## Highlights",
+      "## Tool of the Week",
+      "## Workflow",
+      "## CTA",
+      "## Sources"
+    ],
+    "url_count": 4,
+    "source_links": [
+      "https://blog.hubspot.com/marketing/aeo-competitor-analysis",
+      "https://forgecore-newsletter.beehiiv.com/",
+      "https://www.semrush.com",
+      "https://ahrefs.com"
+    ],
+    "has_code_block": true,
+    "has_tool_recommendation": true,
+    "has_trust_warning": true,
+    "has_affiliate_reference": false,
+    "has_affiliate_disclosure": false,
+    "leaked_phrases": [],
+    "placeholder_language": [],
+    "duplicate_paragraphs": [],
+    "critic_expected_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/critic-review-2026-05-02-am.json",
+    "critic_review": {
+      "passed": true,
+      "issue": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-02-am.md",
+      "model": "gpt-4o-mini",
+      "fallback_model": "gpt-4o-mini",
+      "overall_score": 10.0,
+      "min_overall_required": 6.5,
+      "min_category_required": 6.0,
+      "consistent_pass_overall": 9.0,
+      "scores": {
+        "headline_strength": 6.0,
+        "hook_strength": 7.0,
+        "specificity": 5.0,
+        "originality": 6.0,
+        "readability": 7.0,
+        "tone": 7.0,
+        "utility": 8.0,
+        "non_repetition": 6.0
+      },
+      "weak_categories": [],
+      "strengths": [
+        "Provides a clear workflow for AEO competitor analysis.",
+        "Includes actionable tools and steps for implementation."
+      ],
+      "weaknesses": [
+        "Lacks a strong, compelling headline.",
+        "The hook could be more engaging.",
+        "Specificity in measurable outcomes is weak."
+      ],
+      "must_fix": [
+        "Enhance the headline to better capture attention.",
+        "Clarify measurable outcomes from implementing the AEO analysis.",
+        "Strengthen the hook to better engage marketing managers."
+      ],
+      "rewrite_plan": [
+        "Revise the headline for impact.",
+        "Enhance the hook to create a stronger emotional connection.",
+        "Add specific metrics or case studies to illustrate potential outcomes."
+      ],
+      "summary": "The issue provides actionable insights for marketing managers but lacks clarity in its execution and could benefit from a stronger focus on specific outcomes.",
+      "verdict": "needs_revision",
+      "consistency_note": "Critic output was internally inconsistent: high overall score (10.00) with weak categories specificity. Overall score takes precedence for publish gating.",
+      "run_token": "pass-2-1777694431880989448",
+      "artifact_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/critic-review-2026-05-02-am.json"
+    },
+    "errors": [],
+    "warnings": [],
+    "fallback_publish_enabled": false,
+    "validation_only": true
+  },
+  "issue": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-02-am.md",
+  "run_token": "",
+  "artifact_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/quality-gate-2026-05-02-am.json"
+}
