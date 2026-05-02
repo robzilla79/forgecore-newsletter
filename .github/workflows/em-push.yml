@@ -1,114 +1,23 @@
-name: Em Push — Local-Em Issue Upload
+name: Em Push — Local-Em Issue Upload (disabled)
 
-# Local-Em's dedicated upload path.
-# Triggers when she drops a file into content/issues/ OR calls workflow_dispatch.
-# Runs on GitHub-hosted runners — no local machine required.
+# Disabled on 2026-05-02.
+# Reason: legacy Local-Em upload/deploy/send path duplicated production publishing.
+# Active publishing now runs through generate-am.yml / generate-pm.yml calling generate.yml.
+# This file remains as an audit marker so the path can be restored intentionally if needed.
 
 on:
-  push:
-    paths:
-      - 'content/issues/**.md'
   workflow_dispatch:
-    inputs:
-      issue_date:
-        description: 'Issue date (YYYY-MM-DD) — leave blank to auto-detect latest'
-        required: false
-        default: ''
-      notify:
-        description: 'Leave a note for the commit message'
-        required: false
-        default: 'Local-Em autonomous push'
 
-concurrency:
-  group: em-push
-  cancel-in-progress: false
+permissions:
+  contents: read
 
 jobs:
-  em-push:
+  disabled:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    env:
-      KIT_API_KEY: ${{ secrets.KIT_API_KEY }}
-      KIT_FORM_ID: ${{ secrets.KIT_FORM_ID }}
-      KIT_SEND_MODE: 'public'
-      SITE_DOMAIN: news.forgecore.co
-      SITE_BASE_URL: https://news.forgecore.co
-
+    timeout-minutes: 5
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GH_PAT }}
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-          cache: 'pip'
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt --quiet
-
-      - name: Detect issue file
-        id: detect
+      - name: Explain disabled workflow
         run: |
-          INPUT_DATE="${{ github.event.inputs.issue_date }}"
-          if [ -n "$INPUT_DATE" ]; then
-            FILE="content/issues/${INPUT_DATE}.md"
-            if [ -f "$FILE" ]; then
-              echo "issue_file=$FILE" >> $GITHUB_OUTPUT
-              echo "[em-push] Using specified file: $FILE"
-            else
-              echo "::error::Specified issue file $FILE not found"
-              exit 1
-            fi
-          else
-            FILE=$(ls -t content/issues/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].md 2>/dev/null | head -1)
-            if [ -z "$FILE" ]; then
-              echo "::error::No YYYY-MM-DD.md files found in content/issues/"
-              exit 1
-            fi
-            echo "issue_file=$FILE" >> $GITHUB_OUTPUT
-            echo "[em-push] Auto-detected: $FILE"
-          fi
-
-      - name: Render site HTML
-        run: |
-          echo "[em-push] Rendering site for ${{ steps.detect.outputs.issue_file }}"
-          python publish_site.py
-        env:
-          SITE_BASE_URL: https://news.forgecore.co
-          NEWSLETTER_NAME: FORGE/DAILY
-          NEWSLETTER_TAGLINE: "AI news for people who don't need it explained twice."
-          PRIMARY_CTA_URL: https://forgecore-newsletter.beehiiv.com/
-          SPONSOR_EMAIL: sponsors@forgecore.co
-          KIT_FORM_ID: ${{ secrets.KIT_FORM_ID }}
-        continue-on-error: true
-
-      - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy site/dist --project-name=forgecore-newsletter --commit-dirty=true --branch=main
-        continue-on-error: true
-
-      - name: Publish to Kit
-        run: |
-          echo "[em-push] Publishing ${{ steps.detect.outputs.issue_file }} to Kit"
-          python kit_publish.py
-        continue-on-error: true
-
-      - name: Upload log artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: em-push-log-${{ github.run_id }}
-          path: |
-            state/progress-log.md
-            state/errors.log
-            state/kit_sent.json
-            HEARTBEAT.md
-          retention-days: 7
-          if-no-files-found: warn
+          echo "This legacy Local-Em push workflow is disabled."
+          echo "Active path: generate-am.yml / generate-pm.yml -> generate.yml."
+          echo "No site render, Cloudflare deploy, or Kit publish was attempted by this disabled workflow."
