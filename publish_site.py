@@ -108,8 +108,8 @@ def excerpt_from_markdown(text: str) -> str:
         if len(" ".join(lines)) > 210:
             break
     excerpt = " ".join(lines)
-    if len(excerpt) > 240:
-        excerpt = excerpt[:237].rsplit(" ", 1)[0].rstrip() + "..."
+    if len(excerpt) > 220:
+        excerpt = excerpt[:217].rsplit(" ", 1)[0].rstrip() + "..."
     return excerpt or NEWSLETTER_TAGLINE
 
 
@@ -242,41 +242,43 @@ def base_template(
   <style>
     :root {{ color-scheme: dark; --bg:#080b12; --panel:#111827; --text:#e5e7eb; --muted:#9ca3af; --accent:#38bdf8; --accent-2:#a78bfa; --border:#1f2937; --soft:#0f172a; }}
     * {{ box-sizing:border-box; }}
-    body {{ margin:0; font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background:radial-gradient(circle at top left,#172554 0,#080b12 38%,#05070d 100%); color:var(--text); line-height:1.65; }}
+    body {{ margin:0; font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background:radial-gradient(circle at top left,#172554 0,#080b12 34%,#05070d 100%); color:var(--text); line-height:1.6; }}
     a {{ color:var(--accent); text-decoration:none; }}
     a:hover {{ text-decoration:underline; }}
-    .wrap {{ width:min(1040px,92vw); margin:0 auto; }}
-    header {{ padding:46px 0 34px; border-bottom:1px solid rgba(148,163,184,.14); }}
-    .brand {{ font-weight:900; letter-spacing:-0.055em; font-size:clamp(2.4rem,7vw,5rem); color:white; line-height:.9; }}
-    .tagline {{ color:var(--muted); max-width:720px; font-size:1.1rem; margin:18px 0 0; }}
-    .eyebrow {{ color:#bae6fd; font-size:.78rem; letter-spacing:.16em; text-transform:uppercase; font-weight:800; margin-bottom:14px; }}
-    .hero-title {{ max-width:900px; margin:.15rem 0 .75rem; font-size:clamp(2rem,5vw,4rem); line-height:1.02; letter-spacing:-.045em; }}
-    .hero-copy {{ max-width:760px; color:#cbd5e1; font-size:1.14rem; }}
-    .cta-bar {{ margin-top:24px; display:flex; gap:12px; flex-wrap:wrap; }}
-    .button {{ display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:11px 17px; border-radius:999px; background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#04111f; font-weight:900; box-shadow:0 12px 34px rgba(56,189,248,.18); }}
+    .wrap {{ width:min(1120px,94vw); margin:0 auto; }}
+    header {{ padding:30px 0 24px; border-bottom:1px solid rgba(148,163,184,.14); }}
+    .brand {{ font-weight:900; letter-spacing:-0.055em; font-size:clamp(2.2rem,6vw,4.35rem); color:white; line-height:.9; }}
+    .tagline {{ color:var(--muted); max-width:760px; font-size:1.04rem; margin:14px 0 0; }}
+    .eyebrow {{ color:#bae6fd; font-size:.76rem; letter-spacing:.16em; text-transform:uppercase; font-weight:800; margin-bottom:10px; }}
+    .hero {{ display:grid; grid-template-columns:minmax(0,1.25fr) minmax(300px,.75fr); gap:22px; align-items:start; }}
+    .hero-title {{ max-width:820px; margin:.1rem 0 .6rem; font-size:clamp(1.85rem,4.2vw,3.35rem); line-height:1.04; letter-spacing:-.045em; }}
+    .hero-copy {{ max-width:720px; color:#cbd5e1; font-size:1.08rem; margin-bottom:0; }}
+    .cta-bar {{ margin-top:20px; display:flex; gap:10px; flex-wrap:wrap; }}
+    .button {{ display:inline-flex; align-items:center; justify-content:center; min-height:42px; padding:10px 15px; border-radius:999px; background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#04111f; font-weight:900; box-shadow:0 12px 34px rgba(56,189,248,.18); }}
     .button.secondary {{ background:rgba(15,23,42,.55); color:var(--text); border:1px solid rgba(148,163,184,.22); box-shadow:none; }}
-    main {{ padding:38px 0 64px; }}
-    .section-heading {{ margin:34px 0 16px; font-size:clamp(1.5rem,3vw,2.2rem); letter-spacing:-.035em; }}
-    .value-grid {{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin:30px 0 8px; }}
-    .value-card {{ padding:17px; border:1px solid rgba(148,163,184,.18); border-radius:18px; background:rgba(15,23,42,.54); color:#cbd5e1; }}
-    .value-card strong {{ display:block; color:#fff; margin-bottom:4px; }}
-    .grid {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; }}
-    .card {{ padding:24px; border:1px solid rgba(148,163,184,.18); border-radius:22px; background:linear-gradient(180deg,rgba(17,24,39,.9),rgba(15,23,42,.72)); box-shadow:0 22px 58px rgba(0,0,0,.26); }}
+    main {{ padding:26px 0 54px; }}
+    .section-heading {{ margin:28px 0 14px; font-size:clamp(1.35rem,2.6vw,2rem); letter-spacing:-.035em; }}
+    .value-grid {{ display:grid; grid-template-columns:1fr; gap:10px; margin:0; }}
+    .value-card {{ padding:14px 15px; border:1px solid rgba(148,163,184,.18); border-radius:16px; background:rgba(15,23,42,.58); color:#cbd5e1; font-size:.96rem; }}
+    .value-card strong {{ display:block; color:#fff; margin-bottom:2px; }}
+    .grid {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }}
+    .card {{ padding:20px; border:1px solid rgba(148,163,184,.18); border-radius:20px; background:linear-gradient(180deg,rgba(17,24,39,.9),rgba(15,23,42,.72)); box-shadow:0 18px 46px rgba(0,0,0,.22); }}
     .card:hover {{ border-color:rgba(56,189,248,.45); transform:translateY(-2px); transition:.18s ease; }}
-    .date {{ color:#93c5fd; font-size:.78rem; text-transform:uppercase; letter-spacing:.12em; font-weight:800; }}
-    .card h2 {{ margin:.45rem 0 .7rem; font-size:1.45rem; line-height:1.16; letter-spacing:-.026em; }}
-    .card p {{ color:#cbd5e1; margin-bottom:1rem; }}
+    .date {{ color:#93c5fd; font-size:.76rem; text-transform:uppercase; letter-spacing:.12em; font-weight:800; }}
+    .card h2 {{ margin:.4rem 0 .55rem; font-size:1.3rem; line-height:1.16; letter-spacing:-.026em; }}
+    .card p {{ color:#cbd5e1; margin:.5rem 0 .85rem; }}
     .read-link {{ font-weight:900; }}
-    .article-nav {{ margin-bottom:24px; }}
+    .article-nav {{ margin-bottom:20px; }}
     article {{ max-width:800px; }}
-    article h1 {{ font-size:clamp(2.1rem,5vw,3.9rem); line-height:1.04; letter-spacing:-0.05em; margin:0 0 16px; }}
-    article h2 {{ margin-top:2.25rem; padding-top:1.15rem; border-top:1px solid rgba(148,163,184,.18); letter-spacing:-.025em; }}
+    article h1 {{ font-size:clamp(2rem,4.6vw,3.65rem); line-height:1.04; letter-spacing:-0.05em; margin:0 0 14px; }}
+    article h2 {{ margin-top:2rem; padding-top:1rem; border-top:1px solid rgba(148,163,184,.18); letter-spacing:-.025em; }}
     article p, article li {{ color:#d1d5db; }}
-    article li {{ margin:.35rem 0; }}
-    pre {{ overflow:auto; padding:18px; border-radius:16px; background:#030712; border:1px solid rgba(148,163,184,.18); box-shadow:inset 0 1px 0 rgba(255,255,255,.03); }}
+    article li {{ margin:.3rem 0; }}
+    pre {{ overflow:auto; padding:16px; border-radius:16px; background:#030712; border:1px solid rgba(148,163,184,.18); box-shadow:inset 0 1px 0 rgba(255,255,255,.03); }}
     code {{ color:#bae6fd; }}
-    footer {{ border-top:1px solid rgba(148,163,184,.14); padding:28px 0 44px; color:var(--muted); font-size:.95rem; }}
-    @media (max-width: 760px) {{ .grid, .value-grid {{ grid-template-columns:1fr; }} header {{ padding-top:34px; }} .button {{ width:100%; }} }}
+    footer {{ border-top:1px solid rgba(148,163,184,.14); padding:24px 0 38px; color:var(--muted); font-size:.95rem; }}
+    @media (max-width: 860px) {{ .hero, .grid {{ grid-template-columns:1fr; }} .value-grid {{ grid-template-columns:repeat(3,minmax(0,1fr)); }} }}
+    @media (max-width: 640px) {{ .value-grid {{ grid-template-columns:1fr; }} header {{ padding-top:26px; }} .button {{ width:100%; }} }}
   </style>
 </head>
 <body>
@@ -328,13 +330,15 @@ def render_home(issues: list[dict[str, str]]) -> str:
 </section>"""
         )
     body = """<section class="hero">
-  <div class="eyebrow">AI workflows for solo operators</div>
-  <h1 class="hero-title">Build systems that save time, create leverage, and avoid tool waste.</h1>
-  <p class="hero-copy">ForgeCore turns AI tool signals into practical playbooks for builders, creators, consultants, indie hackers, and small business operators.</p>
+  <div>
+    <div class="eyebrow">AI workflows for solo operators</div>
+    <h1 class="hero-title">Build systems that save time, create leverage, and avoid tool waste.</h1>
+    <p class="hero-copy">ForgeCore turns AI tool signals into practical playbooks for builders, creators, consultants, indie hackers, and small business operators.</p>
+  </div>
   <div class="value-grid">
-    <div class="value-card"><strong>Make money</strong>Find workflows tied to leads, offers, content, and repeatable revenue tasks.</div>
+    <div class="value-card"><strong>Make money</strong>Workflows tied to leads, offers, content, and repeatable revenue tasks.</div>
     <div class="value-card"><strong>Save time</strong>Automate admin drag without building fragile, overcomplicated systems.</div>
-    <div class="value-card"><strong>Choose tools</strong>See what to use, what to avoid, and when a cheaper option is enough.</div>
+    <div class="value-card"><strong>Choose tools</strong>Use what fits, avoid bad-fit spend, and know when simpler is enough.</div>
   </div>
 </section>
 <h2 class="section-heading">Latest operator playbooks</h2>
