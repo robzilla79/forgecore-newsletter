@@ -561,3 +561,21 @@
   - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
   - Name the exact operator persona, job-to-be-done, tool stack, and tradeoff.
   - Make the headline name the workflow, operator, tool choice, or measurable outcome.
+
+
+---
+
+## 2026-05-02 11:51:42 UTC — /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-02-pm.md
+- Improvement result: changed (rewritten issue saved)
+- Critic score: 10.0 | verdict: needs_revision
+- Weaknesses found:
+  - Revise the headline to make it more engaging.
+  - Simplify and clarify the workflow steps for better readability.
+  - Enhance the CTA to emphasize immediate action.
+  - 1. Create a more compelling headline that captures attention.
+  - 2. Streamline the workflow section to ensure clarity and conciseness.
+  - 3. Revise the CTA to include a stronger sense of urgency and specific next steps.
+- Rules for future issues:
+  - Make the headline name the workflow, operator, tool choice, or measurable outcome.
+  - Turn vague advice into 3-6 named steps plus one prompt, checklist, config, or command block.
+  - CTA must tell the reader what to try this week and include subscribe plus sponsor links.

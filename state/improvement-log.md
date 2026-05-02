@@ -834,3 +834,18 @@
 ---
 
 [2026-05-02 11:41:35 UTC] Improved /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-02-am.md: rewritten issue saved
+
+
+---
+
+[2026-05-02 11:51:27 UTC] Improving /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-02-pm.md using targeted critic/gate guidance ...
+
+
+---
+
+[2026-05-02 11:51:42 UTC] Applied deterministic guardrails: CTA, duplicate sections
+
+
+---
+
+[2026-05-02 11:51:42 UTC] Improved /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-02-pm.md: rewritten issue saved
