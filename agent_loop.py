@@ -21,6 +21,7 @@ ISSUE_SLOT = os.getenv("ISSUE_SLOT", "").strip().lower()
 RECENT_TOPIC_LIMIT = int(os.getenv("RECENT_TOPIC_LIMIT", "8"))
 DUPLICATE_TITLE_THRESHOLD = float(os.getenv("DUPLICATE_TITLE_THRESHOLD", "0.72"))
 AUTHOR_TOPIC_RETRIES = int(os.getenv("AUTHOR_TOPIC_RETRIES", "2"))
+EDITOR_TOPIC_RETRIES = int(os.getenv("EDITOR_TOPIC_RETRIES", "1"))
 
 ALLOWED = {"scout", "analyst", "author", "editor"}
 MEMO_AGENTS = {"scout", "analyst"}
@@ -347,7 +348,7 @@ def build_markdown_prompt(agent: str, extra_context: str = "") -> str:
     if agent == "author":
         task = f"Write a clean, original, complete newsletter issue as Markdown for {target}. Return ONLY Markdown. Use today's research and the fresh slot-specific brief only. Do not reuse old issue text. Do not choose a topic that overlaps with recent published issues. If an approved affiliate candidate genuinely fits, you may mention it with disclosure, bad-fit warning, and a simpler alternative, but do not publish placeholder affiliate labels as live links. Do not include placeholder phrases like 'No concrete content returned', 'Missing Content', or 'description incomplete'. Do not wrap it in JSON or code fences."
     else:
-        task = f"Edit the existing draft for {target}. If it contains placeholder or raw-intel junk, rewrite it completely from today's research and fresh slot-specific brief. Return ONLY the complete final Markdown issue. Preserve the selected non-duplicate topic. Keep monetization transparent and registry-approved; remove forced or placeholder affiliate language. Prefer preserving or expanding useful detail; do not shorten the issue unless removing junk."
+        task = f"Edit the existing draft for {target}. If the draft's topic is too similar to a recent issue, rewrite it around a materially different research item and operator workflow from today's brief instead of preserving the duplicate. Return ONLY the complete final Markdown issue. Keep monetization transparent and registry-approved; remove forced or placeholder affiliate language. Prefer preserving or expanding useful detail; do not shorten the issue unless removing junk."
     return SYSTEMS[agent] + f"\n\nTask:\n{task}\n\nContext:\n{context(agent, extra_context=extra_context)}"
 
 
@@ -408,9 +409,17 @@ def validate_memo(agent: str, text: str) -> None:
         raise ValueError(f"{agent} memo needs at least 3 source URLs")
 
 
+def max_topic_retries(agent: str) -> int:
+    if agent == "author":
+        return AUTHOR_TOPIC_RETRIES
+    if agent == "editor":
+        return EDITOR_TOPIC_RETRIES
+    return 0
+
+
 def generate_markdown_with_duplicate_retries(agent: str, model: str) -> str:
     rejections: list[str] = []
-    attempts = max(1, AUTHOR_TOPIC_RETRIES + 1) if agent == "author" else 1
+    attempts = max(1, max_topic_retries(agent) + 1)
     for attempt in range(1, attempts + 1):
         extra = duplicate_retry_context(rejections)
         markdown = clean_markdown(call_text_model(model, build_markdown_prompt(agent, extra_context=extra), temperature=0.35 if rejections else 0.25))
