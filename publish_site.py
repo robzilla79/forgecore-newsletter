@@ -108,15 +108,15 @@ def excerpt_from_markdown(text: str) -> str:
         if len(" ".join(lines)) > 210:
             break
     excerpt = " ".join(lines)
-    if len(excerpt) > 240:
-        excerpt = excerpt[:237].rstrip() + "..."
+    if len(excerpt) > 220:
+        excerpt = excerpt[:217].rsplit(" ", 1)[0].rstrip() + "..."
     return excerpt or NEWSLETTER_TAGLINE
 
 
 def meta_description(value: str) -> str:
     description = " ".join((value or NEWSLETTER_TAGLINE).split())
     if len(description) > 156:
-        description = description[:153].rstrip() + "..."
+        description = description[:153].rsplit(" ", 1)[0].rstrip() + "..."
     return description
 
 
@@ -139,7 +139,7 @@ def is_valid_issue(text: str) -> bool:
 def inline_markdown(value: str) -> str:
     value = html.escape(value)
     value = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", value)
-    value = re.sub(r"\[(.+?)\]\((https?://[^)]+)\)", r'<a href="\2">\1</a>', value)
+    value = re.sub(r"\[(.+?)\]\(((?:https?://|mailto:)[^)]+)\)", r'<a href="\2">\1</a>', value)
     return value
 
 
@@ -240,30 +240,45 @@ def base_template(
   <meta name="twitter:description" content="{escaped_description}">
   {schema_html}
   <style>
-    :root {{ color-scheme: dark; --bg:#080b12; --panel:#111827; --text:#e5e7eb; --muted:#9ca3af; --accent:#38bdf8; --border:#1f2937; }}
+    :root {{ color-scheme: dark; --bg:#080b12; --panel:#111827; --text:#e5e7eb; --muted:#9ca3af; --accent:#38bdf8; --accent-2:#a78bfa; --border:#1f2937; --soft:#0f172a; }}
     * {{ box-sizing:border-box; }}
-    body {{ margin:0; font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background:radial-gradient(circle at top left,#152033 0,#080b12 42%); color:var(--text); line-height:1.65; }}
+    body {{ margin:0; font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background:radial-gradient(circle at top left,#172554 0,#080b12 34%,#05070d 100%); color:var(--text); line-height:1.6; }}
     a {{ color:var(--accent); text-decoration:none; }}
     a:hover {{ text-decoration:underline; }}
-    .wrap {{ width:min(980px,92vw); margin:0 auto; }}
-    header {{ padding:42px 0 28px; border-bottom:1px solid var(--border); }}
-    .brand {{ font-weight:800; letter-spacing:-0.04em; font-size:clamp(2rem,5vw,4rem); color:white; }}
-    .tagline {{ color:var(--muted); max-width:720px; font-size:1.08rem; }}
-    .cta-bar {{ margin-top:22px; display:flex; gap:12px; flex-wrap:wrap; }}
-    .button {{ display:inline-block; padding:11px 16px; border-radius:999px; background:var(--accent); color:#04111f; font-weight:800; }}
-    .button.secondary {{ background:transparent; color:var(--text); border:1px solid var(--border); }}
-    main {{ padding:34px 0 56px; }}
-    .grid {{ display:grid; gap:18px; }}
-    .card {{ padding:22px; border:1px solid var(--border); border-radius:18px; background:rgba(17,24,39,.82); box-shadow:0 20px 50px rgba(0,0,0,.22); }}
-    .date {{ color:var(--muted); font-size:.92rem; text-transform:uppercase; letter-spacing:.08em; }}
-    .card h2 {{ margin:.35rem 0 .6rem; font-size:1.45rem; line-height:1.2; }}
-    article {{ max-width:780px; }}
-    article h1 {{ font-size:clamp(2rem,5vw,3.6rem); line-height:1.05; letter-spacing:-0.04em; margin:0 0 12px; }}
-    article h2 {{ margin-top:2rem; padding-top:1rem; border-top:1px solid var(--border); }}
+    .wrap {{ width:min(1120px,94vw); margin:0 auto; }}
+    header {{ padding:30px 0 24px; border-bottom:1px solid rgba(148,163,184,.14); }}
+    .brand {{ font-weight:900; letter-spacing:-0.055em; font-size:clamp(2.2rem,6vw,4.35rem); color:white; line-height:.9; }}
+    .tagline {{ color:var(--muted); max-width:760px; font-size:1.04rem; margin:14px 0 0; }}
+    .eyebrow {{ color:#bae6fd; font-size:.76rem; letter-spacing:.16em; text-transform:uppercase; font-weight:800; margin-bottom:10px; }}
+    .hero {{ display:grid; grid-template-columns:minmax(0,1.25fr) minmax(300px,.75fr); gap:22px; align-items:start; }}
+    .hero-title {{ max-width:820px; margin:.1rem 0 .6rem; font-size:clamp(1.85rem,4.2vw,3.35rem); line-height:1.04; letter-spacing:-.045em; }}
+    .hero-copy {{ max-width:720px; color:#cbd5e1; font-size:1.08rem; margin-bottom:0; }}
+    .cta-bar {{ margin-top:20px; display:flex; gap:10px; flex-wrap:wrap; }}
+    .button {{ display:inline-flex; align-items:center; justify-content:center; min-height:42px; padding:10px 15px; border-radius:999px; background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#04111f; font-weight:900; box-shadow:0 12px 34px rgba(56,189,248,.18); }}
+    .button.secondary {{ background:rgba(15,23,42,.55); color:var(--text); border:1px solid rgba(148,163,184,.22); box-shadow:none; }}
+    main {{ padding:26px 0 54px; }}
+    .section-heading {{ margin:28px 0 14px; font-size:clamp(1.35rem,2.6vw,2rem); letter-spacing:-.035em; }}
+    .value-grid {{ display:grid; grid-template-columns:1fr; gap:10px; margin:0; }}
+    .value-card {{ padding:14px 15px; border:1px solid rgba(148,163,184,.18); border-radius:16px; background:rgba(15,23,42,.58); color:#cbd5e1; font-size:.96rem; }}
+    .value-card strong {{ display:block; color:#fff; margin-bottom:2px; }}
+    .grid {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }}
+    .card {{ padding:20px; border:1px solid rgba(148,163,184,.18); border-radius:20px; background:linear-gradient(180deg,rgba(17,24,39,.9),rgba(15,23,42,.72)); box-shadow:0 18px 46px rgba(0,0,0,.22); }}
+    .card:hover {{ border-color:rgba(56,189,248,.45); transform:translateY(-2px); transition:.18s ease; }}
+    .date {{ color:#93c5fd; font-size:.76rem; text-transform:uppercase; letter-spacing:.12em; font-weight:800; }}
+    .card h2 {{ margin:.4rem 0 .55rem; font-size:1.3rem; line-height:1.16; letter-spacing:-.026em; }}
+    .card p {{ color:#cbd5e1; margin:.5rem 0 .85rem; }}
+    .read-link {{ font-weight:900; }}
+    .article-nav {{ margin-bottom:20px; }}
+    article {{ max-width:800px; }}
+    article h1 {{ font-size:clamp(2rem,4.6vw,3.65rem); line-height:1.04; letter-spacing:-0.05em; margin:0 0 14px; }}
+    article h2 {{ margin-top:2rem; padding-top:1rem; border-top:1px solid rgba(148,163,184,.18); letter-spacing:-.025em; }}
     article p, article li {{ color:#d1d5db; }}
-    pre {{ overflow:auto; padding:16px; border-radius:14px; background:#030712; border:1px solid var(--border); }}
+    article li {{ margin:.3rem 0; }}
+    pre {{ overflow:auto; padding:16px; border-radius:16px; background:#030712; border:1px solid rgba(148,163,184,.18); box-shadow:inset 0 1px 0 rgba(255,255,255,.03); }}
     code {{ color:#bae6fd; }}
-    footer {{ border-top:1px solid var(--border); padding:26px 0 42px; color:var(--muted); font-size:.95rem; }}
+    footer {{ border-top:1px solid rgba(148,163,184,.14); padding:24px 0 38px; color:var(--muted); font-size:.95rem; }}
+    @media (max-width: 860px) {{ .hero, .grid {{ grid-template-columns:1fr; }} .value-grid {{ grid-template-columns:repeat(3,minmax(0,1fr)); }} }}
+    @media (max-width: 640px) {{ .value-grid {{ grid-template-columns:1fr; }} header {{ padding-top:26px; }} .button {{ width:100%; }} }}
   </style>
 </head>
 <body>
@@ -311,9 +326,24 @@ def render_home(issues: list[dict[str, str]]) -> str:
   <div class="date">{html.escape(issue['date'])}</div>
   <h2><a href="/{html.escape(issue['slug'])}/">{html.escape(issue['title'])}</a></h2>
   <p>{html.escape(issue['excerpt'])}</p>
+  <a class="read-link" href="/{html.escape(issue['slug'])}/">Read the workflow →</a>
 </section>"""
         )
-    body = "<h1>Latest ForgeCore Issues</h1>\n<div class=\"grid\">\n" + "\n".join(cards) + "\n</div>"
+    body = """<section class="hero">
+  <div>
+    <div class="eyebrow">AI workflows for solo operators</div>
+    <h1 class="hero-title">Build systems that save time, create leverage, and avoid tool waste.</h1>
+    <p class="hero-copy">ForgeCore turns AI tool signals into practical playbooks for builders, creators, consultants, indie hackers, and small business operators.</p>
+  </div>
+  <div class="value-grid">
+    <div class="value-card"><strong>Make money</strong>Workflows tied to leads, offers, content, and repeatable revenue tasks.</div>
+    <div class="value-card"><strong>Save time</strong>Automate admin drag without building fragile, overcomplicated systems.</div>
+    <div class="value-card"><strong>Choose tools</strong>Use what fits, avoid bad-fit spend, and know when simpler is enough.</div>
+  </div>
+</section>
+<h2 class="section-heading">Latest operator playbooks</h2>
+<div class="grid">
+""" + "\n".join(cards) + "\n</div>"
     schema = {
         "@context": "https://schema.org",
         "@type": "WebSite",
@@ -326,7 +356,8 @@ def render_home(issues: list[dict[str, str]]) -> str:
 
 def render_issue(issue: dict[str, str]) -> str:
     article_url = canonical_url(issue["slug"])
-    article = f"""<article>
+    article = f"""<div class="article-nav"><a class="read-link" href="/">← Back to all playbooks</a></div>
+<article>
   <div class="date">{html.escape(issue['date'])}</div>
   {markdown_to_html(issue['text'])}
 </article>"""

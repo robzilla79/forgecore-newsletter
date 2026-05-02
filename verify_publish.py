@@ -89,6 +89,27 @@ def require_metadata(html: str, slug: str) -> None:
             raise SystemExit(f"Article page missing {label}: {slug}")
 
 
+def require_site_polish(homepage_html: str, article_html: str, slug: str) -> None:
+    homepage_required = {
+        "hero title": "hero-title",
+        "value grid": "value-grid",
+        "read link": "Read the workflow",
+        "responsive layout": "@media (max-width: 860px)",
+    }
+    article_required = {
+        "back link": "Back to all playbooks",
+        "mailto sponsor link": "mailto:sponsors@forgecore.co",
+    }
+    for label, snippet in homepage_required.items():
+        if snippet not in homepage_html:
+            raise SystemExit(f"Homepage missing polished {label}: {slug}")
+    for label, snippet in article_required.items():
+        if snippet not in article_html:
+            raise SystemExit(f"Article page missing polished {label}: {slug}")
+    if "[sponsors@forgecore.co](mailto:sponsors@forgecore.co)" in article_html:
+        raise SystemExit(f"Article page still contains raw Markdown mailto link: {slug}")
+
+
 def main() -> int:
     if not ISSUES_DIR.exists():
         raise SystemExit("content/issues directory missing")
@@ -133,6 +154,7 @@ def main() -> int:
     if "<article" not in article_html:
         raise SystemExit(f"Article page missing article markup: {slug}")
     require_metadata(article_html, slug)
+    require_site_polish(homepage_html, article_html, slug)
 
     print(f"Publish verified: {slug}")
     return 0
