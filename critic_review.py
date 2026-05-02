@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""critic_review.py - Score the current slot-specific issue against the ForgeCore rubric."""
+"""critic_review.py - Score the current slot-specific issue against the ForgeCore rubric.
+
+The critic is validation-only. It must not call issue-contract normalization or
+repair logic before scoring. Structurally weak drafts should receive critic
+feedback and quality-gate errors so improvement_loop.py can repair them.
+"""
 from __future__ import annotations
 
 import json
@@ -12,7 +17,6 @@ from typing import Any
 
 import requests
 
-from issue_contract import ensure_issue_contract
 from templates.system_prompts import CRITIC_SYSTEM
 from utils import WORKSPACE, artifact_suffix_for_issue, dump_json, issue_path_for_today, load_project_env, load_text
 
@@ -190,7 +194,8 @@ def main() -> int:
     suffix = artifact_suffix_for_issue(path)
     out_path = WORKSPACE / "state" / f"critic-review-{suffix}.json"
     try:
-        path = ensure_issue_contract(path)
+        if not path.exists():
+            raise FileNotFoundError(path.as_posix())
         result = evaluate_issue(path)
     except Exception as exc:
         result = {
