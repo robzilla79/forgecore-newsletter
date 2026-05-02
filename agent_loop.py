@@ -97,10 +97,43 @@ def clean_old_slot_file_for_author(agent: str) -> None:
             progress(f"Removed contaminated draft before author run: content/issues/{issue_id()}.md")
 
 
+def today_research_files() -> list[Path]:
+    return sorted((WORKSPACE / "research" / "raw").glob(f"{today_str()}-*.md"))
+
+
+def fresh_research_urls(limit: int = 8) -> list[str]:
+    urls: list[str] = []
+    seen: set[str] = set()
+    for path in today_research_files():
+        text = load_text(path)
+        for match in re.finditer(r"^- URL:\s*(https?://\S+)", text, flags=re.MULTILINE):
+            url = match.group(1).rstrip(").,")
+            if url and url not in seen:
+                seen.add(url)
+                urls.append(url)
+                if len(urls) >= limit:
+                    return urls
+    return urls
+
+
+def ensure_memo_source_urls(agent: str, memo: str) -> str:
+    urls = re.findall(r"https?://\S+", memo)
+    if len(urls) >= 3:
+        return memo
+
+    source_urls = fresh_research_urls(limit=5)
+    missing = [url for url in source_urls if url not in memo]
+    if not missing:
+        return memo
+
+    appended = "\n\n## Deterministic Source URLs\n" + "\n".join(f"- {url}" for url in missing[:5]) + "\n"
+    warn(f"{agent} memo included {len(urls)} source URLs; appended {min(len(missing), 5)} deterministic URLs from today's research")
+    return memo.rstrip() + appended
+
+
 def gather_research() -> str:
     blocks: list[str] = []
-    today_files = sorted((WORKSPACE / "research" / "raw").glob(f"{today_str()}-*.md"))
-    for path in today_files[:10]:
+    for path in today_research_files()[:10]:
         text = load_text(path)
         if text.strip():
             blocks.append(f"## {path.name}\n{text[:2400]}")
@@ -274,6 +307,7 @@ def run(agent: str) -> int:
         clean_old_slot_file_for_author(agent)
         if agent in MEMO_AGENTS:
             memo = clean_markdown(call_text_model(model, build_memo_prompt(agent), temperature=0.15))
+            memo = ensure_memo_source_urls(agent, memo)
             validate_memo(agent, memo)
 
             path = scout_file() if agent == "scout" else brief_file()
