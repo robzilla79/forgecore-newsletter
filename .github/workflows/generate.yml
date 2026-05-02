@@ -182,11 +182,14 @@ jobs:
         run: |
           git config user.name "ForgeCore AI Bot"
           git config user.email "bot@forgecore.co"
-          git pull --rebase origin main
           git add content/issues/ research/ state/ site/dist/ HEARTBEAT.md
           if git diff --staged --quiet; then
             echo "Nothing to commit"
           else
+            git stash push --include-untracked --message forgecore-generated-content
+            git pull --rebase origin main
+            git stash pop
+            git add content/issues/ research/ state/ site/dist/ HEARTBEAT.md
             TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M UTC')
             git commit -m "auto: ${ISSUE_SLOT:-manual} newsletter issue $TIMESTAMP [bot]"
             git push
