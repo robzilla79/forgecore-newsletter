@@ -20,6 +20,7 @@ EDITOR_MODEL = os.getenv("EDITOR_MODEL", WRITER_MODEL)
 ISSUE_SLOT = os.getenv("ISSUE_SLOT", "").strip().lower()
 RECENT_TOPIC_LIMIT = int(os.getenv("RECENT_TOPIC_LIMIT", "8"))
 DUPLICATE_TITLE_THRESHOLD = float(os.getenv("DUPLICATE_TITLE_THRESHOLD", "0.72"))
+AUTHOR_TOPIC_RETRIES = int(os.getenv("AUTHOR_TOPIC_RETRIES", "2"))
 
 ALLOWED = {"scout", "analyst", "author", "editor"}
 MEMO_AGENTS = {"scout", "analyst"}
@@ -50,6 +51,9 @@ STOPWORDS = {
     "of", "on", "or", "the", "this", "to", "use", "using", "with", "your", "you", "managers", "manager",
     "operators", "operator", "solo", "ai", "forgecore", "newsletter", "issue", "brand", "brands",
 }
+
+class DuplicateTopicError(ValueError):
+    pass
 
 
 def issue_id() -> str:
@@ -153,7 +157,7 @@ def enforce_not_duplicate_title(agent: str, markdown: str) -> None:
         existing = title_from_markdown(load_text(path), path.stem)
         score = topic_similarity(title, existing)
         if score >= DUPLICATE_TITLE_THRESHOLD:
-            raise ValueError(
+            raise DuplicateTopicError(
                 f"{agent} generated a topic too similar to recent issue {path.name}: "
                 f"'{title}' vs '{existing}' (similarity={score:.2f})"
             )
@@ -248,7 +252,19 @@ def current_issue_context(agent: str) -> str:
     return "No existing draft for this slot."
 
 
-def context(agent: str) -> str:
+def duplicate_retry_context(rejections: list[str]) -> str:
+    if not rejections:
+        return ""
+    bullets = "\n".join(f"- {item}" for item in rejections[-3:])
+    return (
+        "\n\n# REJECTED DUPLICATE TOPICS FROM THIS RUN\n"
+        "The following draft topics were rejected as too similar to recent issues. Do not use the same source angle, keywords, or job-to-be-done again. Choose a materially different research item and operator workflow.\n"
+        f"{bullets}\n"
+        "Good alternate directions from today's research may include: Zapier Agents vs ChatGPT workspace agents, MuleSoft pricing decision, advanced account security, AI cybersecurity workflow, browser/tool selection, or share-of-voice tracking if it is clearly not AEO competitor analysis."
+    )
+
+
+def context(agent: str, extra_context: str = "") -> str:
     research = gather_research()
     brief_required = agent in {"author", "editor"}
     parts = [
@@ -260,6 +276,7 @@ def context(agent: str) -> str:
         f"# TARGET_BRIEF_PATH\n{brief_file().relative_to(WORKSPACE).as_posix()}",
         f"# CRITICAL CONTEXT RULE\nUse only today's fresh research files and the deterministic slot-specific scout/brief files above. Do not copy, summarize, or improve old broken issue files. If context contains placeholder or missing-content language, treat it as a defect to avoid, not source material.",
         f"# DUPLICATE TOPIC AVOIDANCE\nDo not choose, brief, draft, or polish a topic that substantially overlaps with any recent issue below. If today's strongest source matches a recent topic, choose a different source, persona, job-to-be-done, tool category, or workflow angle.\n{recent_topic_context()}",
+        extra_context.strip(),
         f"# GOALS\n{load_text(WORKSPACE / 'GOALS.md')}",
         f"# RULES\n{load_text(WORKSPACE / 'AGENTS.md')}",
         f"# SOUL\n{load_text(WORKSPACE / 'agents' / agent / 'SOUL.md')}",
@@ -273,7 +290,7 @@ def context(agent: str) -> str:
     else:
         parts.append(f"# BRIEF_STATUS\n{load_fresh_brief(required=False)[:1200]}")
     parts.append(f"# CURRENT_SLOT_ISSUE_CONTEXT\n{current_issue_context(agent)}")
-    return "\n\n".join(parts)[:24000]
+    return "\n\n".join(part for part in parts if part)[:24000]
 
 
 def openai_client() -> OpenAI:
@@ -309,13 +326,13 @@ def build_memo_prompt(agent: str) -> str:
     return SYSTEMS[agent] + f"\n\nTask:\n{task}\n\nContext:\n{context(agent)}"
 
 
-def build_markdown_prompt(agent: str) -> str:
+def build_markdown_prompt(agent: str, extra_context: str = "") -> str:
     target = f"content/issues/{issue_id()}.md"
     if agent == "author":
         task = f"Write a clean, original, complete newsletter issue as Markdown for {target}. Return ONLY Markdown. Use today's research and the fresh slot-specific brief only. Do not reuse old issue text. Do not choose a topic that overlaps with recent published issues. Do not include placeholder phrases like 'No concrete content returned', 'Missing Content', or 'description incomplete'. Do not wrap it in JSON or code fences."
     else:
         task = f"Edit the existing draft for {target}. If it contains placeholder or raw-intel junk, rewrite it completely from today's research and fresh slot-specific brief. Return ONLY the complete final Markdown issue. Preserve the selected non-duplicate topic. Prefer preserving or expanding useful detail; do not shorten the issue unless removing junk."
-    return SYSTEMS[agent] + f"\n\nTask:\n{task}\n\nContext:\n{context(agent)}"
+    return SYSTEMS[agent] + f"\n\nTask:\n{task}\n\nContext:\n{context(agent, extra_context=extra_context)}"
 
 
 def clean_markdown(text: str) -> str:
@@ -375,6 +392,25 @@ def validate_memo(agent: str, text: str) -> None:
         raise ValueError(f"{agent} memo needs at least 3 source URLs")
 
 
+def generate_markdown_with_duplicate_retries(agent: str, model: str) -> str:
+    rejections: list[str] = []
+    attempts = max(1, AUTHOR_TOPIC_RETRIES + 1) if agent == "author" else 1
+    for attempt in range(1, attempts + 1):
+        extra = duplicate_retry_context(rejections)
+        markdown = clean_markdown(call_text_model(model, build_markdown_prompt(agent, extra_context=extra), temperature=0.35 if rejections else 0.25))
+        try:
+            validate_markdown(agent, markdown)
+            if rejections:
+                warn(f"{agent} recovered from duplicate-topic rejection on attempt {attempt}")
+            return markdown
+        except DuplicateTopicError as exc:
+            rejections.append(str(exc))
+            warn(f"{agent} duplicate-topic rejection on attempt {attempt}/{attempts}: {exc}")
+            if attempt >= attempts:
+                raise
+    raise RuntimeError(f"{agent} failed duplicate-topic recovery")
+
+
 def run(agent: str) -> int:
     start = time.time()
     model = choose_model(agent)
@@ -393,8 +429,7 @@ def run(agent: str) -> int:
             summary = f"Wrote Markdown {agent} memo to {path.relative_to(WORKSPACE).as_posix()}"
 
         elif agent in MARKDOWN_AGENTS:
-            markdown = clean_markdown(call_text_model(model, build_markdown_prompt(agent), temperature=0.25))
-            validate_markdown(agent, markdown)
+            markdown = generate_markdown_with_duplicate_retries(agent, model)
             write_text(issue_file(), markdown)
 
             count = 1
