@@ -38,13 +38,13 @@
     },
     {
       "name": "OpusClip",
-      "status": "approved_affiliate_candidate",
+      "status": "approved_affiliate",
       "category": "short_form_video",
       "approved_links": [
         {
-          "label": "AFFILIATE_OPUSCLIP",
-          "url": "AFFILIATE_OPUSCLIP",
-          "type": "placeholder"
+          "label": "OPUSCLIP_PARTNER_LINK",
+          "url": "https://www.opus.pro/?via=c18891",
+          "type": "affiliate"
         }
       ],
       "use_when": [
@@ -86,13 +86,13 @@
     },
     {
       "name": "Repurpose.io",
-      "status": "approved_affiliate_candidate",
+      "status": "approved_affiliate",
       "category": "content_distribution_automation",
       "approved_links": [
         {
-          "label": "AFFILIATE_REPURPOSE_IO",
-          "url": "AFFILIATE_REPURPOSE_IO",
-          "type": "placeholder"
+          "label": "REPURPOSE_IO_PARTNER_LINK",
+          "url": "https://repurpose.io?fpr=661348",
+          "type": "affiliate"
         }
       ],
       "use_when": [
@@ -152,9 +152,15 @@
     },
     {
       "name": "beehiiv",
-      "status": "approved_non_affiliate_or_future_affiliate",
+      "status": "approved_affiliate",
       "category": "newsletter_platform",
-      "approved_links": [],
+      "approved_links": [
+        {
+          "label": "BEEHIIV_PARTNER_LINK",
+          "url": "https://www.beehiiv.com/?via=r-s-UwiE",
+          "type": "affiliate"
+        }
+      ],
       "use_when": [
         "The workflow is about newsletter publishing, sponsorships, audience growth, referral programs, or newsletter monetization.",
         "The reader needs a newsletter operating system rather than a generic email tool."
@@ -164,7 +170,7 @@
         "The article is not about publishing, audience growth, or email monetization."
       ],
       "simpler_alternatives": ["Substack", "ConvertKit", "Mailchimp", "Buttondown"],
-      "example_disclosure": "No affiliate disclosure needed unless an approved partner link is added later."
+      "example_disclosure": "Disclosure: ForgeCore may earn a commission if you buy beehiiv through a partner link, but it is best for operators building a newsletter business rather than sending basic transactional email."
     }
   ]
 }
