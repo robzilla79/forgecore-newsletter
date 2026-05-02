@@ -13,6 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 ISSUES_DIR = ROOT / "content" / "issues"
 DIST_DIR = ROOT / "site" / "dist"
+STATIC_PAGE_SLUGS = {"ai-tools"}
 REQUIRED_SECTIONS = (
     "## Hook",
     "## Top Story",
@@ -68,8 +69,22 @@ def first_rss_slug(xml: str) -> str:
 
 
 def first_sitemap_issue_slug(xml: str) -> str:
-    issue_urls = re.findall(r"<loc>https://news\.forgecore\.co/([^/]+)/</loc>", xml)
-    return issue_urls[0] if issue_urls else ""
+    slugs = re.findall(r"<loc>https://news\.forgecore\.co/([^/]+)/</loc>", xml)
+    for slug in slugs:
+        if slug and slug not in STATIC_PAGE_SLUGS:
+            return slug
+    return ""
+
+
+def require_static_pages(homepage_html: str, sitemap_xml: str) -> None:
+    tools_path = "/ai-tools/"
+    tools_page = DIST_DIR / "ai-tools" / "index.html"
+    if not tools_page.exists():
+        raise SystemExit("AI tools directory missing: site/dist/ai-tools/index.html")
+    if tools_path not in homepage_html:
+        raise SystemExit("Homepage missing AI tools directory link")
+    if "https://news.forgecore.co/ai-tools/" not in sitemap_xml:
+        raise SystemExit("Sitemap missing AI tools directory URL")
 
 
 def require_metadata(html: str, slug: str) -> None:
@@ -153,6 +168,7 @@ def main() -> int:
         raise SystemExit("Homepage missing ForgeCore brand marker")
     if "<article" not in article_html:
         raise SystemExit(f"Article page missing article markup: {slug}")
+    require_static_pages(homepage_html, sitemap_xml)
     require_metadata(article_html, slug)
     require_site_polish(homepage_html, article_html, slug)
 
