@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 """Quality gate: validate the current slot-specific issue before it ships.
 
-Hard structural failures still block publishing. Critic-only failures are warnings
-when ALLOW_FALLBACK_PUBLISH=1 so AM/PM slots are not skipped for merely weak copy.
-
-Important: this file is validation-only. It must never mutate issue Markdown.
+This validator is intentionally read-only. It must never mutate issue Markdown.
 """
 from __future__ import annotations
 
@@ -18,7 +15,11 @@ from utils import WORKSPACE, artifact_suffix_for_issue, dump_json, issue_path_fo
 
 MIN_WORDS = 500
 MIN_SOURCE_LINKS = 3
-REQUIRED_CTA_URL = "https://forgecore-newsletter.beehiiv.com/"
+REQUIRED_CTA_URL = (
+    os.getenv("PRIMARY_CTA_URL", "").strip()
+    or os.getenv("KIT_SIGNUP_URL", "").strip()
+    or "https://news.forgecore.co/"
+)
 REQUIRED_SPONSOR_EMAIL = "sponsors@forgecore.co"
 MIN_CRITIC_OVERALL = float(os.getenv("MIN_CRITIC_OVERALL", "6.5"))
 REQUIRE_CRITIC_REVIEW = os.getenv("REQUIRE_CRITIC_REVIEW", "1") == "1"
@@ -46,7 +47,6 @@ TOOL_RECOMMENDATION_PATTERNS = (
     r"\buse [A-Z][A-Za-z0-9 ._-]{2,}\b",
     r"\btry [A-Z][A-Za-z0-9 ._-]{2,}\b",
 )
-
 LEAKED_PHRASE_PATTERNS = [
     r"\baudience\s+focus\b",
     r"\bstrategic\s+lens\b",
@@ -64,7 +64,6 @@ LEAKED_PHRASE_PATTERNS = [
     r"^\*\*Date:\*\*",
     r"^\*\*Edition:\*\*",
 ]
-
 MISSING_CONTENT_PATTERNS = [
     r"\bmissing content\b",
     r"\bno concrete content returned\b",
@@ -104,8 +103,11 @@ def has_affiliate_reference(text: str) -> bool:
 def has_affiliate_disclosure(text: str) -> bool:
     lower = text.lower()
     return (
-        "affiliate" in lower
-        and ("commission" in lower or "may earn" in lower or "we earn" in lower or "partner" in lower)
+        "disclosure" in lower
+        and ("commission" in lower or "may earn" in lower or "we earn" in lower or "partner" in lower or "affiliate" in lower)
+    ) or (
+        "may earn" in lower
+        and ("commission" in lower or "partner" in lower or "affiliate" in lower)
     )
 
 
@@ -208,8 +210,8 @@ def collect_errors_and_warnings(text: str, critic: dict | None, critic_expected_
         errors.append("CTA section is missing or too short (need 8+ words)")
     else:
         cta_text = cta_match.group(1)
-        if REQUIRED_CTA_URL not in cta_text:
-            errors.append("CTA section missing required Beehiiv subscribe URL")
+        if REQUIRED_CTA_URL and REQUIRED_CTA_URL not in cta_text:
+            errors.append("CTA section missing required Kit subscribe URL from PRIMARY_CTA_URL")
         if REQUIRED_SPONSOR_EMAIL not in cta_text:
             errors.append("CTA section missing required sponsor email")
         if "sponsor this issue" not in cta_text.lower():
@@ -239,10 +241,7 @@ def collect_errors_and_warnings(text: str, critic: dict | None, critic_expected_
             weak_categories = []
         runtime_failed = bool(runtime_error) or "critic_runtime_failure" in weak_categories
         if runtime_failed:
-            critic_problem(
-                "Critic runtime failure; publish blocked until critic_review.py runs cleanly.",
-                hard=True,
-            )
+            critic_problem("Critic runtime failure; publish blocked until critic_review.py runs cleanly.", hard=True)
             if runtime_error:
                 errors.append(f"Critic runtime failure detail: {runtime_error}")
         overall = float(critic.get("overall_score", 0.0) or 0.0)
@@ -261,12 +260,8 @@ def main() -> int:
     path = issue_path_for_today()
     text = load_text(path)
     urls = [u.rstrip(").,") for u in re.findall(r"https?://\S+", text)]
-    leaked = find_matching_patterns(text, LEAKED_PHRASE_PATTERNS)
-    missing = find_matching_patterns(text, MISSING_CONTENT_PATTERNS)
-    dupes = find_duplicate_paragraphs(text)
     critic, critic_path = load_issue_critic(path, run_token=RUN_TOKEN)
     errors, warnings = collect_errors_and_warnings(text, critic, critic_path)
-
     checks = {
         "exists": path.exists(),
         "issue_path": path.as_posix(),
@@ -279,9 +274,7 @@ def main() -> int:
         "has_trust_warning": has_trust_warning(text),
         "has_affiliate_reference": has_affiliate_reference(text),
         "has_affiliate_disclosure": has_affiliate_disclosure(text),
-        "leaked_phrases": leaked,
-        "placeholder_language": missing,
-        "duplicate_paragraphs": dupes,
+        "required_cta_url": REQUIRED_CTA_URL,
         "critic_expected_path": critic_path,
         "critic_review": critic or {},
         "errors": errors,
@@ -294,10 +287,10 @@ def main() -> int:
         "fallback_published": bool(warnings and not errors),
         "checks": checks,
         "issue": path.as_posix(),
+        "run_token": RUN_TOKEN,
     }
     suffix = artifact_suffix_for_issue(path)
     out_path = WORKSPACE / "state" / f"quality-gate-{suffix}.json"
-    result["run_token"] = RUN_TOKEN
     result["artifact_path"] = out_path.as_posix()
     dump_json(out_path, result)
     print(json.dumps(result, indent=2))
