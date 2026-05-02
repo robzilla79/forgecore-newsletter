@@ -288,6 +288,17 @@ verify_publish.py
 site/dist/
 ```
 
+### Monetization
+
+```text
+monetization/affiliate-tools.json
+SPONSORSHIP.md
+```
+
+`monetization/affiliate-tools.json` is the approved-tool registry for trust-safe affiliate recommendations. It stores each tool’s category, operator use case, best-fit reader, bad-fit warning, affiliate URL environment variable, fallback public URL, free or cheaper alternative, disclosure requirement, and editorial notes.
+
+`SPONSORSHIP.md` defines ForgeCore’s sponsor inventory, audience fit, placement types, sample sponsor block, and editorial trust policy.
+
 ---
 
 ## Issue Format
@@ -356,6 +367,34 @@ Suggested disclosure language:
 ```text
 Disclosure: ForgeCore may earn a commission if you buy through partner links, but recommendations are based on workflow fit, not payout.
 ```
+
+### Approved-tool registry
+
+Affiliate or paid-tool mentions should use the approved-tool registry when possible:
+
+```text
+monetization/affiliate-tools.json
+```
+
+A tool in the registry is not automatically recommended. It is only eligible for recommendation when the issue’s workflow, reader persona, and job-to-be-done make the tool useful.
+
+When using a registry tool, include:
+
+- why it fits the workflow
+- who it is best for
+- who should avoid it
+- a free, cheaper, or simpler alternative when useful
+- disclosure language if affiliate, sponsor, partner, referral, or commission language appears
+
+### Sponsor inventory
+
+Sponsor positioning and placement rules live in:
+
+```text
+SPONSORSHIP.md
+```
+
+Use this file when preparing sponsor outreach, sponsor blocks, dedicated tool teardowns, or paid placements.
 
 ---
 
@@ -472,7 +511,8 @@ Cost strategy:       Keep gpt-4o-mini until output data proves upgrade is needed
 ## Next Planned Improvements
 
 - deterministic topic scoring before Scout
-- affiliate link inventory and approved-tool registry
 - newsletter send workflow
 - analytics feedback loop
 - revenue-focused CTA testing
+- connect approved-tool registry to generation prompts and quality checks
+- add sponsor placement templates to issue generation
