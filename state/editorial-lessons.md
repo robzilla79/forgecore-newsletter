@@ -397,3 +397,22 @@
   - Critic flagged weak categories: critic_runtime_failure
 - Rules for future issues:
   - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
+
+
+---
+
+## 2026-05-02 03:56:30 UTC — /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-02-pm.md
+- Improvement result: changed (rewritten issue saved)
+- Critic score: 10.0 | verdict: needs_revision
+- Weaknesses found:
+  - Enhance the hook to better engage readers
+  - Revise the headline for greater impact
+  - Emphasize measurable outcomes more clearly
+  - Revise the hook to create a stronger emotional appeal
+  - Craft a more compelling headline that highlights the benefits
+  - Add specific metrics or case studies to illustrate potential outcomes
+- Rules for future issues:
+  - Start the Hook with the operator outcome or decision, not a product announcement.
+  - Make the headline name the workflow, operator, tool choice, or measurable outcome.
+  - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
+  - Name the exact operator persona, job-to-be-done, tool stack, and tradeoff.

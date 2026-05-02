@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-<url><loc>https://news.forgecore.co/</loc><lastmod>2026-05-01</lastmod></url>
-<url><loc>https://news.forgecore.co/2026-05-01-am/</loc><lastmod>2026-05-01</lastmod></url>
-<url><loc>https://news.forgecore.co/2026-05-01/</loc><lastmod>2026-05-01</lastmod></url>
+<url><loc>https://news.forgecore.co/</loc><lastmod>2026-05-02</lastmod></url>
+<url><loc>https://news.forgecore.co/2026-05-02-pm/</loc><lastmod>2026-05-02</lastmod></url>
+<url><loc>https://news.forgecore.co/2026-05-01-am/</loc><lastmod>2026-05-02</lastmod></url>
+<url><loc>https://news.forgecore.co/2026-05-01/</loc><lastmod>2026-05-02</lastmod></url>
 </urlset>

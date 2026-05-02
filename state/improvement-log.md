@@ -709,3 +709,18 @@
 ---
 
 [2026-05-01 22:35:11 UTC] No improvement applied to /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-01.md: rewrite is identical
+
+
+---
+
+[2026-05-02 03:56:12 UTC] Improving /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-02-pm.md using targeted critic/gate guidance ...
+
+
+---
+
+[2026-05-02 03:56:30 UTC] Applied deterministic guardrails: tool recommendation, trust warning, workflow code block, CTA
+
+
+---
+
+[2026-05-02 03:56:30 UTC] Improved /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-02-pm.md: rewritten issue saved
