@@ -32,6 +32,7 @@
     .cta-bar { margin-top:20px; display:flex; gap:10px; flex-wrap:wrap; }
     .button { display:inline-flex; align-items:center; justify-content:center; min-height:42px; padding:10px 15px; border-radius:999px; background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#04111f; font-weight:900; box-shadow:0 12px 34px rgba(56,189,248,.18); }
     .button.secondary { background:rgba(15,23,42,.55); color:var(--text); border:1px solid rgba(148,163,184,.22); box-shadow:none; }
+    .button.subtle { background:rgba(15,23,42,.55); color:#e0f2fe; border:1px solid rgba(56,189,248,.35); box-shadow:none; }
     main { padding:26px 0 54px; }
     .section-heading { margin:28px 0 14px; font-size:clamp(1.35rem,2.6vw,2rem); letter-spacing:-.035em; }
     .value-grid { display:grid; grid-template-columns:1fr; gap:10px; margin:0; }
@@ -50,10 +51,20 @@
     article h2 { margin-top:2rem; padding-top:1rem; border-top:1px solid rgba(148,163,184,.18); letter-spacing:-.025em; }
     article p, article li { color:#d1d5db; }
     article li { margin:.3rem 0; }
+    .tools-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin-top:18px; }
+    .tool-card { padding:20px; border:1px solid rgba(148,163,184,.18); border-radius:20px; background:linear-gradient(180deg,rgba(17,24,39,.94),rgba(15,23,42,.78)); }
+    .tool-card h2 { margin:.2rem 0 .45rem; font-size:1.35rem; letter-spacing:-.025em; }
+    .tool-meta { display:flex; gap:8px; flex-wrap:wrap; margin:.65rem 0 .9rem; }
+    .pill { display:inline-flex; align-items:center; border:1px solid rgba(148,163,184,.22); border-radius:999px; color:#cbd5e1; font-size:.76rem; font-weight:800; padding:4px 9px; text-transform:uppercase; letter-spacing:.08em; }
+    .pill.partner { color:#d8b4fe; border-color:rgba(216,180,254,.38); }
+    .tool-card p, .tool-card li { color:#cbd5e1; }
+    .tool-card ul { padding-left:20px; }
+    .tool-card li { margin:.28rem 0; }
+    .disclosure { margin-top:24px; padding:16px 18px; border:1px solid rgba(56,189,248,.22); border-radius:18px; background:rgba(8,47,73,.28); color:#cbd5e1; }
     pre { overflow:auto; padding:16px; border-radius:16px; background:#030712; border:1px solid rgba(148,163,184,.18); box-shadow:inset 0 1px 0 rgba(255,255,255,.03); }
     code { color:#bae6fd; }
     footer { border-top:1px solid rgba(148,163,184,.14); padding:24px 0 38px; color:var(--muted); font-size:.95rem; }
-    @media (max-width: 860px) { .hero, .grid { grid-template-columns:1fr; } .value-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+    @media (max-width: 860px) { .hero, .grid, .tools-grid { grid-template-columns:1fr; } .value-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } }
     @media (max-width: 640px) { .value-grid { grid-template-columns:1fr; } header { padding-top:26px; } .button { width:100%; } }
   </style>
 </head>
@@ -63,7 +74,8 @@
     <a class="brand" href="/">ForgeCore</a>
     <p class="tagline">Practical AI workflows, tools, and ROI cases for operators</p>
     <div class="cta-bar">
-      <a class="button" href="https://forgecore-newsletter.beehiiv.com/">Subscribe for weekly operator-grade AI workflows</a>
+      <a class="button" href="https://forge-daily.kit.com/232bce5a31">Subscribe for weekly operator-grade AI workflows</a>
+      <a class="button subtle" href="/ai-tools/">Browse AI tools</a>
       <a class="button secondary" href="mailto:sponsors@forgecore.co">Sponsor ForgeCore</a>
     </div>
   </div>
@@ -75,6 +87,7 @@
     <div class="eyebrow">AI workflows for solo operators</div>
     <h1 class="hero-title">Build systems that save time, create leverage, and avoid tool waste.</h1>
     <p class="hero-copy">ForgeCore turns AI tool signals into practical playbooks for builders, creators, consultants, indie hackers, and small business operators.</p>
+    <div class="cta-bar"><a class="button subtle" href="/ai-tools/">Browse the AI tools directory</a></div>
   </div>
   <div class="value-grid">
     <div class="value-card"><strong>Make money</strong>Workflows tied to leads, offers, content, and repeatable revenue tasks.</div>
@@ -87,7 +100,7 @@
 <section class="card">
   <div class="date">May 2, 2026</div>
   <h2><a href="/2026-05-02-pm/">Enhance Your Brand Visibility with AEO Competitor Analysis</a></h2>
-  <p>Solo marketers can boost their brand visibility and engagement by implementing AEO (Answer Engine Optimization) competitor analysis. This strategic approach helps identify which competitors are cited in AI-generated...</p>
+  <p>Solo marketers can significantly boost their brand visibility and engagement by implementing AEO (Answer Engine Optimization) competitor analysis. This strategic approach helps identify which competitors are cited in...</p>
   <a class="read-link" href="/2026-05-02-pm/">Read the workflow →</a>
 </section>
 <section class="card">
