@@ -4,20 +4,20 @@ kit_publish.py
 
 Publishes the current ForgeCore issue to Kit (formerly ConvertKit).
 
-Default behavior is to create a broadcast draft. In production AM/PM
-newsletter runs, set KIT_SEND_MODE=public to publish/send immediately.
+Production AM/PM GitHub Actions runs send immediately. Manual/non-slot runs
+stay as drafts unless explicitly configured otherwise.
 
 Required env vars:
   KIT_API_KEY        - API key from Kit -> Settings -> Developer -> API Key
 
 Optional env vars:
-  KIT_SEND_MODE      - 'public' (sends/publishes immediately) or 'draft'
+  KIT_SEND_MODE      - 'public' (send immediately) or 'draft'
   ISSUE_SLOT         - am | pm; used to select content/issues/YYYY-MM-DD-am.md or -pm.md
   SITE_BASE_URL      - Used to build the web version link
   NEWSLETTER_NAME    - Used as subject fallback
   SPONSOR_EMAIL      - Used in footer
 
-Safety rules for KIT_SEND_MODE=public:
+Safety rules for immediate sends:
   - only slot-specific issues may send: YYYY-MM-DD-am.md or YYYY-MM-DD-pm.md
   - ISSUE_SLOT must match the issue slot
   - only one AM and one PM issue may be sent per issue date
@@ -50,8 +50,17 @@ from utils import issue_path_for_today, load_project_env
 load_project_env()
 
 API_KEY = os.environ.get("KIT_API_KEY", "").strip()
-SEND_MODE = os.environ.get("KIT_SEND_MODE", "draft").strip().lower()
+REQUESTED_SEND_MODE = os.environ.get("KIT_SEND_MODE", "draft").strip().lower()
 ISSUE_SLOT_ENV = os.environ.get("ISSUE_SLOT", "").strip().lower()
+GITHUB_ACTIONS = os.environ.get("GITHUB_ACTIONS", "").strip().lower() == "true"
+
+# ForgeCore production rule: AM/PM GitHub Actions newsletter runs send immediately.
+# The per-issue sent log and slot guard below prevent duplicate sends when a workflow reruns.
+if GITHUB_ACTIONS and ISSUE_SLOT_ENV in {"am", "pm"}:
+    SEND_MODE = "public"
+else:
+    SEND_MODE = REQUESTED_SEND_MODE
+
 SITE_BASE_URL = os.environ.get("SITE_BASE_URL", "https://news.forgecore.co").strip().rstrip("/")
 NEWSLETTER_NAME = os.environ.get("NEWSLETTER_NAME", "ForgeCore AI Productivity Brief").strip()
 SPONSOR_EMAIL = os.environ.get("SPONSOR_EMAIL", "sponsors@forgecore.co").strip()
@@ -134,21 +143,21 @@ def sent_public_slots_for_date(sent_log: dict, issue_date: str) -> set[str]:
 
 
 def enforce_public_send_guard(issue_slug: str, sent_log: dict) -> None:
-    """Exit safely when a public send would violate ForgeCore send policy."""
+    """Exit safely when an immediate send would violate ForgeCore send policy."""
     if SEND_MODE != "public":
         return
 
     parsed = parse_slot_issue_slug(issue_slug)
     if not parsed:
         log(
-            "SKIP: KIT_SEND_MODE=public is only allowed for slot-specific issues "
+            "SKIP: immediate Kit send is only allowed for slot-specific issues "
             "named YYYY-MM-DD-am.md or YYYY-MM-DD-pm.md."
         )
         sys.exit(0)
 
     issue_date, issue_slot = parsed
     if ISSUE_SLOT_ENV not in {"am", "pm"}:
-        log("SKIP: KIT_SEND_MODE=public requires ISSUE_SLOT=am or ISSUE_SLOT=pm.")
+        log("SKIP: immediate Kit send requires ISSUE_SLOT=am or ISSUE_SLOT=pm.")
         sys.exit(0)
 
     if ISSUE_SLOT_ENV != issue_slot:
@@ -168,11 +177,6 @@ def enforce_public_send_guard(issue_slug: str, sent_log: dict) -> None:
             f"SKIP: {issue_date} already has two public sends recorded "
             f"({', '.join(sorted(sent_slots)).upper()})."
         )
-        sys.exit(0)
-
-    allowed_after_send = sent_slots | {issue_slot}
-    if not allowed_after_send.issubset({"am", "pm"}) or len(allowed_after_send) > 2:
-        log("SKIP: public send would exceed the one-AM/one-PM daily send policy.")
         sys.exit(0)
 
 
@@ -350,7 +354,8 @@ def create_broadcast(subject: str, email_html: str, preview_text: str) -> dict:
 
     log(f"POST {url}")
     log(f"Subject: {subject}")
-    log(f"Mode: {SEND_MODE}")
+    log(f"Requested mode: {REQUESTED_SEND_MODE}")
+    log(f"Effective mode: {SEND_MODE}")
 
     resp = requests.post(url, headers=headers, json=payload, timeout=30)
     log(f"Response: {resp.status_code}")
@@ -400,6 +405,7 @@ def main() -> None:
         "subject": subject,
         "sent_at": datetime.now(timezone.utc).isoformat(),
         "mode": SEND_MODE,
+        "requested_mode": REQUESTED_SEND_MODE,
         "issue_path": issue_path.as_posix(),
         "issue_slot": parse_slot_issue_slug(issue_slug)[1] if parse_slot_issue_slug(issue_slug) else "legacy",
         "web_url": f"{SITE_BASE_URL}/{issue_slug}/",
