@@ -201,6 +201,10 @@ def markdown_to_html(markdown: str) -> str:
     return "\n".join(blocks)
 
 
+def safe_json_ld(schema: dict) -> str:
+    return json.dumps(schema, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
+
+
 def base_template(
     title: str,
     body: str,
@@ -217,11 +221,7 @@ def base_template(
     escaped_url = html.escape(url)
     schema_html = ""
     if schema:
-        schema_html = (
-            '<script type="application/ld+json">'
-            + html.escape(json.dumps(schema, ensure_ascii=False, separators=(",", ":")))
-            + "</script>"
-        )
+        schema_html = f'<script type="application/ld+json">{safe_json_ld(schema)}</script>'
     return f"""<!doctype html>
 <html lang="en">
 <head>
