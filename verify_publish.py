@@ -2,7 +2,7 @@
 """Smoke test for ForgeCore static publishing.
 
 Fails the workflow if publish_site.py did not render the newest valid issue
-onto the homepage and create the article route.
+onto the homepage, article route, RSS feed, and sitemap in the expected order.
 """
 from __future__ import annotations
 
@@ -56,6 +56,21 @@ def issue_sort_key(path: Path) -> tuple[str, int, str]:
     return (date_key, slot_rank, path.name)
 
 
+def first_href_slug(html: str) -> str:
+    match = re.search(r'<h2><a href="/([^"/]+)/">', html)
+    return match.group(1) if match else ""
+
+
+def first_rss_slug(xml: str) -> str:
+    match = re.search(r"<item>\s*<title>.*?</title>\s*<link>https://news\.forgecore\.co/([^/]+)/</link>", xml, re.S)
+    return match.group(1) if match else ""
+
+
+def first_sitemap_issue_slug(xml: str) -> str:
+    issue_urls = re.findall(r"<loc>https://news\.forgecore\.co/([^/]+)/</loc>", xml)
+    return issue_urls[0] if issue_urls else ""
+
+
 def main() -> int:
     if not ISSUES_DIR.exists():
         raise SystemExit("content/issues directory missing")
@@ -68,17 +83,33 @@ def main() -> int:
     slug = latest.stem.lower()
     homepage = DIST_DIR / "index.html"
     article = DIST_DIR / slug / "index.html"
+    rss = DIST_DIR / "rss.xml"
+    sitemap = DIST_DIR / "sitemap.xml"
 
     if not homepage.exists():
         raise SystemExit("Homepage missing: site/dist/index.html")
     if not article.exists():
         raise SystemExit(f"Article page missing: site/dist/{slug}/index.html")
+    if not rss.exists():
+        raise SystemExit("RSS feed missing: site/dist/rss.xml")
+    if not sitemap.exists():
+        raise SystemExit("Sitemap missing: site/dist/sitemap.xml")
 
     homepage_html = homepage.read_text(encoding="utf-8")
     article_html = article.read_text(encoding="utf-8")
+    rss_xml = rss.read_text(encoding="utf-8")
+    sitemap_xml = sitemap.read_text(encoding="utf-8")
 
     if f"/{slug}/" not in homepage_html and slug not in homepage_html:
         raise SystemExit(f"Latest issue not linked from homepage: {slug}")
+    if first_href_slug(homepage_html) != slug:
+        raise SystemExit(f"Latest issue is not first on homepage: expected {slug}, found {first_href_slug(homepage_html) or 'none'}")
+    if first_rss_slug(rss_xml) != slug:
+        raise SystemExit(f"Latest issue is not first in RSS: expected {slug}, found {first_rss_slug(rss_xml) or 'none'}")
+    if first_sitemap_issue_slug(sitemap_xml) != slug:
+        raise SystemExit(
+            f"Latest issue is not first issue URL in sitemap: expected {slug}, found {first_sitemap_issue_slug(sitemap_xml) or 'none'}"
+        )
     if "ForgeCore" not in homepage_html:
         raise SystemExit("Homepage missing ForgeCore brand marker")
     if "<article" not in article_html:
