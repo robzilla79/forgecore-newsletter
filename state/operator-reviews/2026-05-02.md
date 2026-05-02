@@ -1,6 +1,6 @@
 # ForgeCore Operator Review — 2026-05-02
 
-Generated: 2026-05-02 14:31:04 UTC
+Generated: 2026-05-02 18:13:19 UTC
 
 ## Executive Status
 
@@ -11,7 +11,7 @@ Generated: 2026-05-02 14:31:04 UTC
 
 ## Latest Issues
 
-- `2026-05-02-pm` — Enhance Your Brand Visibility with AEO Competitor Analysis (944 words, 6 URLs) — OK
+- `2026-05-02-pm` — Enhance Your Brand Visibility with AEO Competitor Analysis (1060 words, 4 URLs) — OK
 - `2026-05-02-am` — Mastering AEO Competitor Analysis: A Solo Marketer's Playbook (800 words, 6 URLs) — OK
 - `2026-05-01-am` — Build a 3-Step AI Follow-Up System That Saves 5 Hours a Week (970 words, 8 URLs) — OK
 - `2026-05-01` — How Solo Operators Can Leverage Ollama's New Features to Streamline Workflows (514 words, 5 URLs) — OK
@@ -28,7 +28,7 @@ Generated: 2026-05-02 14:31:04 UTC
 
 ## Quality / Critic / Affiliate / Monetization / Kit Artifacts
 
-- Quality gate latest: failed; errors=0, warnings=0
+- Quality gate latest: passed; errors=0, warnings=0
 - Critic latest: score=10.0; verdict=reject; weak=headline_strength, hook_strength, specificity, originality, readability, tone, utility, non_repetition
 - Affiliate linker latest: changed; activated=1 (beehiiv)
 - Monetization guard latest: passed; errors=0, warnings=0
