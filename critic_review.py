@@ -28,6 +28,7 @@ OPENAI_RETRIES = int(os.getenv("OPENAI_RETRIES", "3"))
 MAX_CONTEXT_CHARS = int(os.getenv("MAX_CONTEXT_CHARS", "22000"))
 MIN_CRITIC_OVERALL = float(os.getenv("MIN_CRITIC_OVERALL", "6.5"))
 MIN_CRITIC_CATEGORY = float(os.getenv("MIN_CRITIC_CATEGORY", "6.0"))
+CONSISTENT_PASS_OVERALL = float(os.getenv("CONSISTENT_PASS_OVERALL", "9.0"))
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 RUN_TOKEN = os.getenv("RUN_TOKEN", "").strip()
 
@@ -163,8 +164,18 @@ def evaluate_issue(path: Path) -> dict[str, Any]:
     overall = clamp(parsed.get("overall_score"))
     if overall == 0.0 and scores:
         overall = round(sum(scores.values()) / len(scores), 2)
-    weak = [key for key, score in scores.items() if score < MIN_CRITIC_CATEGORY]
     verdict = str(parsed.get("verdict", "needs_revision")).strip().lower() or "needs_revision"
+    weak = [key for key, score in scores.items() if score < MIN_CRITIC_CATEGORY]
+
+    consistency_note = ""
+    if weak and overall >= CONSISTENT_PASS_OVERALL and verdict != "reject":
+        consistency_note = (
+            "Critic output was internally inconsistent: high overall score "
+            f"({overall:.2f}) with weak categories {', '.join(weak)}. "
+            "Overall score takes precedence for publish gating."
+        )
+        weak = []
+
     passed = overall >= MIN_CRITIC_OVERALL and not weak and verdict != "reject"
 
     result = {
@@ -175,6 +186,7 @@ def evaluate_issue(path: Path) -> dict[str, Any]:
         "overall_score": overall,
         "min_overall_required": MIN_CRITIC_OVERALL,
         "min_category_required": MIN_CRITIC_CATEGORY,
+        "consistent_pass_overall": CONSISTENT_PASS_OVERALL,
         "scores": scores,
         "weak_categories": weak,
         "strengths": as_list(parsed.get("strengths")),
@@ -184,6 +196,8 @@ def evaluate_issue(path: Path) -> dict[str, Any]:
         "summary": str(parsed.get("summary", "")).strip(),
         "verdict": verdict,
     }
+    if consistency_note:
+        result["consistency_note"] = consistency_note
     if parser_errors:
         result["parser_errors"] = parser_errors
     return result

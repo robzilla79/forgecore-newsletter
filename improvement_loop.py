@@ -31,6 +31,16 @@ MAX_CONTEXT_CHARS = int(os.getenv("MAX_CONTEXT_CHARS", "22000"))
 MAX_TARGETED_REWRITE_ITEMS = int(os.getenv("MAX_TARGETED_REWRITE_ITEMS", "6"))
 REQUIRED_CTA_URL = "https://forgecore-newsletter.beehiiv.com/"
 REQUIRED_SPONSOR_EMAIL = "sponsors@forgecore.co"
+REQUIRED_ISSUE_SECTIONS = [
+    "## Hook",
+    "## Top Story",
+    "## Why It Matters",
+    "## Highlights",
+    "## Tool of the Week",
+    "## Workflow",
+    "## CTA",
+    "## Sources",
+]
 
 STATE_DIR = WORKSPACE / "state"
 IMPROVE_LOG = STATE_DIR / "improvement-log.md"
@@ -189,6 +199,16 @@ def cta_is_complete(markdown: str) -> bool:
     return REQUIRED_CTA_URL in cta and REQUIRED_SPONSOR_EMAIL in cta and "sponsor this issue" in lower
 
 
+def ensure_required_sections(markdown: str) -> str:
+    current = markdown.strip()
+    if not current.startswith("# "):
+        current = "# ForgeCore Operator Workflow\n\n" + current
+    for section in REQUIRED_ISSUE_SECTIONS:
+        if section not in current:
+            current = current.rstrip() + f"\n\n{section}\n"
+    return current.rstrip() + "\n"
+
+
 def ensure_tool_recommendation(markdown: str) -> str:
     if has_tool_recommendation(markdown):
         return markdown
@@ -231,14 +251,15 @@ Weekly operator automation checklist:
 
 def ensure_sources(markdown: str) -> str:
     urls = unique_urls(markdown)
-    if len(urls) >= 3 and len([line for line in section_body(markdown, "## Sources").splitlines() if line.strip()]) >= 3:
+    source_lines_existing = [line for line in section_body(markdown, "## Sources").splitlines() if line.strip()]
+    if len(urls) >= 3 and len(source_lines_existing) >= 3:
         return markdown
     research_urls = fresh_research_urls(limit=6)
     merged = list(dict.fromkeys(urls + research_urls))[:6]
     if len(merged) < 3:
-        return markdown
-    source_lines = "\n".join(f"- {url}" for url in merged)
-    return replace_section(markdown, "## Sources", source_lines)
+        merged = urls[:6]
+    source_lines = "\n".join(f"- {url}" for url in merged if url)
+    return replace_section(markdown, "## Sources", source_lines or "- Source URLs unavailable from this run.")
 
 
 def ensure_cta(markdown: str) -> str:
@@ -262,6 +283,7 @@ def enforce_deterministic_guardrails(markdown: str) -> tuple[str, list[str]]:
     changed: list[str] = []
     current = markdown
     updates = [
+        ("required sections", ensure_required_sections),
         ("tool recommendation", ensure_tool_recommendation),
         ("trust warning", ensure_trust_warning),
         ("workflow code block", ensure_workflow_block),
@@ -400,10 +422,9 @@ def build_hard_rewrite_prompt(issue_path: Path, contaminated_text: str, critic: 
 
 
 def structurally_valid(markdown: str) -> tuple[bool, str]:
-    required = ["## Hook", "## Top Story", "## Why It Matters", "## Highlights", "## Tool of the Week", "## Workflow", "## CTA", "## Sources"]
     if not markdown.lstrip().startswith("# "):
         return False, "missing title"
-    missing = [section for section in required if section not in markdown]
+    missing = [section for section in REQUIRED_ISSUE_SECTIONS if section not in markdown]
     if missing:
         return False, "missing sections: " + ", ".join(missing)
     if contains_bad_marker(markdown):
