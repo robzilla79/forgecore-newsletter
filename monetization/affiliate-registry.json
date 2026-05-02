@@ -1,0 +1,170 @@
+{
+  "version": 1,
+  "last_updated": "2026-05-02",
+  "default_disclosure": "Disclosure: ForgeCore may earn a commission if you buy through partner links, but recommendations are based on workflow fit, not payout.",
+  "rules": {
+    "reader_trust_first": true,
+    "never_force_affiliate_links": true,
+    "require_disclosure_for_affiliate_language": true,
+    "require_bad_fit_warning": true,
+    "require_cheaper_or_simpler_alternative_when_paid_tool_is_recommended": true,
+    "max_affiliate_tools_per_issue": 2,
+    "approved_link_policy": "Only use URLs listed in approved_links. If a tool fits but no approved link exists, mention the tool without affiliate language."
+  },
+  "approved_tools": [
+    {
+      "name": "Castmagic",
+      "status": "approved_affiliate_candidate",
+      "category": "content_repurposing",
+      "approved_links": [
+        {
+          "label": "AFFILIATE_CASTMAGIC",
+          "url": "AFFILIATE_CASTMAGIC",
+          "type": "placeholder"
+        }
+      ],
+      "use_when": [
+        "The workflow starts from recorded calls, podcasts, webinars, interviews, or videos.",
+        "The reader needs transcripts, summaries, newsletters, show notes, or social snippets from recordings.",
+        "The article is about content repurposing, sales-call summaries, expert interview workflows, or creator operations."
+      ],
+      "do_not_use_when": [
+        "The operator only writes text and does not record audio or video.",
+        "A simple transcript pasted into ChatGPT would be enough.",
+        "The article is about analytics, coding, finance, cybersecurity, or unrelated automation."
+      ],
+      "simpler_alternatives": ["ChatGPT with a pasted transcript", "Google Docs voice typing", "Descript transcript export"],
+      "example_disclosure": "Disclosure: ForgeCore may earn a commission if you buy Castmagic through a partner link, but use it only when recordings are already part of your workflow."
+    },
+    {
+      "name": "OpusClip",
+      "status": "approved_affiliate_candidate",
+      "category": "short_form_video",
+      "approved_links": [
+        {
+          "label": "AFFILIATE_OPUSCLIP",
+          "url": "AFFILIATE_OPUSCLIP",
+          "type": "placeholder"
+        }
+      ],
+      "use_when": [
+        "The workflow turns long videos, webinars, or podcasts into short-form clips.",
+        "The reader is a creator, consultant, educator, or founder using video for distribution.",
+        "The article compares AI clipping, repurposing, or creator distribution tools."
+      ],
+      "do_not_use_when": [
+        "The reader has no long-form video source material.",
+        "The goal is written content, not short video distribution.",
+        "Manual clip selection is needed for high-stakes brand or client work."
+      ],
+      "simpler_alternatives": ["CapCut", "Descript manual clipping", "YouTube Shorts editor"],
+      "example_disclosure": "Disclosure: ForgeCore may earn a commission if you buy OpusClip through a partner link, but it only makes sense if you already publish long-form video."
+    },
+    {
+      "name": "Descript",
+      "status": "approved_affiliate_candidate",
+      "category": "audio_video_editing",
+      "approved_links": [
+        {
+          "label": "AFFILIATE_DESCRIPT",
+          "url": "AFFILIATE_DESCRIPT",
+          "type": "placeholder"
+        }
+      ],
+      "use_when": [
+        "The operator edits podcasts, screen recordings, courses, sales videos, or interviews.",
+        "The workflow benefits from transcript-based editing, filler-word cleanup, or lightweight video/audio production.",
+        "The article is about recording-to-assets, creator production systems, or lean media operations."
+      ],
+      "do_not_use_when": [
+        "The task is only text generation or document editing.",
+        "The operator needs professional-grade motion graphics or complex timeline editing.",
+        "A free recorder and manual transcript workflow is sufficient."
+      ],
+      "simpler_alternatives": ["CapCut", "Audacity", "OBS plus ChatGPT transcript workflow"],
+      "example_disclosure": "Disclosure: ForgeCore may earn a commission if you buy Descript through a partner link, but it is best for operators who actually edit audio or video every week."
+    },
+    {
+      "name": "Repurpose.io",
+      "status": "approved_affiliate_candidate",
+      "category": "content_distribution_automation",
+      "approved_links": [
+        {
+          "label": "AFFILIATE_REPURPOSE_IO",
+          "url": "AFFILIATE_REPURPOSE_IO",
+          "type": "placeholder"
+        }
+      ],
+      "use_when": [
+        "The workflow distributes video or audio content across multiple platforms.",
+        "The reader already publishes consistently and wants fewer manual posting steps.",
+        "The article is about content operations, distribution automation, or creator systems."
+      ],
+      "do_not_use_when": [
+        "The reader has not proven a repeatable content cadence yet.",
+        "The content requires heavy manual customization per platform.",
+        "The operator only publishes one channel."
+      ],
+      "simpler_alternatives": ["native platform scheduling", "Buffer", "manual weekly posting checklist"],
+      "example_disclosure": "Disclosure: ForgeCore may earn a commission if you buy Repurpose.io through a partner link, but it is only worth it after your content cadence is already consistent."
+    },
+    {
+      "name": "Canva Pro",
+      "status": "approved_affiliate_candidate",
+      "category": "design_and_lead_magnets",
+      "approved_links": [
+        {
+          "label": "AFFILIATE_CANVA_PRO",
+          "url": "AFFILIATE_CANVA_PRO",
+          "type": "placeholder"
+        }
+      ],
+      "use_when": [
+        "The workflow creates lead magnets, checklists, social posts, simple landing-page assets, or visual templates.",
+        "The reader is not a designer but needs polished business assets quickly.",
+        "The article is about content packaging, lead magnets, creator offers, or small-business marketing assets."
+      ],
+      "do_not_use_when": [
+        "The asset is mostly text and can ship as a simple Google Doc or PDF.",
+        "The operator already has a designer or brand system.",
+        "The task requires advanced design, illustration, or layout control."
+      ],
+      "simpler_alternatives": ["Canva free", "Google Docs", "Notion public page"],
+      "example_disclosure": "Disclosure: ForgeCore may earn a commission if you buy Canva Pro through a partner link, but a free document is enough for many simple lead magnets."
+    },
+    {
+      "name": "Zapier",
+      "status": "approved_non_affiliate_or_future_affiliate",
+      "category": "automation",
+      "approved_links": [],
+      "use_when": [
+        "The workflow connects repeatable triggers and actions across business apps.",
+        "The operator needs a practical automation layer for follow-up, routing, alerts, or handoffs.",
+        "The article is about no-code automation, agents, lead follow-up, or operations systems."
+      ],
+      "do_not_use_when": [
+        "The process changes daily and is not ready to automate.",
+        "A simple checklist or saved prompt is enough.",
+        "The workflow requires complex custom logic better handled in code."
+      ],
+      "simpler_alternatives": ["manual checklist", "Make", "n8n", "native app automation"],
+      "example_disclosure": "No affiliate disclosure needed unless an approved partner link is added later."
+    },
+    {
+      "name": "beehiiv",
+      "status": "approved_non_affiliate_or_future_affiliate",
+      "category": "newsletter_platform",
+      "approved_links": [],
+      "use_when": [
+        "The workflow is about newsletter publishing, sponsorships, audience growth, referral programs, or newsletter monetization.",
+        "The reader needs a newsletter operating system rather than a generic email tool."
+      ],
+      "do_not_use_when": [
+        "The operator only needs basic transactional email.",
+        "The article is not about publishing, audience growth, or email monetization."
+      ],
+      "simpler_alternatives": ["Substack", "ConvertKit", "Mailchimp", "Buttondown"],
+      "example_disclosure": "No affiliate disclosure needed unless an approved partner link is added later."
+    }
+  ]
+}

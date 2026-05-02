@@ -171,6 +171,7 @@ def duplicate_risks(issues: list[dict[str, Any]]) -> list[str]:
 def state_summary() -> list[str]:
     quality = latest_json("quality-gate-")
     critic = latest_json("critic-review-")
+    monetization = latest_json("monetization-guard-")
     lines: list[str] = []
     if quality:
         passed = quality.get("passed")
@@ -189,6 +190,15 @@ def state_summary() -> list[str]:
         )
     else:
         lines.append("Critic latest: no artifact found")
+    if monetization:
+        lines.append(
+            "Monetization guard latest: "
+            f"{'passed' if monetization.get('passed') else 'failed'}; "
+            f"errors={len(monetization.get('errors', []) or [])}, "
+            f"warnings={len(monetization.get('warnings', []) or [])}"
+        )
+    else:
+        lines.append("Monetization guard latest: no artifact found")
     return lines
 
 
@@ -200,7 +210,7 @@ def recommendation(issues: list[dict[str, Any]], site_label: str, duplicate_item
         return "Review duplicate-topic risk and keep the dedupe threshold active for the next two cycles."
     if latest and (latest.get("words", 0) < 750 or latest.get("urls", 0) < 3):
         return "Tighten article depth: latest issue is thin or undersourced."
-    return "Hold the pipeline steady for the next cycle, then continue with affiliate registry and sponsor CTA improvements."
+    return "Hold the pipeline steady for the next cycle, then continue replacing affiliate placeholders with real approved partner URLs."
 
 
 def build_report() -> str:
@@ -250,7 +260,7 @@ def build_report() -> str:
     for check in site_checks:
         lines.append(f"- {check}")
 
-    lines.extend(["", "## Quality / Critic Artifacts", ""])
+    lines.extend(["", "## Quality / Critic / Monetization Artifacts", ""])
     for line in state_summary():
         lines.append(f"- {line}")
 
@@ -266,7 +276,7 @@ def build_report() -> str:
         "## Operator Notes",
         "",
         "- This report does not generate, edit, publish, or deploy newsletter content.",
-        "- It is a daily dashboard for spotting quality drift, duplicate topics, and deployment problems.",
+        "- It is a daily dashboard for spotting quality drift, duplicate topics, monetization guard status, and deployment problems.",
     ])
     return "\n".join(lines).rstrip() + "\n"
 

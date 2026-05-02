@@ -132,6 +132,9 @@ jobs:
       - name: Run quality gate
         run: python quality_gate.py
 
+      - name: Run monetization guard
+        run: python monetization_guard.py
+
       - name: Publish site
         run: python publish_site.py
 
