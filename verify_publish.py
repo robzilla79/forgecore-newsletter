@@ -4,11 +4,11 @@
 Fails the workflow if publish_site.py did not render the newest valid issue
 onto the homepage, article route, RSS feed, sitemap, and SEO metadata layer in
 the expected order. Also verifies evergreen growth pages, AI-search files,
-source relevance, structured data, and trust warnings.
+business pages, source relevance, structured data, and trust warnings.
 
-This verifier intentionally applies the deterministic AI-search hardening script
-when it is available. That keeps older workflow reruns safe even if the workflow
-file itself does not yet have a dedicated hardening step before verification.
+This verifier intentionally applies deterministic hardening scripts when they
+are available. That keeps older workflow reruns safe even if the workflow file
+itself does not yet have dedicated hardening steps before verification.
 """
 from __future__ import annotations
 
@@ -20,7 +20,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 ISSUES_DIR = ROOT / "content" / "issues"
 DIST_DIR = ROOT / "site" / "dist"
-HARDENING_SCRIPT = ROOT / "ai_search_hardening.py"
+HARDENING_SCRIPTS = (
+    ROOT / "ai_search_hardening.py",
+    ROOT / "business_hardening.py",
+)
 STATIC_PAGE_SLUGS = {
     "ai-tools",
     "workflows/solo-founder-ai-automation",
@@ -29,6 +32,26 @@ STATIC_PAGE_SLUGS = {
     "ai-tools/newsletter-growth",
     "ai-tools/automation",
     "ai-tools/ai-seo-aeo",
+}
+BUSINESS_PAGE_MARKERS = {
+    "newsletter-advertising": (
+        "Advertise with ForgeCore",
+        "Best-fit sponsors",
+        "Sponsor placements",
+        "Sample sponsor block",
+        "mailto:sponsors@forgecore.co",
+        '"@type":"Organization"',
+        '"@type":"BreadcrumbList"',
+    ),
+    "workflow-pack": (
+        "The Solo Operator AI Workflow Pack",
+        "10 workflow checklists",
+        "10 copy/paste prompts",
+        "Tool decision matrix",
+        "Bad-fit warning checklist",
+        '"@type":"CreativeWork"',
+        '"@type":"BreadcrumbList"',
+    ),
 }
 REQUIRED_SECTIONS = (
     "## Hook",
@@ -75,9 +98,9 @@ LATEST_TRUST_MARKERS = (
 
 
 def apply_hardening_if_available() -> None:
-    if not HARDENING_SCRIPT.exists():
-        return
-    subprocess.run([sys.executable, HARDENING_SCRIPT.as_posix()], cwd=ROOT.as_posix(), check=True)
+    for script in HARDENING_SCRIPTS:
+        if script.exists():
+            subprocess.run([sys.executable, script.as_posix()], cwd=ROOT.as_posix(), check=True)
 
 
 def is_valid_issue(path: Path) -> bool:
@@ -121,7 +144,7 @@ def first_rss_slug(xml: str) -> str:
 def first_sitemap_issue_slug(xml: str) -> str:
     slugs = re.findall(r"<loc>https://news\.forgecore\.co/([^<]+?)/</loc>", xml)
     for slug in slugs:
-        if slug and slug not in STATIC_PAGE_SLUGS:
+        if slug and slug not in STATIC_PAGE_SLUGS and slug not in BUSINESS_PAGE_MARKERS:
             return slug
     return ""
 
@@ -164,6 +187,28 @@ def require_static_pages(homepage_html: str, sitemap_xml: str) -> None:
         raise SystemExit("Homepage missing lead magnet CTA")
     if "/workflows/solo-founder-ai-automation/" not in homepage_html:
         raise SystemExit("Homepage missing workflow library link")
+
+
+def require_business_pages(homepage_html: str, sitemap_xml: str) -> None:
+    llms = DIST_DIR / "llms.txt"
+    llms_text = llms.read_text(encoding="utf-8") if llms.exists() else ""
+    for slug, markers in BUSINESS_PAGE_MARKERS.items():
+        page = DIST_DIR / slug / "index.html"
+        url = f"https://news.forgecore.co/{slug}/"
+        if not page.exists():
+            raise SystemExit(f"Business page missing: site/dist/{slug}/index.html")
+        html = page.read_text(encoding="utf-8")
+        for marker in markers:
+            if marker not in html:
+                raise SystemExit(f"Business page {slug} missing marker: {marker}")
+        if f'<link rel="canonical" href="{url}">' not in html:
+            raise SystemExit(f"Business page {slug} missing canonical URL")
+        if url not in sitemap_xml:
+            raise SystemExit(f"Sitemap missing business page URL: {url}")
+        if url not in llms_text:
+            raise SystemExit(f"llms.txt missing business page URL: {url}")
+        if f'/{slug}/' not in homepage_html:
+            raise SystemExit(f"Homepage missing business page link: /{slug}/")
 
 
 def require_metadata(html: str, slug: str) -> None:
@@ -290,13 +335,14 @@ def main() -> int:
     if "<article" not in article_html:
         raise SystemExit(f"Article page missing article markup: {slug}")
     require_static_pages(homepage_html, sitemap_xml)
+    require_business_pages(homepage_html, sitemap_xml)
     require_metadata(article_html, slug)
     require_site_polish(homepage_html, article_html, slug)
     require_source_relevance(latest_markdown, slug)
     require_latest_trust_markers(latest_markdown, article_html, slug)
     require_ai_search_assets(rss_xml)
 
-    print(f"Publish verified with AI search audit: {slug}")
+    print(f"Publish verified with AI search and business audit: {slug}")
     return 0
 
 
