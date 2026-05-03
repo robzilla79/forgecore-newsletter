@@ -2,7 +2,9 @@ name: Generate AM Newsletter Issue
 
 on:
   schedule:
-    - cron: '0 12 * * *'
+    # Target send window: 10:07 AM Central during daylight time, 9:07 AM Central during standard time.
+    # GitHub cron runs in UTC; the odd minute avoids top-of-hour queue congestion.
+    - cron: '7 15 * * *'
   workflow_dispatch:
 
 permissions:
