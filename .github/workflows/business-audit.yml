@@ -8,6 +8,7 @@ on:
   workflow_dispatch:
   push:
     paths:
+      - 'content_cleanup.py'
       - 'business_audit.py'
       - 'business_hardening.py'
       - 'lead_magnet_hardening.py'
@@ -66,6 +67,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Quarantine legacy or low-quality public issues
+        run: python content_cleanup.py
+
       - name: Render current site snapshot for audit
         run: python publish_site.py
 
@@ -84,19 +88,19 @@ jobs:
       - name: Run lean business audit
         run: python business_audit.py
 
-      - name: Commit audit report and rendered site output
+      - name: Commit audit report, cleanup, and rendered site output
         if: always()
         run: |
           git config user.name "ForgeCore AI Bot"
           git config user.email "bot@forgecore.co"
-          git add state/business-audit.json site/dist/
+          git add state/business-audit.json content/issues/ site/dist/
           if git diff --staged --quiet; then
             echo "No business audit changes to commit"
           else
             git stash push --include-untracked --message forgecore-business-audit
             git pull --rebase origin main
             git stash pop
-            git add state/business-audit.json site/dist/
+            git add state/business-audit.json content/issues/ site/dist/
             TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M UTC')
             git commit -m "auto: daily business audit $TIMESTAMP [bot]"
             git push
