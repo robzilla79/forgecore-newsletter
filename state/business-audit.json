@@ -1,0 +1,11 @@
+{
+  "checked_at": "2026-05-03T15:57:39.992865+00:00",
+  "passed": true,
+  "purpose": "lean business audit: newsletter quality, growth, revenue, and email safety",
+  "error_count": 0,
+  "warning_count": 1,
+  "errors": [],
+  "warnings": [
+    "Sponsor rates are still early test prices; revisit after subscriber/traffic proof"
+  ]
+}
