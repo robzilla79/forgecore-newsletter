@@ -38,6 +38,8 @@ Fresh research
 → Critic
 → Improvement loop
 → Quality gate
+→ Affiliate linker
+→ Monetization guard
 → Static site render
 → Publish verification
 → Commit generated assets
@@ -70,12 +72,14 @@ It builds:
 
 - homepage
 - article pages
+- AI tools directory
+- evergreen workflow landing pages
 - RSS feed
 - sitemap
 - canonical URLs
 - meta descriptions
 - Open Graph/Twitter metadata
-- JSON-LD `WebSite` and `Article` schema
+- JSON-LD `WebSite`, `CollectionPage`, and `Article` schema
 
 ### 2. Quality gate is validation-only
 
@@ -84,6 +88,8 @@ It builds:
 It checks:
 
 - required sections
+- duplicate required sections
+- malformed or glued section headings
 - word count
 - source links
 - CTA links
@@ -168,10 +174,12 @@ Current behavior:
 4. runs Scout, Analyst, Author, and Editor agents
 5. runs critic-driven improvement loop
 6. runs quality gate
-7. renders site with `publish_site.py`
-8. verifies publish with `verify_publish.py`
-9. commits generated issue/site/state files
-10. deploys `site/dist` to Cloudflare Pages
+7. runs affiliate linker
+8. runs monetization guard
+9. renders site with `publish_site.py`
+10. verifies publish with `verify_publish.py`
+11. commits generated issue/site/state files
+12. deploys `site/dist` to Cloudflare Pages
 
 ---
 
@@ -222,6 +230,7 @@ Optional newsletter-related secrets:
 ```text
 KIT_API_KEY
 KIT_FORM_ID
+KIT_SIGNUP_URL
 ```
 
 ---
@@ -291,13 +300,30 @@ site/dist/
 ### Monetization
 
 ```text
-monetization/affiliate-tools.json
+monetization/affiliate-registry.json
 SPONSORSHIP.md
 ```
 
-`monetization/affiliate-tools.json` is the approved-tool registry for trust-safe affiliate recommendations. It stores each tool’s category, operator use case, best-fit reader, bad-fit warning, affiliate URL environment variable, fallback public URL, free or cheaper alternative, disclosure requirement, and editorial notes.
+`monetization/affiliate-registry.json` is the approved-tool registry for trust-safe affiliate recommendations. It stores each tool’s category, operator use case, bad-fit warning, approved partner links, simpler alternatives, and disclosure requirements.
 
 `SPONSORSHIP.md` defines ForgeCore’s sponsor inventory, audience fit, placement types, sample sponsor block, and editorial trust policy.
+
+---
+
+## Evergreen Traffic Pages
+
+`publish_site.py` renders indexable workflow landing pages designed for search traffic and newsletter conversion:
+
+```text
+/workflows/solo-founder-ai-automation/
+/ai-tools/content-repurposing/
+/ai-tools/client-onboarding/
+/ai-tools/newsletter-growth/
+/ai-tools/automation/
+/ai-tools/ai-seo-aeo/
+```
+
+These pages should be practical, evergreen, and tied to buyer-intent workflows. They should link to the AI tools directory and the newsletter/lead magnet CTA.
 
 ---
 
@@ -328,7 +354,7 @@ Content requirements:
 - “do not use this if” warning
 - tradeoffs such as cost, privacy, quality, maintenance, or speed
 - real source URLs
-- Beehiiv signup URL
+- Beehiiv/Kit signup URL
 - sponsor email
 
 ---
@@ -347,6 +373,7 @@ ForgeCore monetization must help the reader first.
 - Twitter summary card metadata
 - JSON-LD `Article` schema on article pages
 - JSON-LD `WebSite` schema on the homepage
+- JSON-LD `CollectionPage` schema on tool and workflow pages
 
 These are rendering outputs only. The renderer must not rewrite source Markdown to create metadata.
 
@@ -373,7 +400,7 @@ Disclosure: ForgeCore may earn a commission if you buy through partner links, bu
 Affiliate or paid-tool mentions should use the approved-tool registry when possible:
 
 ```text
-monetization/affiliate-tools.json
+monetization/affiliate-registry.json
 ```
 
 A tool in the registry is not automatically recommended. It is only eligible for recommendation when the issue’s workflow, reader persona, and job-to-be-done make the tool useful.
@@ -411,6 +438,8 @@ python agent_loop.py author
 python agent_loop.py editor
 python improve_until_passes.py
 python quality_gate.py
+python affiliate_linker.py
+python monetization_guard.py
 python publish_site.py
 python verify_publish.py
 ```
@@ -451,6 +480,7 @@ Good failures:
 - no fresh research found
 - issue too short
 - missing required section
+- duplicate or malformed section heading
 - missing source links
 - missing tool recommendation
 - missing trust warning
@@ -490,20 +520,28 @@ The content promise:
 Every issue should help the reader make money, save time, automate work, build a system, choose the right AI tool, or avoid wasting money.
 ```
 
+Lead magnet positioning:
+
+```text
+The Solo Operator AI Workflow Pack
+```
+
+This should be the default conversion promise on homepage, workflow pages, and article pages until a dedicated digital product exists.
+
 ---
 
 ## Current Status
 
 ```text
-Infrastructure:      Stable
-Research inputs:     Operator-focused
-Generation:          Fresh-input only
-Quality gate:        Validation-only
-Renderer:            Validation-only + SEO metadata
+Infrastructure:       Stable
+Research inputs:      Operator-focused
+Generation:           Fresh-input only
+Quality gate:         Validation-only
+Renderer:             Validation-only + SEO metadata + evergreen pages
 Publish verification: Enforced
 Monetization guardrails: Trust-safe affiliate/sponsor checks
-Deployment:          Cloudflare Pages
-Cost strategy:       Keep gpt-4o-mini until output data proves upgrade is needed
+Deployment:           Cloudflare Pages
+Cost strategy:        Keep gpt-4o-mini until output data proves upgrade is needed
 ```
 
 ---
@@ -512,7 +550,7 @@ Cost strategy:       Keep gpt-4o-mini until output data proves upgrade is needed
 
 - deterministic topic scoring before Scout
 - newsletter send workflow
-- analytics feedback loop
+- analytics connector integration once traffic data source is available
 - revenue-focused CTA testing
-- connect approved-tool registry to generation prompts and quality checks
+- add more approved affiliate URLs to the registry
 - add sponsor placement templates to issue generation
