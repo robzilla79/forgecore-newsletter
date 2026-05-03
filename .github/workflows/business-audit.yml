@@ -1,0 +1,102 @@
+name: Daily Business Audit
+
+on:
+  schedule:
+    # Runs daily at 8:45 AM Central during daylight time, 7:45 AM Central during standard time.
+    # This does not generate newsletters or send email.
+    - cron: '45 13 * * *'
+  workflow_dispatch:
+  push:
+    paths:
+      - 'business_audit.py'
+      - 'business_hardening.py'
+      - 'verify_site_updates.py'
+      - 'kit_publish.py'
+      - 'lock_email_issue.py'
+      - '.github/workflows/business-audit.yml'
+      - '.github/workflows/deploy-site.yml'
+      - '.github/workflows/generate.yml'
+      - '.github/workflows/send.yml'
+      - '.github/workflows/generate-am.yml'
+      - '.github/workflows/generate-pm.yml'
+      - '.github/workflows/send-am.yml'
+      - '.github/workflows/send-pm.yml'
+      - 'business/sponsorship-rate-card.md'
+      - 'monetization/affiliate-registry.json'
+
+concurrency:
+  group: forgecore-business-audit
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  business-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SITE_DOMAIN: news.forgecore.co
+      SITE_BASE_URL: https://news.forgecore.co
+      NEWSLETTER_NAME: ForgeCore AI Productivity Brief
+      NEWSLETTER_TAGLINE: Practical AI workflows, tools, and ROI cases for operators
+      PRIMARY_CTA_TEXT: Get the Solo Operator AI Workflow Pack
+      PRIMARY_CTA_URL: ${{ secrets.KIT_SIGNUP_URL || 'https://forge-daily.kit.com/232bce5a31' }}
+      SPONSOR_EMAIL: sponsors@forgecore.co
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Sync to latest main
+        run: |
+          git fetch origin main
+          git checkout main
+          git reset --hard origin/main
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Render current site snapshot for audit
+        run: python publish_site.py
+
+      - name: Apply AI search hardening
+        run: python ai_search_hardening.py
+
+      - name: Apply business hardening
+        run: python business_hardening.py
+
+      - name: Verify site update surface
+        run: python verify_site_updates.py
+
+      - name: Run business audit
+        run: python business_audit.py
+
+      - name: Commit audit report and rendered site output
+        if: always()
+        run: |
+          git config user.name "ForgeCore AI Bot"
+          git config user.email "bot@forgecore.co"
+          git add state/business-audit.json site/dist/
+          if git diff --staged --quiet; then
+            echo "No business audit changes to commit"
+          else
+            git stash push --include-untracked --message forgecore-business-audit
+            git pull --rebase origin main
+            git stash pop
+            git add state/business-audit.json site/dist/
+            TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M UTC')
+            git commit -m "auto: daily business audit $TIMESTAMP [bot]"
+            git push
+          fi
