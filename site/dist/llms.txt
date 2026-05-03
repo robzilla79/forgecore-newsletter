@@ -18,3 +18,5 @@ ForgeCore publishes practical AI workflows, tool comparisons, operator playbooks
 ## Trust policy
 
 ForgeCore recommendations should include workflow fit, simpler alternatives, bad-fit warnings, and disclosure when partner or affiliate links are used. llms.txt is a content map, not a ranking guarantee.
+- Advertise with ForgeCore: https://news.forgecore.co/newsletter-advertising/
+- Workflow Pack: https://news.forgecore.co/workflow-pack/
