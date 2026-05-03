@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
   push:
     paths:
+      - 'content_cleanup.py'
       - 'publish_site.py'
       - 'ai_search_hardening.py'
       - 'business_hardening.py'
@@ -59,6 +60,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Quarantine legacy or low-quality public issues
+        run: python content_cleanup.py
+
       - name: Render site from existing content
         run: python publish_site.py
 
@@ -74,21 +78,21 @@ jobs:
       - name: Verify site without newsletter send dependency
         run: python verify_site_updates.py
 
-      - name: Commit rendered site output
+      - name: Commit cleanup and rendered site output
         if: success()
         run: |
           git config user.name "ForgeCore AI Bot"
           git config user.email "bot@forgecore.co"
-          git add site/dist/
+          git add content/issues/ site/dist/
           if git diff --staged --quiet; then
-            echo "No rendered site changes to commit"
+            echo "No cleanup or rendered site changes to commit"
           else
             git stash push --include-untracked --message forgecore-site-only-render
             git pull --rebase origin main
             git stash pop
-            git add site/dist/
+            git add content/issues/ site/dist/
             TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M UTC')
-            git commit -m "auto: deploy site updates $TIMESTAMP [bot]"
+            git commit -m "auto: deploy cleaned site updates $TIMESTAMP [bot]"
             git push
           fi
 
