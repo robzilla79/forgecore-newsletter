@@ -1,0 +1,19 @@
+name: Send PM Newsletter Email
+
+on:
+  schedule:
+    # Target send window: 4:21 PM Central during daylight time, 3:21 PM Central during standard time.
+    # This workflow sends the already-prepared PM issue once. It does not generate or rewrite content.
+    - cron: '21 21 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  send-pm:
+    uses: ./.github/workflows/send.yml
+    secrets: inherit
+    with:
+      issue_slot: pm
