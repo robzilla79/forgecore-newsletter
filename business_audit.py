@@ -3,26 +3,11 @@
 
 This is a business-surface audit, not a newsletter generation workflow.
 It checks that ForgeCore still has the core business infrastructure needed to
-operate as a content-driven AI workflow media business:
-
-- newsletter subscribe funnel
-- workflow-pack lead magnet funnel
-- sponsor / advertise page
-- sitemap and llms.txt discovery
-- AM/PM prepare/send separation
-- locked email snapshot system
-- Kit idempotency guard markers
-- site-only deploy path
-- sponsorship rate card
-- affiliate registry presence and safety fields
-
-Exit code 0 means no critical issues. Warnings are written to state/business-audit.json.
-Exit code 1 means critical issues were found.
+operate as a content-driven AI workflow media business.
 """
 from __future__ import annotations
 
 import json
-import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -52,6 +37,20 @@ CHECK_FILES = {
 }
 
 BUSINESS_PAGES = {
+    "subscribe": {
+        "required": [
+            "Subscribe to ForgeCore",
+            "Get practical AI workflows for solo operators",
+            "Subscribe free",
+            "Preview the workflow pack",
+            SIGNUP,
+            '"@type":"Organization"',
+            '"@type":"BreadcrumbList"',
+        ],
+        "forbidden": [
+            'href="/subscribe/">Subscribe to the newsletter</a>',
+        ],
+    },
     "workflow-pack": {
         "required": [
             "The Solo Operator AI Workflow Pack",
@@ -60,6 +59,7 @@ BUSINESS_PAGES = {
             "Tool decision matrix",
             "Bad-fit warning checklist",
             "Subscribe and get the pack",
+            "Subscribe to the newsletter",
             SIGNUP,
             '"@type":"CreativeWork"',
             '"@type":"BreadcrumbList"',
@@ -88,7 +88,7 @@ HOME_REQUIRED = [
     "hero-title",
     "value-grid",
     "Subscribe to the newsletter",
-    f'href="{SIGNUP}">Subscribe to the newsletter</a>',
+    'href="/subscribe/">Subscribe to the newsletter</a>',
     'href="/workflow-pack/">Get the workflow pack</a>',
     "/newsletter-advertising/",
     "/ai-tools/",
@@ -96,6 +96,7 @@ HOME_REQUIRED = [
 ]
 
 DISCOVERY_URLS = [
+    f"{SITE_BASE}/subscribe/",
     f"{SITE_BASE}/workflow-pack/",
     f"{SITE_BASE}/newsletter-advertising/",
     f"{SITE_BASE}/ai-tools/",
@@ -131,6 +132,8 @@ def check_homepage(errors: list[str], warnings: list[str]) -> None:
             add_error(errors, f"Homepage missing business marker: {marker}")
     if f'href="{SIGNUP}">Get the workflow pack</a>' in html:
         add_error(errors, "Homepage workflow-pack CTA points directly to Kit instead of /workflow-pack/")
+    if f'href="{SIGNUP}">Subscribe to the newsletter</a>' in html:
+        add_error(errors, "Homepage subscribe CTA points directly to Kit instead of /subscribe/")
     if html.count("Subscribe to the newsletter") < 1:
         add_warning(warnings, "Homepage has fewer than one explicit newsletter subscribe label")
 
