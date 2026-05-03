@@ -10,7 +10,9 @@ on:
     paths:
       - 'business_audit.py'
       - 'business_hardening.py'
+      - 'lead_magnet_hardening.py'
       - 'verify_site_updates.py'
+      - 'lead-magnets/**'
       - 'kit_publish.py'
       - 'lock_email_issue.py'
       - '.github/workflows/business-audit.yml'
@@ -72,6 +74,9 @@ jobs:
 
       - name: Apply business hardening
         run: python business_hardening.py
+
+      - name: Render lead magnet assets
+        run: python lead_magnet_hardening.py
 
       - name: Verify site update surface
         run: python verify_site_updates.py
