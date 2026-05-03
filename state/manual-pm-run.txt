@@ -1,4 +1,4 @@
 manual PM run requested
-requested_at_utc=2026-05-03T03:02:00Z
+requested_at_utc=2026-05-03T03:12:00Z
 issue_slot=pm
-reason=Deploy evergreen growth pages, lead magnet CTA, cleaned issues, and traffic feedback loop
+reason=Retry after deterministic cleanup for example.com placeholders and glued headings
