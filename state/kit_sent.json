@@ -14,5 +14,15 @@
     "mode": "draft",
     "issue_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-02-pm.md",
     "web_url": "https://news.forgecore.co/2026-05-02-pm/"
+  },
+  "2026-05-03-pm": {
+    "broadcast_id": 23957326,
+    "subject": "How Solo Founders Can Automate Content Repurposing to Save 10+ Hours a Week",
+    "sent_at": "2026-05-03T03:22:40.667990+00:00",
+    "mode": "public",
+    "requested_mode": "draft",
+    "issue_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-03-pm.md",
+    "issue_slot": "pm",
+    "web_url": "https://news.forgecore.co/2026-05-03-pm/"
   }
 }

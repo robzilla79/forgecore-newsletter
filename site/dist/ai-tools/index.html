@@ -60,11 +60,14 @@
     .tool-card p, .tool-card li { color:#cbd5e1; }
     .tool-card ul { padding-left:20px; }
     .tool-card li { margin:.28rem 0; }
-    .disclosure { margin-top:24px; padding:16px 18px; border:1px solid rgba(56,189,248,.22); border-radius:18px; background:rgba(8,47,73,.28); color:#cbd5e1; }
+    .disclosure, .lead-magnet { margin-top:24px; padding:18px 20px; border:1px solid rgba(56,189,248,.22); border-radius:20px; background:rgba(8,47,73,.28); color:#cbd5e1; }
+    .lead-magnet { display:flex; gap:18px; align-items:center; justify-content:space-between; }
+    .lead-magnet h2 { margin:.1rem 0 .35rem; letter-spacing:-.035em; }
+    .lead-magnet p { margin:0; max-width:720px; }
     pre { overflow:auto; padding:16px; border-radius:16px; background:#030712; border:1px solid rgba(148,163,184,.18); box-shadow:inset 0 1px 0 rgba(255,255,255,.03); }
     code { color:#bae6fd; }
     footer { border-top:1px solid rgba(148,163,184,.14); padding:24px 0 38px; color:var(--muted); font-size:.95rem; }
-    @media (max-width: 860px) { .hero, .grid, .tools-grid { grid-template-columns:1fr; } .value-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+    @media (max-width: 860px) { .hero, .grid, .tools-grid { grid-template-columns:1fr; } .value-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } .lead-magnet { align-items:flex-start; flex-direction:column; } }
     @media (max-width: 640px) { .value-grid { grid-template-columns:1fr; } header { padding-top:26px; } .button { width:100%; } }
   </style>
 </head>
@@ -83,112 +86,75 @@
 <main>
   <div class="wrap">
 <section class="hero">
+  <div><div class="eyebrow">ForgeCore AI tools directory</div><h1 class="hero-title">Find AI tools that actually fit the workflow.</h1><p class="hero-copy">Use this directory to choose tools for content repurposing, short-form video, newsletter growth, automation, design, and operator workflows. Every tool includes when to use it, when to skip it, and simpler alternatives.</p></div>
+  <div class="value-grid"><div class="value-card"><strong>Workflow first</strong>Choose based on the job, not hype.</div><div class="value-card"><strong>Trust rules</strong>Paid tools include bad-fit warnings and simpler alternatives.</div><div class="value-card"><strong>Partner links</strong>Some links may earn ForgeCore a commission.</div></div>
+</section>
+<section class="lead-magnet">
   <div>
-    <div class="eyebrow">ForgeCore AI tools directory</div>
-    <h1 class="hero-title">Find AI tools that actually fit the workflow.</h1>
-    <p class="hero-copy">Use this directory to choose tools for content repurposing, short-form video, newsletter growth, automation, design, and operator workflows. Every tool includes when to use it, when to skip it, and simpler alternatives.</p>
+    <div class="eyebrow">Free operator resource</div>
+    <h2>The Solo Operator AI Workflow Pack</h2>
+    <p>Get practical AI workflow checklists for content, onboarding, automation, research, tool selection, and follow-up systems. Built for solo operators who want leverage, not hype.</p>
   </div>
-  <div class="value-grid">
-    <div class="value-card"><strong>Workflow first</strong>Choose based on the job, not hype.</div>
-    <div class="value-card"><strong>Trust rules</strong>Paid tools include bad-fit warnings and simpler alternatives.</div>
-    <div class="value-card"><strong>Partner links</strong>Some links may earn ForgeCore a commission.</div>
-  </div>
+  <a class="button" href="https://forge-daily.kit.com/232bce5a31">Get the workflow pack</a>
 </section>
 <div class="disclosure"><strong>Disclosure:</strong> ForgeCore may earn a commission if you buy through approved partner links. Recommendations are based on workflow fit, not payout. If a free checklist, existing app, or simpler tool is enough, use that first.</div>
 <h2 class="section-heading">AI tools for solo operators</h2>
-<div class="tools-grid">
-<section class="tool-card">
-  <div class="tool-meta">
-    <span class="pill">Content Repurposing</span>
-    <span class="pill">Reviewed tool</span>
-  </div>
+<div class="tools-grid"><section class="tool-card">
+  <div class="tool-meta"><span class="pill">Content Repurposing</span><span class="pill">Reviewed tool</span></div>
   <h2>Castmagic</h2>
-  <p><strong>Use it when:</strong></p>
-  <ul><li>The workflow starts from recorded calls, podcasts, webinars, interviews, or videos.</li><li>The reader needs transcripts, summaries, newsletters, show notes, or social snippets from recordings.</li></ul>
-  <p><strong>Do not use it when:</strong></p>
-  <ul><li>The operator only writes text and does not record audio or video.</li></ul>
+  <p><strong>Use it when:</strong></p><ul><li>The workflow starts from recorded calls, podcasts, webinars, interviews, or videos.</li><li>The reader needs transcripts, summaries, newsletters, show notes, or social snippets from recordings.</li></ul>
+  <p><strong>Do not use it when:</strong></p><ul><li>The operator only writes text and does not record audio or video.</li></ul>
   <p><strong>Simpler alternatives:</strong> ChatGPT with a pasted transcript, Google Docs voice typing, Descript transcript export.</p>
   <div class="cta-bar"><span class="pill">Partner link pending</span></div>
 </section>
 <section class="tool-card">
-  <div class="tool-meta">
-    <span class="pill">Short Form Video</span>
-    <span class="pill partner">Partner link</span>
-  </div>
+  <div class="tool-meta"><span class="pill">Short Form Video</span><span class="pill partner">Partner link</span></div>
   <h2>OpusClip</h2>
-  <p><strong>Use it when:</strong></p>
-  <ul><li>The workflow turns long videos, webinars, or podcasts into short-form clips.</li><li>The reader is a creator, consultant, educator, or founder using video for distribution.</li></ul>
-  <p><strong>Do not use it when:</strong></p>
-  <ul><li>The reader has no long-form video source material.</li></ul>
+  <p><strong>Use it when:</strong></p><ul><li>The workflow turns long videos, webinars, or podcasts into short-form clips.</li><li>The reader is a creator, consultant, educator, or founder using video for distribution.</li></ul>
+  <p><strong>Do not use it when:</strong></p><ul><li>The reader has no long-form video source material.</li></ul>
   <p><strong>Simpler alternatives:</strong> CapCut, Descript manual clipping, YouTube Shorts editor.</p>
   <div class="cta-bar"><a class="button" href="https://www.opus.pro/?via=c18891" rel="sponsored nofollow">Visit OpusClip</a></div>
 </section>
 <section class="tool-card">
-  <div class="tool-meta">
-    <span class="pill">Audio Video Editing</span>
-    <span class="pill">Reviewed tool</span>
-  </div>
+  <div class="tool-meta"><span class="pill">Audio Video Editing</span><span class="pill">Reviewed tool</span></div>
   <h2>Descript</h2>
-  <p><strong>Use it when:</strong></p>
-  <ul><li>The operator edits podcasts, screen recordings, courses, sales videos, or interviews.</li><li>The workflow benefits from transcript-based editing, filler-word cleanup, or lightweight video/audio production.</li></ul>
-  <p><strong>Do not use it when:</strong></p>
-  <ul><li>The task is only text generation or document editing.</li></ul>
+  <p><strong>Use it when:</strong></p><ul><li>The operator edits podcasts, screen recordings, courses, sales videos, or interviews.</li><li>The workflow benefits from transcript-based editing, filler-word cleanup, or lightweight video/audio production.</li></ul>
+  <p><strong>Do not use it when:</strong></p><ul><li>The task is only text generation or document editing.</li></ul>
   <p><strong>Simpler alternatives:</strong> CapCut, Audacity, OBS plus ChatGPT transcript workflow.</p>
   <div class="cta-bar"><span class="pill">Partner link pending</span></div>
 </section>
 <section class="tool-card">
-  <div class="tool-meta">
-    <span class="pill">Content Distribution Automation</span>
-    <span class="pill partner">Partner link</span>
-  </div>
+  <div class="tool-meta"><span class="pill">Content Distribution Automation</span><span class="pill partner">Partner link</span></div>
   <h2>Repurpose.io</h2>
-  <p><strong>Use it when:</strong></p>
-  <ul><li>The workflow distributes video or audio content across multiple platforms.</li><li>The reader already publishes consistently and wants fewer manual posting steps.</li></ul>
-  <p><strong>Do not use it when:</strong></p>
-  <ul><li>The reader has not proven a repeatable content cadence yet.</li></ul>
+  <p><strong>Use it when:</strong></p><ul><li>The workflow distributes video or audio content across multiple platforms.</li><li>The reader already publishes consistently and wants fewer manual posting steps.</li></ul>
+  <p><strong>Do not use it when:</strong></p><ul><li>The reader has not proven a repeatable content cadence yet.</li></ul>
   <p><strong>Simpler alternatives:</strong> native platform scheduling, Buffer, manual weekly posting checklist.</p>
   <div class="cta-bar"><a class="button" href="https://repurpose.io?fpr=661348" rel="sponsored nofollow">Visit Repurpose.io</a></div>
 </section>
 <section class="tool-card">
-  <div class="tool-meta">
-    <span class="pill">Design + Lead Magnets</span>
-    <span class="pill">Reviewed tool</span>
-  </div>
+  <div class="tool-meta"><span class="pill">Design + Lead Magnets</span><span class="pill">Reviewed tool</span></div>
   <h2>Canva Pro</h2>
-  <p><strong>Use it when:</strong></p>
-  <ul><li>The workflow creates lead magnets, checklists, social posts, simple landing-page assets, or visual templates.</li><li>The reader is not a designer but needs polished business assets quickly.</li></ul>
-  <p><strong>Do not use it when:</strong></p>
-  <ul><li>The asset is mostly text and can ship as a simple Google Doc or PDF.</li></ul>
+  <p><strong>Use it when:</strong></p><ul><li>The workflow creates lead magnets, checklists, social posts, simple landing-page assets, or visual templates.</li><li>The reader is not a designer but needs polished business assets quickly.</li></ul>
+  <p><strong>Do not use it when:</strong></p><ul><li>The asset is mostly text and can ship as a simple Google Doc or PDF.</li></ul>
   <p><strong>Simpler alternatives:</strong> Canva free, Google Docs, Notion public page.</p>
   <div class="cta-bar"><span class="pill">Partner link pending</span></div>
 </section>
 <section class="tool-card">
-  <div class="tool-meta">
-    <span class="pill">Automation</span>
-    <span class="pill">Reviewed tool</span>
-  </div>
+  <div class="tool-meta"><span class="pill">Automation</span><span class="pill">Reviewed tool</span></div>
   <h2>Zapier</h2>
-  <p><strong>Use it when:</strong></p>
-  <ul><li>The workflow connects repeatable triggers and actions across business apps.</li><li>The operator needs a practical automation layer for follow-up, routing, alerts, or handoffs.</li></ul>
-  <p><strong>Do not use it when:</strong></p>
-  <ul><li>The process changes daily and is not ready to automate.</li></ul>
+  <p><strong>Use it when:</strong></p><ul><li>The workflow connects repeatable triggers and actions across business apps.</li><li>The operator needs a practical automation layer for follow-up, routing, alerts, or handoffs.</li></ul>
+  <p><strong>Do not use it when:</strong></p><ul><li>The process changes daily and is not ready to automate.</li></ul>
   <p><strong>Simpler alternatives:</strong> manual checklist, Make, n8n.</p>
   <div class="cta-bar"><span class="pill">Partner link pending</span></div>
 </section>
 <section class="tool-card">
-  <div class="tool-meta">
-    <span class="pill">Newsletter Platform</span>
-    <span class="pill partner">Partner link</span>
-  </div>
+  <div class="tool-meta"><span class="pill">Newsletter Platform</span><span class="pill partner">Partner link</span></div>
   <h2>beehiiv</h2>
-  <p><strong>Use it when:</strong></p>
-  <ul><li>The workflow is about newsletter publishing, sponsorships, audience growth, referral programs, or newsletter monetization.</li><li>The reader needs a newsletter operating system rather than a generic email tool.</li></ul>
-  <p><strong>Do not use it when:</strong></p>
-  <ul><li>The operator only needs basic transactional email.</li></ul>
+  <p><strong>Use it when:</strong></p><ul><li>The workflow is about newsletter publishing, sponsorships, audience growth, referral programs, or newsletter monetization.</li><li>The reader needs a newsletter operating system rather than a generic email tool.</li></ul>
+  <p><strong>Do not use it when:</strong></p><ul><li>The operator only needs basic transactional email.</li></ul>
   <p><strong>Simpler alternatives:</strong> Substack, ConvertKit, Mailchimp.</p>
   <div class="cta-bar"><a class="button" href="https://www.beehiiv.com/?via=r-s-UwiE" rel="sponsored nofollow">Visit beehiiv</a></div>
-</section>
-</div>
+</section></div>
   </div>
 </main>
 <footer>

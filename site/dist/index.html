@@ -60,11 +60,14 @@
     .tool-card p, .tool-card li { color:#cbd5e1; }
     .tool-card ul { padding-left:20px; }
     .tool-card li { margin:.28rem 0; }
-    .disclosure { margin-top:24px; padding:16px 18px; border:1px solid rgba(56,189,248,.22); border-radius:18px; background:rgba(8,47,73,.28); color:#cbd5e1; }
+    .disclosure, .lead-magnet { margin-top:24px; padding:18px 20px; border:1px solid rgba(56,189,248,.22); border-radius:20px; background:rgba(8,47,73,.28); color:#cbd5e1; }
+    .lead-magnet { display:flex; gap:18px; align-items:center; justify-content:space-between; }
+    .lead-magnet h2 { margin:.1rem 0 .35rem; letter-spacing:-.035em; }
+    .lead-magnet p { margin:0; max-width:720px; }
     pre { overflow:auto; padding:16px; border-radius:16px; background:#030712; border:1px solid rgba(148,163,184,.18); box-shadow:inset 0 1px 0 rgba(255,255,255,.03); }
     code { color:#bae6fd; }
     footer { border-top:1px solid rgba(148,163,184,.14); padding:24px 0 38px; color:var(--muted); font-size:.95rem; }
-    @media (max-width: 860px) { .hero, .grid, .tools-grid { grid-template-columns:1fr; } .value-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+    @media (max-width: 860px) { .hero, .grid, .tools-grid { grid-template-columns:1fr; } .value-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } .lead-magnet { align-items:flex-start; flex-direction:column; } }
     @media (max-width: 640px) { .value-grid { grid-template-columns:1fr; } header { padding-top:26px; } .button { width:100%; } }
   </style>
 </head>
@@ -83,45 +86,49 @@
 <main>
   <div class="wrap">
 <section class="hero">
+  <div><div class="eyebrow">AI workflows for solo operators</div><h1 class="hero-title">Build systems that save time, create leverage, and avoid tool waste.</h1><p class="hero-copy">ForgeCore turns AI tool signals into practical playbooks for builders, creators, consultants, indie hackers, and small business operators.</p><div class="cta-bar"><a class="button subtle" href="/ai-tools/">Browse the AI tools directory</a></div></div>
+  <div class="value-grid"><div class="value-card"><strong>Make money</strong>Workflows tied to leads, offers, content, and repeatable revenue tasks.</div><div class="value-card"><strong>Save time</strong>Automate admin drag without fragile systems.</div><div class="value-card"><strong>Choose tools</strong>Use what fits, avoid bad-fit spend, and know when simpler is enough.</div></div>
+</section>
+<section class="lead-magnet">
   <div>
-    <div class="eyebrow">AI workflows for solo operators</div>
-    <h1 class="hero-title">Build systems that save time, create leverage, and avoid tool waste.</h1>
-    <p class="hero-copy">ForgeCore turns AI tool signals into practical playbooks for builders, creators, consultants, indie hackers, and small business operators.</p>
-    <div class="cta-bar"><a class="button subtle" href="/ai-tools/">Browse the AI tools directory</a></div>
+    <div class="eyebrow">Free operator resource</div>
+    <h2>The Solo Operator AI Workflow Pack</h2>
+    <p>Get practical AI workflow checklists for content, onboarding, automation, research, tool selection, and follow-up systems. Built for solo operators who want leverage, not hype.</p>
   </div>
-  <div class="value-grid">
-    <div class="value-card"><strong>Make money</strong>Workflows tied to leads, offers, content, and repeatable revenue tasks.</div>
-    <div class="value-card"><strong>Save time</strong>Automate admin drag without building fragile, overcomplicated systems.</div>
-    <div class="value-card"><strong>Choose tools</strong>Use what fits, avoid bad-fit spend, and know when simpler is enough.</div>
-  </div>
+  <a class="button" href="https://forge-daily.kit.com/232bce5a31">Get the workflow pack</a>
 </section>
-<h2 class="section-heading">Latest operator playbooks</h2>
-<div class="grid">
-<section class="card">
-  <div class="date">May 2, 2026</div>
-  <h2><a href="/2026-05-02-pm/">How Solo Founders Can Automate Client Onboarding with AI</a></h2>
-  <p>As a solo founder, automating your client onboarding process can save you up to 5 hours each week while significantly enhancing client satisfaction. By leveraging AI tools, you can streamline repetitive tasks,...</p>
-  <a class="read-link" href="/2026-05-02-pm/">Read the workflow →</a>
-</section>
-<section class="card">
-  <div class="date">May 2, 2026</div>
-  <h2><a href="/2026-05-02-am/">Mastering AEO Competitor Analysis: A Solo Marketer&#x27;s Playbook</a></h2>
-  <p>As a solo marketer, leveraging AEO (Answer Engine Optimization) competitor analysis can dramatically enhance your content strategy. By identifying which brands are frequently cited in AI-generated answers, you can...</p>
-  <a class="read-link" href="/2026-05-02-am/">Read the workflow →</a>
-</section>
-<section class="card">
-  <div class="date">May 1, 2026</div>
-  <h2><a href="/2026-05-01-am/">Build a 3-Step AI Follow-Up System That Saves 5 Hours a Week</a></h2>
-  <p>A solo consultant does not lose deals because they lack ideas. They lose deals because follow-up gets buried under client work, inbox noise, and half-finished notes. This issue gives you a simple AI-assisted...</p>
-  <a class="read-link" href="/2026-05-01-am/">Read the workflow →</a>
-</section>
-<section class="card">
-  <div class="date">May 1, 2026</div>
-  <h2><a href="/2026-05-01/">How Solo Operators Can Leverage Ollama&#x27;s New Features to Streamline Workflows</a></h2>
-  <p>Solo operators can automate coding tasks and enhance productivity with Ollama&#x27;s latest features, saving hours each week by simplifying setup and improving performance. Ollama has introduced significant updates that...</p>
-  <a class="read-link" href="/2026-05-01/">Read the workflow →</a>
-</section>
-</div>
+<h2 class="section-heading">Evergreen workflow guides</h2><div class="grid"><section class="card">
+  <div class="date">Workflow library</div>
+  <h2><a href="/workflows/solo-founder-ai-automation/">Solo Founder AI Automation Workflow</a></h2>
+  <p>A practical AI automation workflow for solo founders who want to save time without building fragile systems.</p>
+  <a class="read-link" href="/workflows/solo-founder-ai-automation/">Open workflow →</a>
+</section><section class="card">
+  <div class="date">AI tools by workflow</div>
+  <h2><a href="/ai-tools/content-repurposing/">AI Content Repurposing Workflow</a></h2>
+  <p>Turn one idea, recording, or article into a week of useful content without turning your brand into generic AI sludge.</p>
+  <a class="read-link" href="/ai-tools/content-repurposing/">Open workflow →</a>
+</section><section class="card">
+  <div class="date">AI tools by workflow</div>
+  <h2><a href="/ai-tools/client-onboarding/">AI Client Onboarding Workflow</a></h2>
+  <p>A simple onboarding system for solo founders and consultants who want fewer dropped details and faster kickoff calls.</p>
+  <a class="read-link" href="/ai-tools/client-onboarding/">Open workflow →</a>
+</section><section class="card">
+  <div class="date">AI tools by workflow</div>
+  <h2><a href="/ai-tools/newsletter-growth/">AI Newsletter Growth Workflow</a></h2>
+  <p>Use AI to find high-intent topics, create useful issues, repurpose posts, and improve subscriber conversion.</p>
+  <a class="read-link" href="/ai-tools/newsletter-growth/">Open workflow →</a>
+</section><section class="card">
+  <div class="date">AI tools by workflow</div>
+  <h2><a href="/ai-tools/automation/">AI Automation Tools for Solo Operators</a></h2>
+  <p>Choose the right AI automation stack for repeatable business tasks without overbuilding.</p>
+  <a class="read-link" href="/ai-tools/automation/">Open workflow →</a>
+</section><section class="card">
+  <div class="date">AI tools by workflow</div>
+  <h2><a href="/ai-tools/ai-seo-aeo/">AI SEO and AEO Workflow</a></h2>
+  <p>Build content that can rank in search and earn citations in answer engines by being more useful, specific, and trustworthy.</p>
+  <a class="read-link" href="/ai-tools/ai-seo-aeo/">Open workflow →</a>
+</section></div>
+<h2 class="section-heading">Latest operator playbooks</h2><div class="grid"><section class="card"><div class="date">May 3, 2026</div><h2><a href="/2026-05-03-pm/">How Solo Founders Can Automate Content Repurposing to Save 10+ Hours a Week</a></h2><p>As a solo founder, automating your content repurposing can save you over 10 hours each week, allowing you to focus on scaling your business instead of getting bogged down in repetitive tasks. In the competitive...</p><a class="read-link" href="/2026-05-03-pm/">Read the workflow →</a></section><section class="card"><div class="date">May 2, 2026</div><h2><a href="/2026-05-02-pm/">How Solo Founders Can Automate Client Onboarding with AI</a></h2><p>Client onboarding is where a solo founder either looks organized or creates avoidable friction. AI will not replace the relationship, but it can remove the repetitive intake, reminders, summaries, and handoffs that...</p><a class="read-link" href="/2026-05-02-pm/">Read the workflow →</a></section><section class="card"><div class="date">May 2, 2026</div><h2><a href="/2026-05-02-am/">AEO Competitor Analysis: A Solo Operator Playbook for Getting Cited by AI Answers</a></h2><p>AI search is changing the traffic game. If your business depends on content, you need to know which competitors show up in AI-generated answers, why they are trusted, and what you can publish this week to close the gap.</p><a class="read-link" href="/2026-05-02-am/">Read the workflow →</a></section><section class="card"><div class="date">May 1, 2026</div><h2><a href="/2026-05-01-am/">Build a 3-Step AI Follow-Up System That Saves 5 Hours a Week</a></h2><p>A solo consultant does not lose deals because they lack ideas. They lose deals because follow-up gets buried under client work, inbox noise, and half-finished notes. This issue gives you a simple AI-assisted...</p><a class="read-link" href="/2026-05-01-am/">Read the workflow →</a></section><section class="card"><div class="date">May 1, 2026</div><h2><a href="/2026-05-01/">How Solo Operators Can Leverage Ollama&#x27;s New Features to Streamline Workflows</a></h2><p>Solo operators can automate coding tasks and enhance productivity with Ollama&#x27;s latest features, saving hours each week by simplifying setup and improving performance. Ollama has introduced significant updates that...</p><a class="read-link" href="/2026-05-01/">Read the workflow →</a></section></div>
   </div>
 </main>
 <footer>

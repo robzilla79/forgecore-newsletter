@@ -1,0 +1,35 @@
+{
+  "passed": true,
+  "issue": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-03-pm.md",
+  "model": "gpt-4o-mini",
+  "fallback_model": "gpt-4o-mini",
+  "overall_score": 8.0,
+  "min_overall_required": 6.5,
+  "min_category_required": 6.0,
+  "consistent_pass_overall": 9.0,
+  "scores": {
+    "headline_strength": 8.0,
+    "hook_strength": 8.0,
+    "specificity": 9.0,
+    "originality": 7.0,
+    "readability": 8.0,
+    "tone": 8.0,
+    "utility": 9.0,
+    "non_repetition": 8.0
+  },
+  "weak_categories": [],
+  "strengths": [
+    "Clear actionable steps for solo founders",
+    "Specific AI tools recommended",
+    "Concrete time-saving outcomes"
+  ],
+  "weaknesses": [
+    "Could enhance originality with unique insights or case studies"
+  ],
+  "must_fix": [],
+  "rewrite_plan": [],
+  "summary": "The issue is publishable as it provides actionable steps for solo founders to automate content repurposing effectively.",
+  "verdict": "publishable",
+  "run_token": "pass-2-1777778556896678746",
+  "artifact_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/critic-review-2026-05-03-pm.json"
+}
