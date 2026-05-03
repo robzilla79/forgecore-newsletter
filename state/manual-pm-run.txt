@@ -1,4 +1,4 @@
 manual PM run requested
-requested_at_utc=2026-05-03T03:12:00Z
+requested_at_utc=2026-05-03T03:20:00Z
 issue_slot=pm
-reason=Retry after deterministic cleanup for example.com placeholders and glued headings
+reason=Retry after duplicate-section collapse and CTA contract enforcement
