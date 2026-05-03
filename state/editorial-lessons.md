@@ -649,3 +649,20 @@
 - Rules for future issues:
   - Make the headline name the workflow, operator, tool choice, or measurable outcome.
   - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
+
+
+---
+
+## 2026-05-03 03:35:42 UTC — /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-03-pm.md
+- Improvement result: changed (rewritten issue saved)
+- Critic score: 10.0 | verdict: needs_revision
+- Weaknesses found:
+  - Expand on the implementation steps with more detailed examples or case studies.
+  - Include potential challenges or limitations of using local AI.
+  - Add more detailed implementation examples or case studies.
+  - Discuss potential challenges and how to overcome them.
+  - Enhance the originality by providing unique insights or perspectives on local AI.
+  - Lacks depth in implementation details
+- Rules for future issues:
+  - Turn vague advice into 3-6 named steps plus one prompt, checklist, config, or command block.
+  - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
