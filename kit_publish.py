@@ -11,7 +11,7 @@ Required env vars:
   KIT_API_KEY        - API key from Kit -> Settings -> Developer -> API Key
 
 Optional env vars:
-  KIT_SEND_MODE      - 'public' (send immediately) or 'draft'
+  KIT_SEND_MODE      - 'public' (publish to web and send now) or 'draft'
   ISSUE_SLOT         - am | pm; used to select content/issues/YYYY-MM-DD-am.md or -pm.md
   SITE_BASE_URL      - Used to build the web version link
   NEWSLETTER_NAME    - Used as subject fallback
@@ -22,6 +22,11 @@ Safety rules for immediate sends:
   - ISSUE_SLOT must match the issue slot
   - only one AM and one PM issue may be sent per issue date
   - already-sent issue slugs are skipped idempotently
+
+Kit API behavior:
+  - public=true publishes the broadcast to the web
+  - send_at controls email delivery/scheduling
+  - for AM/PM production sends we set both public=true and send_at=now
 
 Exit codes:
   0 - created, skipped because already sent, skipped by send guard, or skipped because no credentials
@@ -77,6 +82,10 @@ LINK_STYLE = "color:#2563eb; text-decoration:underline;"
 
 def log(msg: str) -> None:
     print(f"[kit] {msg}", flush=True)
+
+
+def utc_now_iso() -> str:
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def load_sent_log() -> dict:
@@ -137,7 +146,7 @@ def sent_public_slots_for_date(sent_log: dict, issue_date: str) -> set[str]:
         sent_date, sent_slot = parsed
         if sent_date != issue_date:
             continue
-        if isinstance(record, dict) and record.get("mode") == "public":
+        if isinstance(record, dict) and record.get("mode") == "public" and record.get("email_delivery") == "scheduled_or_sent":
             slots.add(sent_slot)
     return slots
 
@@ -169,12 +178,12 @@ def enforce_public_send_guard(issue_slug: str, sent_log: dict) -> None:
 
     sent_slots = sent_public_slots_for_date(sent_log, issue_date)
     if issue_slot in sent_slots:
-        log(f"SKIP: {issue_date} {issue_slot.upper()} was already sent publicly.")
+        log(f"SKIP: {issue_date} {issue_slot.upper()} was already scheduled/sent publicly by email.")
         sys.exit(0)
 
     if len(sent_slots) >= 2:
         log(
-            f"SKIP: {issue_date} already has two public sends recorded "
+            f"SKIP: {issue_date} already has two public email sends recorded "
             f"({', '.join(sorted(sent_slots)).upper()})."
         )
         sys.exit(0)
@@ -335,7 +344,7 @@ def build_email_html(body_md: str, issue_slug: str) -> str:
 """.strip()
 
 
-def create_broadcast(subject: str, email_html: str, preview_text: str) -> dict:
+def create_broadcast(subject: str, email_html: str, preview_text: str) -> tuple[dict, str | None]:
     if SEND_MODE not in {"draft", "public"}:
         raise ValueError(f"Unsupported KIT_SEND_MODE={SEND_MODE!r}; expected draft or public")
 
@@ -345,24 +354,30 @@ def create_broadcast(subject: str, email_html: str, preview_text: str) -> dict:
         "Content-Type": "application/json",
         "Accept": "application/json",
     }
+    send_at = utc_now_iso() if SEND_MODE == "public" else None
     payload: dict = {
         "subject": subject,
         "content": email_html,
+        "description": preview_text,
         "preview_text": preview_text,
         "public": SEND_MODE == "public",
+        "published_at": utc_now_iso() if SEND_MODE == "public" else None,
+        "send_at": send_at,
+        "subscriber_filter": [{"all": [{"type": "all_subscribers"}]}],
     }
 
     log(f"POST {url}")
     log(f"Subject: {subject}")
     log(f"Requested mode: {REQUESTED_SEND_MODE}")
     log(f"Effective mode: {SEND_MODE}")
+    log(f"send_at: {send_at or 'null (draft only)'}")
 
     resp = requests.post(url, headers=headers, json=payload, timeout=30)
     log(f"Response: {resp.status_code}")
     if resp.status_code not in (200, 201):
         log(f"ERROR: {resp.text[:1000]}")
         resp.raise_for_status()
-    return resp.json()
+    return resp.json(), send_at
 
 
 def main() -> None:
@@ -379,8 +394,9 @@ def main() -> None:
     log(f"Found issue: {issue_path}")
 
     sent_log = load_sent_log()
-    if issue_slug in sent_log:
-        log(f"Issue {issue_slug} already sent to Kit (broadcast_id={sent_log[issue_slug].get('broadcast_id')}). Skipping.")
+    existing = sent_log.get(issue_slug)
+    if isinstance(existing, dict) and existing.get("email_delivery") == "scheduled_or_sent":
+        log(f"Issue {issue_slug} already scheduled/sent to Kit (broadcast_id={existing.get('broadcast_id')}). Skipping.")
         sys.exit(0)
 
     enforce_public_send_guard(issue_slug, sent_log)
@@ -393,7 +409,7 @@ def main() -> None:
     preview = meta.get("description") or preview_from_markdown(body_md, f"{NEWSLETTER_NAME} — {issue_slug}")
 
     email_html = build_email_html(body_md, issue_slug)
-    result = create_broadcast(subject, email_html, preview)
+    result, send_at = create_broadcast(subject, email_html, preview)
 
     broadcast = result.get("broadcast", result)
     broadcast_id = broadcast.get("id", "unknown")
@@ -406,6 +422,8 @@ def main() -> None:
         "sent_at": datetime.now(timezone.utc).isoformat(),
         "mode": SEND_MODE,
         "requested_mode": REQUESTED_SEND_MODE,
+        "email_delivery": "scheduled_or_sent" if send_at else "not_scheduled",
+        "send_at": send_at,
         "issue_path": issue_path.as_posix(),
         "issue_slot": parse_slot_issue_slug(issue_slug)[1] if parse_slot_issue_slug(issue_slug) else "legacy",
         "web_url": f"{SITE_BASE_URL}/{issue_slug}/",
