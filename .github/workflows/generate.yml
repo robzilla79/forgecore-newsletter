@@ -152,6 +152,9 @@ jobs:
       - name: Apply business hardening
         run: python business_hardening.py
 
+      - name: Render lead magnet assets
+        run: python lead_magnet_hardening.py
+
       - name: Verify publish
         run: python verify_publish.py
 
