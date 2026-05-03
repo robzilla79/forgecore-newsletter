@@ -7,7 +7,7 @@ on:
       - 'publish_site.py'
       - 'ai_search_hardening.py'
       - 'business_hardening.py'
-      - 'verify_publish.py'
+      - 'verify_site_updates.py'
       - 'monetization/affiliate-registry.json'
       - '.github/workflows/deploy-site.yml'
 
@@ -66,8 +66,8 @@ jobs:
       - name: Apply business hardening
         run: python business_hardening.py
 
-      - name: Verify site without sending email
-        run: python verify_publish.py
+      - name: Verify site without newsletter send dependency
+        run: python verify_site_updates.py
 
       - name: Commit rendered site output
         if: success()
