@@ -3,7 +3,8 @@
 
 Fails the workflow if publish_site.py did not render the newest valid issue
 onto the homepage, article route, RSS feed, sitemap, and SEO metadata layer in
-the expected order. Also verifies evergreen growth pages and the lead magnet.
+the expected order. Also verifies evergreen growth pages, AI-search files,
+source relevance, structured data, and trust warnings.
 """
 from __future__ import annotations
 
@@ -40,6 +41,33 @@ BAD_MARKERS = (
     "[EMPTY RESPONSE]",
 )
 LEAD_MAGNET = "The Solo Operator AI Workflow Pack"
+BLOCKED_SOURCE_PATTERNS = (
+    "forge-daily.kit.com",
+    "forgecore-newsletter.beehiiv.com",
+    "example.com",
+)
+AI_CRAWLER_MARKERS = (
+    "OAI-SearchBot",
+    "ChatGPT-User",
+    "PerplexityBot",
+    "Sitemap: https://news.forgecore.co/sitemap.xml",
+)
+AI_SEARCH_PAGE_MARKERS = (
+    "AI search visibility",
+    "Answer Engine Optimization",
+    "Generative Engine Optimization",
+    "Citation-ready page",
+    "SEO vs AEO vs GEO vs LLMO",
+    "Do not invent expertise",
+)
+LATEST_TRUST_MARKERS = (
+    "Local AI vs cloud AI vs automation vs manual checklist",
+    "Trust warnings",
+    "Do not paste unredacted client secrets",
+    "Ollama FAQ",
+    "NIST AI Risk Management Framework",
+    "OWASP Top 10 for LLM Applications",
+)
 
 
 def is_valid_issue(path: Path) -> bool:
@@ -68,7 +96,7 @@ def issue_sort_key(path: Path) -> tuple[str, int, str]:
 
 
 def first_latest_issue_slug(homepage_html: str) -> str:
-    marker = 'Latest operator playbooks'
+    marker = "Latest operator playbooks"
     if marker in homepage_html:
         homepage_html = homepage_html.split(marker, 1)[1]
     match = re.search(r'<h2><a href="/([^"/]+)/">', homepage_html)
@@ -86,6 +114,27 @@ def first_sitemap_issue_slug(xml: str) -> str:
         if slug and slug not in STATIC_PAGE_SLUGS:
             return slug
     return ""
+
+
+def source_urls(markdown: str) -> list[str]:
+    section = markdown.split("## Sources", 1)[-1]
+    urls = re.findall(r"https?://[^\s)]+", section)
+    return [url.rstrip(".,]") for url in urls]
+
+
+def require_source_relevance(markdown: str, slug: str) -> None:
+    urls = source_urls(markdown)
+    if len(urls) < 3:
+        raise SystemExit(f"AI search source gate failed for {slug}: fewer than 3 source URLs")
+    blocked = [url for url in urls if any(pattern in url for pattern in BLOCKED_SOURCE_PATTERNS)]
+    if blocked:
+        raise SystemExit(f"AI search source gate failed for {slug}: CTA or placeholder URL counted as source: {blocked[0]}")
+    lower = markdown.lower()
+    source_blob = "\n".join(urls).lower()
+    if "ollama" in lower and "ollama" not in source_blob:
+        raise SystemExit(f"AI search source gate failed for {slug}: Ollama mentioned without Ollama source")
+    if "local ai" in lower and not any(term in source_blob for term in ("nist.gov", "ftc.gov", "owasp.org", "ollama")):
+        raise SystemExit(f"AI search source gate failed for {slug}: local AI claims need relevant trust sources")
 
 
 def require_static_pages(homepage_html: str, sitemap_xml: str) -> None:
@@ -120,6 +169,9 @@ def require_metadata(html: str, slug: str) -> None:
         "JSON-LD script": '<script type="application/ld+json">',
         "Article schema": '"@type":"Article"',
         "mainEntityOfPage": '"mainEntityOfPage"',
+        "BreadcrumbList schema": '"@type":"BreadcrumbList"',
+        "article keywords": '"keywords"',
+        "article about": '"about"',
     }
     for label, snippet in required_snippets.items():
         if snippet not in html:
@@ -146,6 +198,41 @@ def require_site_polish(homepage_html: str, article_html: str, slug: str) -> Non
             raise SystemExit(f"Article page missing polished {label}: {slug}")
     if "[sponsors@forgecore.co](mailto:sponsors@forgecore.co)" in article_html:
         raise SystemExit(f"Article page still contains raw Markdown mailto link: {slug}")
+
+
+def require_ai_search_assets(rss_xml: str) -> None:
+    robots = DIST_DIR / "robots.txt"
+    llms = DIST_DIR / "llms.txt"
+    aeo_page = DIST_DIR / "ai-tools" / "ai-seo-aeo" / "index.html"
+    if not robots.exists():
+        raise SystemExit("robots.txt missing")
+    robots_text = robots.read_text(encoding="utf-8")
+    for marker in AI_CRAWLER_MARKERS:
+        if marker not in robots_text:
+            raise SystemExit(f"robots.txt missing AI crawler marker: {marker}")
+    if not llms.exists():
+        raise SystemExit("llms.txt missing")
+    llms_text = llms.read_text(encoding="utf-8")
+    for marker in ("ForgeCore", "AI Tools Directory", "Trust policy"):
+        if marker not in llms_text:
+            raise SystemExit(f"llms.txt missing marker: {marker}")
+    if "<pubDate>" not in rss_xml:
+        raise SystemExit("RSS missing pubDate")
+    if not aeo_page.exists():
+        raise SystemExit("AI SEO/AEO page missing")
+    aeo_html = aeo_page.read_text(encoding="utf-8")
+    for marker in AI_SEARCH_PAGE_MARKERS:
+        if marker not in aeo_html:
+            raise SystemExit(f"AI SEO/AEO page missing marker: {marker}")
+    if '"@type":"HowTo"' not in aeo_html or '"@type":"BreadcrumbList"' not in aeo_html:
+        raise SystemExit("AI SEO/AEO page missing HowTo or BreadcrumbList schema")
+
+
+def require_latest_trust_markers(markdown: str, article_html: str, slug: str) -> None:
+    combined = markdown + "\n" + article_html
+    for marker in LATEST_TRUST_MARKERS:
+        if marker not in combined:
+            raise SystemExit(f"Latest issue missing AI-search trust marker ({slug}): {marker}")
 
 
 def main() -> int:
@@ -176,6 +263,7 @@ def main() -> int:
     article_html = article.read_text(encoding="utf-8")
     rss_xml = rss.read_text(encoding="utf-8")
     sitemap_xml = sitemap.read_text(encoding="utf-8")
+    latest_markdown = latest.read_text(encoding="utf-8")
 
     if f"/{slug}/" not in homepage_html and slug not in homepage_html:
         raise SystemExit(f"Latest issue not linked from homepage: {slug}")
@@ -194,8 +282,11 @@ def main() -> int:
     require_static_pages(homepage_html, sitemap_xml)
     require_metadata(article_html, slug)
     require_site_polish(homepage_html, article_html, slug)
+    require_source_relevance(latest_markdown, slug)
+    require_latest_trust_markers(latest_markdown, article_html, slug)
+    require_ai_search_assets(rss_xml)
 
-    print(f"Publish verified: {slug}")
+    print(f"Publish verified with AI search audit: {slug}")
     return 0
 
 
