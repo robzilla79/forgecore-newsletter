@@ -35,12 +35,14 @@ FUNNEL_PAGES = {
     "subscribe": ("Subscribe to ForgeCore", "Subscribe free", SIGNUP),
     "workflow-pack": ("The Solo Operator AI Workflow Pack", "Subscribe and get the pack", SIGNUP),
     "newsletter-advertising": ("Advertise with ForgeCore", "Sponsor placements", f"mailto:{SPONSOR_EMAIL}"),
+    "archive": ("ForgeCore AI Workflow Archive", "Workflow categories", "Latest issues"),
 }
 
 DISCOVERY_URLS = (
     f"{SITE_BASE}/subscribe/",
     f"{SITE_BASE}/workflow-pack/",
     f"{SITE_BASE}/newsletter-advertising/",
+    f"{SITE_BASE}/archive/",
     f"{SITE_BASE}/ai-tools/",
 )
 
@@ -72,12 +74,18 @@ def check_funnels(errors: list[str]) -> None:
     required_home_links = (
         'href="/subscribe/">Subscribe to the newsletter</a>',
         'href="/workflow-pack/">Get the workflow pack</a>',
+        'href="/archive/">Read the archive</a>',
         '/newsletter-advertising/',
         '/ai-tools/',
+        'forgecore-proof-positioning',
+        'Not generic AI news',
+        'Every issue has a job',
+        'forgecore-workflow-cards',
+        'AI tools by workflow',
     )
     for marker in required_home_links:
         if marker not in homepage:
-            error(errors, f"Homepage missing revenue/growth link: {marker}")
+            error(errors, f"Homepage missing growth/revenue asset: {marker}")
 
     if f'href="{SIGNUP}">Subscribe to the newsletter</a>' in homepage:
         error(errors, "Homepage subscribe CTA points directly to Kit instead of /subscribe/")
@@ -87,14 +95,14 @@ def check_funnels(errors: list[str]) -> None:
     for slug, markers in FUNNEL_PAGES.items():
         html = read(DIST / slug / "index.html")
         if not html:
-            error(errors, f"Funnel page missing: /{slug}/")
+            error(errors, f"Funnel/discovery page missing: /{slug}/")
             continue
         canonical = f'<link rel="canonical" href="{SITE_BASE}/{slug}/">'
         if canonical not in html:
-            error(errors, f"Funnel page missing canonical: /{slug}/")
+            error(errors, f"Funnel/discovery page missing canonical: /{slug}/")
         for marker in markers:
             if marker not in html:
-                error(errors, f"Funnel page /{slug}/ missing marker: {marker}")
+                error(errors, f"Funnel/discovery page /{slug}/ missing marker: {marker}")
 
 
 def check_discovery(errors: list[str]) -> None:
