@@ -69,6 +69,42 @@ def approved_url_map(registry: dict[str, Any]) -> dict[str, str]:
     return mapping
 
 
+def approved_affiliate_links(tool: dict[str, Any]) -> list[str]:
+    """Return active approved affiliate URLs/labels for one tool.
+
+    Placeholder labels such as AFFILIATE_CASTMAGIC are intentionally excluded
+    because they are not live affiliate links and are already blocked elsewhere.
+    """
+    links: list[str] = []
+    for link in tool.get("approved_links", []) or []:
+        if not isinstance(link, dict):
+            continue
+        if link.get("type") != "affiliate":
+            continue
+        for key in ("url", "label"):
+            value = str(link.get(key, "")).strip()
+            if value and not PLACEHOLDER_RE.fullmatch(value):
+                links.append(value)
+    return links
+
+
+def active_affiliate_tools(text: str, registry: dict[str, Any]) -> list[dict[str, Any]]:
+    """Tools that are actually monetized in this issue.
+
+    A global disclosure alone should not make every mentioned registry tool count
+    against max_affiliate_tools_per_issue. The cap applies only when the issue
+    contains a live approved affiliate URL or label for that specific tool.
+    """
+    found: list[dict[str, Any]] = []
+    for tool in registry.get("approved_tools", []) or []:
+        if not isinstance(tool, dict):
+            continue
+        links = approved_affiliate_links(tool)
+        if links and any(link in text for link in links):
+            found.append(tool)
+    return found
+
+
 def mentioned_tools(text: str, registry: dict[str, Any]) -> list[dict[str, Any]]:
     lower = text.lower()
     found: list[dict[str, Any]] = []
@@ -119,15 +155,16 @@ def collect_issue_errors(text: str, registry: dict[str, Any]) -> tuple[list[str]
         warnings.append("Tool of the Week section not found for monetization review")
 
     found_tools = mentioned_tools(text, registry)
-    if found_tools and has_affiliate_language(text):
-        if len(found_tools) > int(registry.get("rules", {}).get("max_affiliate_tools_per_issue", 2)):
-            errors.append("Issue mentions too many registry tools alongside affiliate language")
+    monetized_tools = active_affiliate_tools(text, registry)
+    if monetized_tools:
+        if len(monetized_tools) > int(registry.get("rules", {}).get("max_affiliate_tools_per_issue", 2)):
+            errors.append("Issue contains too many active affiliate tools")
         if "do not use" not in text.lower() and "not a fit" not in text.lower() and "avoid" not in text.lower():
             errors.append("Issue mentions monetized tools without a bad-fit warning")
         if "alternative" not in text.lower() and "simpler" not in text.lower() and "cheaper" not in text.lower():
             errors.append("Issue mentions monetized tools without a simpler or cheaper alternative")
     elif found_tools:
-        warnings.append("Registry tool mentioned without affiliate language; OK if no approved link is being used")
+        warnings.append("Registry tool mentioned without active affiliate links; OK if no approved link is being used")
 
     approved = approved_url_map(registry)
     approved_values = set(approved.values()) | set(approved.keys())
