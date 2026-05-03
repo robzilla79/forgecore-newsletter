@@ -143,6 +143,9 @@ jobs:
       - name: Lock email snapshot
         run: python lock_email_issue.py
 
+      - name: Quarantine legacy or low-quality public issues
+        run: python content_cleanup.py
+
       - name: Publish site
         run: python publish_site.py
 
