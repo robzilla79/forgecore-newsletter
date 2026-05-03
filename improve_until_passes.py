@@ -2,25 +2,42 @@
 """improve_until_passes.py - Critic-driven quality improvement controller.
 
 Runs inside generate.yml after the editor agent. Loops up to MAX_ITERATIONS:
-1. runs the critic review
-2. runs the quality gate
-3. if either fails, runs targeted improvement_loop.py
+1. applies deterministic cleanup for mechanical formatting/link failures
+2. runs the critic review
+3. runs the quality gate
+4. if either fails, runs targeted improvement_loop.py
 
 Important production rule:
 - Critic and quality gate must both pass before publish.
 - Runtime failures in critic/gate are hard-blocking.
+- Deterministic cleanup may remove banned placeholder URLs and repair glued headings,
+  but it must not invent article content or silently bypass quality failures.
 """
 from __future__ import annotations
 
 import json
 import os
+import re
 import time
 import subprocess
 import sys
 from pathlib import Path
 
+from issue_contract import issue_path_for_today
+from utils import load_text, write_text
+
 MAX_ITERATIONS = int(os.getenv("IMPROVE_MAX_ITERATIONS", "5"))
 STATE_DIR = Path("state")
+REQUIRED_SECTION_HEADERS = (
+    "## Hook",
+    "## Top Story",
+    "## Why It Matters",
+    "## Highlights",
+    "## Tool of the Week",
+    "## Workflow",
+    "## CTA",
+    "## Sources",
+)
 
 
 def _load_json(path: Path) -> dict:
@@ -69,6 +86,43 @@ def _extract_first_json_object(text: str) -> dict:
                 except Exception:
                     continue
     raise ValueError("no balanced JSON object found")
+
+
+def deterministic_cleanup() -> bool:
+    """Repair mechanical problems that repeatedly block publish.
+
+    This removes placeholder example.com URLs and fixes section headings glued to
+    prior prose/code-fence lines. It does not add missing sections, sources,
+    recommendations, warnings, or CTA content; the quality gate still owns those.
+    """
+    path = issue_path_for_today()
+    if not path.exists():
+        return False
+    original = load_text(path)
+    text = original
+
+    # Remove banned placeholder URLs without inventing replacement sources.
+    text = re.sub(r"\[([^\]]+)\]\(https?://(?:www\.)?example\.com[^)]*\)", r"\1", text, flags=re.IGNORECASE)
+    text = re.sub(r"https?://(?:www\.)?example\.com\S*", "", text, flags=re.IGNORECASE)
+
+    # Put headings on their own lines when model output glues them to prose or code fences.
+    for header in REQUIRED_SECTION_HEADERS:
+        escaped = re.escape(header)
+        text = re.sub(rf"(?<!^)(?<!\n)\s*{escaped}\s*", f"\n\n{header}\n", text, flags=re.MULTILINE)
+        text = re.sub(rf"^\s*{escaped}\s*(?=\S)", f"{header}\n", text, flags=re.MULTILINE)
+
+    # Repair common fence/header joins such as ```## CTA.
+    text = re.sub(r"```\s*(##\s+[A-Za-z])", r"```\n\n\1", text)
+
+    # Normalize excessive blank lines and trailing whitespace.
+    text = "\n".join(line.rstrip() for line in text.splitlines())
+    text = re.sub(r"\n{3,}", "\n\n", text).strip() + "\n"
+
+    if text != original:
+        write_text(path, text)
+        print(f"[improve_until_passes] Deterministic cleanup updated {path.as_posix()}")
+        return True
+    return False
 
 
 def run_json_script(script_name: str, run_token: str) -> dict:
@@ -167,6 +221,7 @@ def main() -> int:
     best_score: float = -1.0
 
     for i in range(1, MAX_ITERATIONS + 1):
+        deterministic_cleanup()
         token = _new_run_token(i)
         try:
             critic = run_json_script("critic_review.py", token)
@@ -201,6 +256,7 @@ def main() -> int:
                 print(f"[improve_until_passes] Improvement agent made no changes: {change.get('reason', 'no reason provided')}")
             else:
                 print(f"[improve_until_passes] Improvement updated {change.get('issue_path')}")
+            deterministic_cleanup()
         except RuntimeError as exc:
             print(f"[improve_until_passes] FAIL-FAST: {exc}")
             return 1
