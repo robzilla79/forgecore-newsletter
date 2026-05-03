@@ -20,6 +20,15 @@ HARDENING_SCRIPTS = (
 SITE_BASE = "https://news.forgecore.co"
 SIGNUP = "https://forge-daily.kit.com/232bce5a31"
 BUSINESS_PAGES = {
+    "subscribe": (
+        "Subscribe to ForgeCore",
+        "Get practical AI workflows for solo operators",
+        "Subscribe free",
+        "Preview the workflow pack",
+        SIGNUP,
+        '"@type":"Organization"',
+        '"@type":"BreadcrumbList"',
+    ),
     "newsletter-advertising": (
         "Advertise with ForgeCore",
         "Best-fit sponsors",
@@ -78,6 +87,7 @@ def require_homepage() -> str:
         "hero-title",
         "value-grid",
         "The Solo Operator AI Workflow Pack",
+        "/subscribe/",
         "/workflow-pack/",
         "/newsletter-advertising/",
         "/ai-tools/",
@@ -89,10 +99,12 @@ def require_homepage() -> str:
             raise SystemExit(f"Homepage missing marker: {marker}")
     if f'href="{SIGNUP}">Get the workflow pack</a>' in html:
         raise SystemExit("Homepage workflow-pack CTA points directly to Kit instead of /workflow-pack/")
+    if f'href="{SIGNUP}">Subscribe to the newsletter</a>' in html:
+        raise SystemExit("Homepage subscribe CTA points directly to Kit instead of /subscribe/")
     if 'href="/workflow-pack/">Get the workflow pack</a>' not in html and 'href="/workflow-pack/">Get the Solo Operator AI Workflow Pack</a>' not in html:
         raise SystemExit("Homepage missing workflow-pack landing-page CTA")
-    if f'href="{SIGNUP}">Subscribe to the newsletter</a>' not in html:
-        raise SystemExit("Homepage missing direct newsletter subscribe CTA")
+    if 'href="/subscribe/">Subscribe to the newsletter</a>' not in html:
+        raise SystemExit("Homepage missing subscribe landing-page CTA")
     return html
 
 
@@ -107,6 +119,7 @@ def require_discovery_files() -> tuple[str, str]:
         "ForgeCore",
         "AI Tools Directory",
         "Trust policy",
+        "https://news.forgecore.co/subscribe/",
         "https://news.forgecore.co/workflow-pack/",
         "https://news.forgecore.co/newsletter-advertising/",
     ):
@@ -142,6 +155,11 @@ def require_business_pages(sitemap: str) -> None:
         for marker in markers:
             if marker not in html:
                 raise SystemExit(f"Business page {slug} missing marker: {marker}")
+    subscribe_html = read(DIST_DIR / "subscribe" / "index.html")
+    if 'href="/subscribe/">Subscribe to the newsletter</a>' in subscribe_html:
+        raise SystemExit("Subscribe page should convert to Kit, not link to itself as primary CTA")
+    if f'href="{SIGNUP}">Subscribe free</a>' not in subscribe_html:
+        raise SystemExit("Subscribe page missing conversion CTA to Kit")
     workflow_html = read(DIST_DIR / "workflow-pack" / "index.html")
     if 'href="/workflow-pack/">Get the workflow pack</a>' in workflow_html:
         raise SystemExit("Workflow-pack page should convert to Kit, not link to itself as primary CTA")
