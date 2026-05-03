@@ -666,3 +666,21 @@
 - Rules for future issues:
   - Turn vague advice into 3-6 named steps plus one prompt, checklist, config, or command block.
   - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
+
+
+---
+
+## 2026-05-03 03:51:55 UTC — /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-03-pm.md
+- Improvement result: changed (rewritten issue saved)
+- Critic score: 10.0 | verdict: needs_revision
+- Weaknesses found:
+  - Enhance the hook to better engage the reader
+  - Include more specific examples of local AI tools and their unique features
+  - Revise the hook to create a stronger emotional appeal or urgency
+  - Add specific examples of local AI tools with unique benefits
+  - Refine the headline for greater impact
+  - Weak hook that doesn't grab attention
+- Rules for future issues:
+  - Start the Hook with the operator outcome or decision, not a product announcement.
+  - Name the exact operator persona, job-to-be-done, tool stack, and tradeoff.
+  - Make the headline name the workflow, operator, tool choice, or measurable outcome.
