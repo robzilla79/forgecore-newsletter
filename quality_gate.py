@@ -90,8 +90,18 @@ def find_duplicate_paragraphs(text: str) -> list[str]:
     return [key[:80] + "..." for key, count in seen.items() if count > 1]
 
 
+def proper_section_header_count(text: str, section: str) -> int:
+    return len(re.findall(rf"^{re.escape(section)}\s*$", text, flags=re.MULTILINE))
+
+
+def malformed_section_header_count(text: str, section: str) -> int:
+    # Catches glued output such as ```## CTA or ...alternative.## Workflow.
+    total_mentions = text.count(section)
+    return max(0, total_mentions - proper_section_header_count(text, section))
+
+
 def section_body(text: str, section: str) -> str:
-    match = re.search(rf"^{re.escape(section)}\n(.+?)(?=^## |\Z)", text, flags=re.MULTILINE | re.DOTALL)
+    match = re.search(rf"^{re.escape(section)}\s*\n(.+?)(?=^## |\Z)", text, flags=re.MULTILINE | re.DOTALL)
     return match.group(1).strip() if match else ""
 
 
@@ -121,11 +131,11 @@ def has_tool_recommendation(text: str) -> bool:
 
 
 def source_section_present(text: str) -> bool:
-    return bool(re.search(r"^## Sources\s*$", text, flags=re.MULTILINE))
+    return proper_section_header_count(text, "## Sources") > 0
 
 
 def source_section_entries(text: str) -> list[str]:
-    match = re.search(r"^## Sources\n(.+?)(?=^## |\Z)", text, flags=re.MULTILINE | re.DOTALL)
+    match = re.search(r"^## Sources\s*\n(.+?)(?=^## |\Z)", text, flags=re.MULTILINE | re.DOTALL)
     if not match:
         return []
     return [line for line in match.group(1).splitlines() if line.strip()]
@@ -158,10 +168,16 @@ def collect_errors_and_warnings(text: str, critic: dict | None, critic_expected_
         return errors, warnings
 
     for header in REQUIRED_SECTIONS:
-        if header not in text:
+        proper_count = proper_section_header_count(text, header)
+        malformed_count = malformed_section_header_count(text, header)
+        if proper_count == 0:
             if header == "## Sources":
                 continue
             errors.append(f"Missing required section: {header}")
+        elif proper_count > 1:
+            errors.append(f"Duplicate required section header: {header} appears {proper_count} times")
+        if malformed_count:
+            errors.append(f"Malformed or glued section header: {header} appears {malformed_count} time(s) outside its own line")
 
     for token in BANNED_TOKENS:
         if token.lower() in text.lower():
@@ -200,11 +216,11 @@ def collect_errors_and_warnings(text: str, critic: dict | None, critic_expected_
         if title.lower().startswith("author update"):
             errors.append("Issue title still contains generic author-update placeholder")
 
-    hook_match = re.search(r"^## Hook\n(.+?)(?=^## |\Z)", text, flags=re.MULTILINE | re.DOTALL)
+    hook_match = re.search(r"^## Hook\s*\n(.+?)(?=^## |\Z)", text, flags=re.MULTILINE | re.DOTALL)
     if not hook_match or len(hook_match.group(1).split()) < 12:
         errors.append("Hook section is missing or too short (need 12+ words)")
 
-    top_story_match = re.search(r"^## Top Story\n(.+?)(?=^## |\Z)", text, flags=re.MULTILINE | re.DOTALL)
+    top_story_match = re.search(r"^## Top Story\s*\n(.+?)(?=^## |\Z)", text, flags=re.MULTILINE | re.DOTALL)
     if not top_story_match or len(top_story_match.group(1).split()) < 80:
         errors.append("Top Story section is too thin (need 80+ words)")
 
@@ -218,7 +234,7 @@ def collect_errors_and_warnings(text: str, critic: dict | None, critic_expected_
     if has_affiliate_reference(text) and not has_affiliate_disclosure(text):
         errors.append("Affiliate/partner reference found without clear commission disclosure")
 
-    cta_match = re.search(r"^## CTA\n(.+?)(?=^## |\Z)", text, flags=re.MULTILINE | re.DOTALL)
+    cta_match = re.search(r"^## CTA\s*\n(.+?)(?=^## |\Z)", text, flags=re.MULTILINE | re.DOTALL)
     if not cta_match or len(cta_match.group(1).split()) < 8:
         errors.append("CTA section is missing or too short (need 8+ words)")
     else:
@@ -283,7 +299,7 @@ def main() -> int:
         "exists": path.exists(),
         "issue_path": path.as_posix(),
         "word_count": word_count(text),
-        "required_sections_present": [h for h in REQUIRED_SECTIONS if h in text],
+        "required_sections_present": [h for h in REQUIRED_SECTIONS if proper_section_header_count(text, h) > 0],
         "url_count": len(list(dict.fromkeys(urls))),
         "source_links": list(dict.fromkeys(urls)),
         "has_sources_section": source_section_present(text),
