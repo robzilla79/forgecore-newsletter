@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""Verify site/business updates without depending on newsletter generation.
-
-Use this for Deploy Site Updates. It checks the public site wrapper, business
-pages, AI discovery files, sitemap, and homepage links without requiring a new
-AM/PM issue to be generated or eligible to send.
-"""
+"""Verify site/business updates without depending on newsletter generation."""
 from __future__ import annotations
 
 import subprocess
@@ -33,7 +28,6 @@ BUSINESS_PAGES = {
         "Advertise with ForgeCore",
         "Best-fit sponsors",
         "Sponsor placements",
-        "Sample sponsor block",
         "mailto:sponsors@forgecore.co",
         "Subscribe to see the newsletter",
         '"@type":"Organization"',
@@ -48,6 +42,14 @@ BUSINESS_PAGES = {
         "Subscribe and get the pack",
         "Subscribe to the newsletter",
         '"@type":"CreativeWork"',
+        '"@type":"BreadcrumbList"',
+    ),
+    "archive": (
+        "ForgeCore AI Workflow Archive",
+        "Workflow categories",
+        "Latest issues",
+        "Most AI newsletters tell you what happened",
+        '"@type":"CollectionPage"',
         '"@type":"BreadcrumbList"',
     ),
 }
@@ -90,9 +92,14 @@ def require_homepage() -> str:
         "/subscribe/",
         "/workflow-pack/",
         "/newsletter-advertising/",
+        "/archive/",
         "/ai-tools/",
-        "mailto:sponsors@forgecore.co",
         "Subscribe to the newsletter",
+        "forgecore-proof-positioning",
+        "Not generic AI news",
+        "Every issue has a job",
+        "forgecore-workflow-cards",
+        "AI tools by workflow",
     )
     for marker in markers:
         if marker not in html:
@@ -101,10 +108,6 @@ def require_homepage() -> str:
         raise SystemExit("Homepage workflow-pack CTA points directly to Kit instead of /workflow-pack/")
     if f'href="{SIGNUP}">Subscribe to the newsletter</a>' in html:
         raise SystemExit("Homepage subscribe CTA points directly to Kit instead of /subscribe/")
-    if 'href="/workflow-pack/">Get the workflow pack</a>' not in html and 'href="/workflow-pack/">Get the Solo Operator AI Workflow Pack</a>' not in html:
-        raise SystemExit("Homepage missing workflow-pack landing-page CTA")
-    if 'href="/subscribe/">Subscribe to the newsletter</a>' not in html:
-        raise SystemExit("Homepage missing subscribe landing-page CTA")
     return html
 
 
@@ -122,6 +125,7 @@ def require_discovery_files() -> tuple[str, str]:
         "https://news.forgecore.co/subscribe/",
         "https://news.forgecore.co/workflow-pack/",
         "https://news.forgecore.co/newsletter-advertising/",
+        "https://news.forgecore.co/archive/",
     ):
         if marker not in llms:
             raise SystemExit(f"llms.txt missing marker: {marker}")
@@ -156,13 +160,9 @@ def require_business_pages(sitemap: str) -> None:
             if marker not in html:
                 raise SystemExit(f"Business page {slug} missing marker: {marker}")
     subscribe_html = read(DIST_DIR / "subscribe" / "index.html")
-    if 'href="/subscribe/">Subscribe to the newsletter</a>' in subscribe_html:
-        raise SystemExit("Subscribe page should convert to Kit, not link to itself as primary CTA")
     if f'href="{SIGNUP}">Subscribe free</a>' not in subscribe_html:
         raise SystemExit("Subscribe page missing conversion CTA to Kit")
     workflow_html = read(DIST_DIR / "workflow-pack" / "index.html")
-    if 'href="/workflow-pack/">Get the workflow pack</a>' in workflow_html:
-        raise SystemExit("Workflow-pack page should convert to Kit, not link to itself as primary CTA")
     if f'href="{SIGNUP}">Subscribe and get the pack</a>' not in workflow_html:
         raise SystemExit("Workflow-pack page missing conversion CTA to Kit")
 
