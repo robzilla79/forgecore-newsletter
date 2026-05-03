@@ -18,10 +18,13 @@ STATE = ROOT / "state"
 SITE_BASE = "https://news.forgecore.co"
 SIGNUP = "https://forge-daily.kit.com/232bce5a31"
 SPONSOR_EMAIL = "sponsors@forgecore.co"
+PACK_URL = f"{SITE_BASE}/downloads/solo-operator-ai-workflow-pack/"
 
 REQUIRED_FILES = (
     ROOT / "business_hardening.py",
+    ROOT / "lead_magnet_hardening.py",
     ROOT / "verify_site_updates.py",
+    ROOT / "lead-magnets/solo-operator-ai-workflow-pack.md",
     ROOT / "lock_email_issue.py",
     ROOT / "kit_publish.py",
     ROOT / ".github/workflows/deploy-site.yml",
@@ -33,9 +36,10 @@ REQUIRED_FILES = (
 
 FUNNEL_PAGES = {
     "subscribe": ("Subscribe to ForgeCore", "Subscribe free", SIGNUP),
-    "workflow-pack": ("The Solo Operator AI Workflow Pack", "Subscribe and get the pack", SIGNUP),
+    "workflow-pack": ("The Solo Operator AI Workflow Pack", "Subscribe and get the pack", "Read the workflow pack now"),
     "newsletter-advertising": ("Advertise with ForgeCore", "Sponsor placements", f"mailto:{SPONSOR_EMAIL}"),
     "archive": ("ForgeCore AI Workflow Archive", "Workflow categories", "Latest issues"),
+    "downloads/solo-operator-ai-workflow-pack": ("The Solo Operator AI Workflow Pack", "Tool decision matrix", "Automation readiness checklist"),
 }
 
 DISCOVERY_URLS = (
@@ -43,6 +47,7 @@ DISCOVERY_URLS = (
     f"{SITE_BASE}/workflow-pack/",
     f"{SITE_BASE}/newsletter-advertising/",
     f"{SITE_BASE}/archive/",
+    PACK_URL,
     f"{SITE_BASE}/ai-tools/",
 )
 
@@ -150,6 +155,8 @@ def check_site_deploy_path(errors: list[str]) -> None:
     deploy = read(ROOT / ".github/workflows/deploy-site.yml")
     if "python verify_site_updates.py" not in deploy:
         error(errors, "Site deploy must use site-only verifier")
+    if "python lead_magnet_hardening.py" not in deploy:
+        error(errors, "Site deploy must render lead magnet assets")
     if "python kit_publish.py" in deploy or "python lock_email_issue.py" in deploy:
         error(errors, "Site deploy must not touch Kit or locked emails")
     if "pages deploy site/dist" not in deploy:
