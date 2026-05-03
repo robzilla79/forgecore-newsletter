@@ -18,6 +18,7 @@ HARDENING_SCRIPTS = (
     ROOT / "business_hardening.py",
 )
 SITE_BASE = "https://news.forgecore.co"
+SIGNUP = "https://forge-daily.kit.com/232bce5a31"
 BUSINESS_PAGES = {
     "newsletter-advertising": (
         "Advertise with ForgeCore",
@@ -25,6 +26,7 @@ BUSINESS_PAGES = {
         "Sponsor placements",
         "Sample sponsor block",
         "mailto:sponsors@forgecore.co",
+        "Subscribe to see the newsletter",
         '"@type":"Organization"',
         '"@type":"BreadcrumbList"',
     ),
@@ -34,6 +36,8 @@ BUSINESS_PAGES = {
         "10 copy/paste prompts",
         "Tool decision matrix",
         "Bad-fit warning checklist",
+        "Subscribe and get the pack",
+        "Subscribe to the newsletter",
         '"@type":"CreativeWork"',
         '"@type":"BreadcrumbList"',
     ),
@@ -78,10 +82,17 @@ def require_homepage() -> str:
         "/newsletter-advertising/",
         "/ai-tools/",
         "mailto:sponsors@forgecore.co",
+        "Subscribe to the newsletter",
     )
     for marker in markers:
         if marker not in html:
             raise SystemExit(f"Homepage missing marker: {marker}")
+    if f'href="{SIGNUP}">Get the workflow pack</a>' in html:
+        raise SystemExit("Homepage workflow-pack CTA points directly to Kit instead of /workflow-pack/")
+    if 'href="/workflow-pack/">Get the workflow pack</a>' not in html and 'href="/workflow-pack/">Get the Solo Operator AI Workflow Pack</a>' not in html:
+        raise SystemExit("Homepage missing workflow-pack landing-page CTA")
+    if f'href="{SIGNUP}">Subscribe to the newsletter</a>' not in html:
+        raise SystemExit("Homepage missing direct newsletter subscribe CTA")
     return html
 
 
@@ -131,6 +142,11 @@ def require_business_pages(sitemap: str) -> None:
         for marker in markers:
             if marker not in html:
                 raise SystemExit(f"Business page {slug} missing marker: {marker}")
+    workflow_html = read(DIST_DIR / "workflow-pack" / "index.html")
+    if 'href="/workflow-pack/">Get the workflow pack</a>' in workflow_html:
+        raise SystemExit("Workflow-pack page should convert to Kit, not link to itself as primary CTA")
+    if f'href="{SIGNUP}">Subscribe and get the pack</a>' not in workflow_html:
+        raise SystemExit("Workflow-pack page missing conversion CTA to Kit")
 
 
 def main() -> int:
