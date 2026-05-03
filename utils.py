@@ -5,10 +5,13 @@ import json
 import os
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from dotenv import dotenv_values
 
 WORKSPACE = Path(os.environ.get('AGENT_WORKSPACE', '.')).resolve()
+LOCAL_TZ_NAME = os.environ.get('FORGECORE_TIMEZONE', 'America/Chicago')
+LOCAL_TZ = ZoneInfo(LOCAL_TZ_NAME)
 
 
 def load_project_env() -> list[str]:
@@ -46,12 +49,26 @@ def utc_now() -> dt.datetime:
     return dt.datetime.now(dt.timezone.utc)
 
 
+def local_now() -> dt.datetime:
+    return utc_now().astimezone(LOCAL_TZ)
+
+
 def now_str() -> str:
     return utc_now().strftime('%Y-%m-%d %H:%M:%S UTC')
 
 
+def local_now_str() -> str:
+    return local_now().strftime('%Y-%m-%d %H:%M:%S %Z')
+
+
 def today_str() -> str:
-    return utc_now().strftime('%Y-%m-%d')
+    """Return the ForgeCore business date in Central time.
+
+    GitHub Actions cron runs in UTC, but ForgeCore's AM/PM newsletter slots are
+    a Central-time business cadence. Using UTC here caused late-night Central
+    runs to create or send the next day's slot too early.
+    """
+    return local_now().strftime('%Y-%m-%d')
 
 
 def issue_slot() -> str:
