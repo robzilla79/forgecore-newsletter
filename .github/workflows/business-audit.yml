@@ -9,7 +9,6 @@ on:
   push:
     paths:
       - 'business_audit.py'
-      - 'business_review.py'
       - 'business_hardening.py'
       - 'verify_site_updates.py'
       - 'kit_publish.py'
@@ -18,11 +17,6 @@ on:
       - '.github/workflows/deploy-site.yml'
       - '.github/workflows/generate.yml'
       - '.github/workflows/send.yml'
-      - '.github/workflows/generate-am.yml'
-      - '.github/workflows/generate-pm.yml'
-      - '.github/workflows/send-am.yml'
-      - '.github/workflows/send-pm.yml'
-      - 'business/mission-guardrails.md'
       - 'business/sponsorship-rate-card.md'
       - 'monetization/affiliate-registry.json'
 
@@ -82,26 +76,22 @@ jobs:
       - name: Verify site update surface
         run: python verify_site_updates.py
 
-      - name: Run business audit
+      - name: Run lean business audit
         run: python business_audit.py
 
-      - name: Generate CEO business review
-        if: always()
-        run: python business_review.py
-
-      - name: Commit audit reports and rendered site output
+      - name: Commit audit report and rendered site output
         if: always()
         run: |
           git config user.name "ForgeCore AI Bot"
           git config user.email "bot@forgecore.co"
-          git add state/business-audit.json state/business-review.md site/dist/
+          git add state/business-audit.json site/dist/
           if git diff --staged --quiet; then
             echo "No business audit changes to commit"
           else
             git stash push --include-untracked --message forgecore-business-audit
             git pull --rebase origin main
             git stash pop
-            git add state/business-audit.json state/business-review.md site/dist/
+            git add state/business-audit.json site/dist/
             TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M UTC')
             git commit -m "auto: daily business audit $TIMESTAMP [bot]"
             git push
