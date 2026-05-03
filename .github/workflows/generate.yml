@@ -140,6 +140,9 @@ jobs:
       - name: Run monetization guard
         run: python monetization_guard.py
 
+      - name: Lock email snapshot
+        run: python lock_email_issue.py
+
       - name: Publish site
         run: python publish_site.py
 
@@ -160,7 +163,7 @@ jobs:
             echo "Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
             echo ""
             echo "### Generated issue files"
-            find content/issues -maxdepth 1 -type f -name '*.md' -print | sort || true
+            find content/issues content/email -maxdepth 1 -type f -name '*.md' -print | sort || true
             echo ""
             echo "### State artifacts"
             find state -maxdepth 1 -type f \( -name '*.json' -o -name '*.log' -o -name '*.md' \) -print | sort || true
@@ -179,6 +182,7 @@ jobs:
           path: |
             failure-summary.md
             content/issues/*.md
+            content/email/*.md
             research/raw/*.md
             research/briefs/*.md
             state/*.json
@@ -193,14 +197,14 @@ jobs:
         run: |
           git config user.name "ForgeCore AI Bot"
           git config user.email "bot@forgecore.co"
-          git add content/issues/ research/ state/ site/dist/ HEARTBEAT.md
+          git add content/issues/ content/email/ research/ state/ site/dist/ HEARTBEAT.md
           if git diff --staged --quiet; then
             echo "Nothing to commit"
           else
             git stash push --include-untracked --message forgecore-prepared-content
             git pull --rebase origin main
             git stash pop
-            git add content/issues/ research/ state/ site/dist/ HEARTBEAT.md
+            git add content/issues/ content/email/ research/ state/ site/dist/ HEARTBEAT.md
             TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M UTC')
             git commit -m "auto: prepare ${ISSUE_SLOT:-manual} newsletter issue $TIMESTAMP [bot]"
             git push
