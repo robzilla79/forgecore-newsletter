@@ -10,8 +10,9 @@ Runs inside generate.yml after the editor agent. Loops up to MAX_ITERATIONS:
 Important production rule:
 - Critic and quality gate must both pass before publish.
 - Runtime failures in critic/gate are hard-blocking.
-- Deterministic cleanup may remove banned placeholder URLs and repair glued headings,
-  but it must not invent article content or silently bypass quality failures.
+- Deterministic cleanup may remove banned placeholder URLs, repair glued headings,
+  collapse duplicate sections, and enforce the configured CTA plumbing.
+- It must not invent sources, recommendations, or article substance.
 """
 from __future__ import annotations
 
@@ -38,6 +39,12 @@ REQUIRED_SECTION_HEADERS = (
     "## CTA",
     "## Sources",
 )
+REQUIRED_CTA_URL = (
+    os.getenv("PRIMARY_CTA_URL", "").strip()
+    or os.getenv("KIT_SIGNUP_URL", "").strip()
+    or "https://news.forgecore.co/"
+)
+REQUIRED_SPONSOR_EMAIL = os.getenv("SPONSOR_EMAIL", "sponsors@forgecore.co").strip() or "sponsors@forgecore.co"
 
 
 def _load_json(path: Path) -> dict:
@@ -88,12 +95,69 @@ def _extract_first_json_object(text: str) -> dict:
     raise ValueError("no balanced JSON object found")
 
 
+def split_issue_sections(text: str) -> tuple[str, dict[str, list[str]]]:
+    """Return title/preamble and bodies by exact required section header."""
+    matches = list(re.finditer(r"^##\s+.+?\s*$", text, flags=re.MULTILINE))
+    if not matches:
+        return text.strip(), {}
+    title = text[: matches[0].start()].strip()
+    sections: dict[str, list[str]] = {header: [] for header in REQUIRED_SECTION_HEADERS}
+    for idx, match in enumerate(matches):
+        header = match.group(0).strip()
+        end = matches[idx + 1].start() if idx + 1 < len(matches) else len(text)
+        body = text[match.end() : end].strip()
+        if header in sections:
+            sections[header].append(body)
+    return title, sections
+
+
+def collapse_duplicate_sections(text: str) -> str:
+    title, sections = split_issue_sections(text)
+    if not sections:
+        return text
+    output: list[str] = [title.strip()]
+    for header in REQUIRED_SECTION_HEADERS:
+        bodies = [body.strip() for body in sections.get(header, []) if body.strip()]
+        if not bodies:
+            continue
+        if header in {"## Workflow", "## CTA", "## Sources"}:
+            body = "\n\n".join(dict.fromkeys(bodies))
+        else:
+            body = bodies[0]
+        output.append(f"{header}\n{body}".strip())
+    return "\n\n".join(part for part in output if part.strip()).strip() + "\n"
+
+
+def enforce_cta_contract(text: str) -> str:
+    title, sections = split_issue_sections(text)
+    bodies = [body.strip() for body in sections.get("## CTA", []) if body.strip()]
+    if not bodies:
+        return text
+    cta = "\n\n".join(dict.fromkeys(bodies)).strip()
+    additions: list[str] = []
+    if REQUIRED_CTA_URL and REQUIRED_CTA_URL not in cta:
+        additions.append(f"Subscribe for more operator-grade AI workflows: {REQUIRED_CTA_URL}")
+    if REQUIRED_SPONSOR_EMAIL not in cta or "sponsor this issue" not in cta.lower():
+        additions.append(f"Sponsor this issue: email {REQUIRED_SPONSOR_EMAIL}.")
+    if additions:
+        cta = (cta + "\n\n" + "\n".join(additions)).strip()
+    sections["## CTA"] = [cta]
+
+    output: list[str] = [title.strip()]
+    for header in REQUIRED_SECTION_HEADERS:
+        bodies_for_header = [body.strip() for body in sections.get(header, []) if body.strip()]
+        if not bodies_for_header:
+            continue
+        output.append(f"{header}\n{bodies_for_header[0]}".strip())
+    return "\n\n".join(part for part in output if part.strip()).strip() + "\n"
+
+
 def deterministic_cleanup() -> bool:
     """Repair mechanical problems that repeatedly block publish.
 
-    This removes placeholder example.com URLs and fixes section headings glued to
-    prior prose/code-fence lines. It does not add missing sections, sources,
-    recommendations, warnings, or CTA content; the quality gate still owns those.
+    This removes placeholder example.com URLs, fixes section headings glued to
+    prior prose/code-fence lines, collapses duplicate sections, and makes sure
+    the CTA contains the configured subscribe URL plus the exact sponsor invite.
     """
     path = issue_path_for_today()
     if not path.exists():
@@ -114,8 +178,11 @@ def deterministic_cleanup() -> bool:
     # Repair common fence/header joins such as ```## CTA.
     text = re.sub(r"```\s*(##\s+[A-Za-z])", r"```\n\n\1", text)
 
-    # Normalize excessive blank lines and trailing whitespace.
+    # Normalize before structural collapse.
     text = "\n".join(line.rstrip() for line in text.splitlines())
+    text = re.sub(r"\n{3,}", "\n\n", text).strip() + "\n"
+    text = collapse_duplicate_sections(text)
+    text = enforce_cta_contract(text)
     text = re.sub(r"\n{3,}", "\n\n", text).strip() + "\n"
 
     if text != original:
