@@ -70,9 +70,9 @@ def base_page(title: str, description: str, slug: str, body: str, schema: dict) 
   </style>
 </head>
 <body>
-<header><div class="wrap"><a class="brand" href="/">ForgeCore</a><p class="tagline">{html.escape(TAGLINE)}</p><p><a class="button" href="{SIGNUP}">Subscribe</a> <a class="button secondary" href="/ai-tools/">Browse AI tools</a> <a class="button secondary" href="/newsletter-advertising/">Advertise</a></p></div></header>
+<header><div class="wrap"><a class="brand" href="/">ForgeCore</a><p class="tagline">{html.escape(TAGLINE)}</p><p><a class="button" href="{SIGNUP}">Subscribe to the newsletter</a> <a class="button secondary" href="/workflow-pack/">Get the workflow pack</a> <a class="button secondary" href="/ai-tools/">Browse AI tools</a> <a class="button secondary" href="/newsletter-advertising/">Advertise</a></p></div></header>
 <main><div class="wrap">{body}</div></main>
-<footer><div class="wrap">ForgeCore helps solo operators use AI tools to build systems, save time, and create income.</div></footer>
+<footer><div class="wrap">ForgeCore helps solo operators use AI tools to build systems, save time, and create income. <a href="{SIGNUP}">Subscribe to the newsletter</a>.</div></footer>
 </body>
 </html>
 """
@@ -102,7 +102,7 @@ def render_advertising_page() -> None:
     <div class="eyebrow">Sponsor ForgeCore</div>
     <h1>Reach operators who buy tools to save time, build systems, and create income.</h1>
     <p>ForgeCore is built for solo founders, creators, consultants, builders, indie hackers, and small business operators who want practical AI workflows instead of hype.</p>
-    <p><a class="button" href="mailto:{SPONSOR_EMAIL}?subject=ForgeCore sponsorship inquiry">Email {SPONSOR_EMAIL}</a></p>
+    <p><a class="button" href="mailto:{SPONSOR_EMAIL}?subject=ForgeCore sponsorship inquiry">Email {SPONSOR_EMAIL}</a> <a class="button secondary" href="{SIGNUP}">Subscribe to see the newsletter</a></p>
   </div>
   <aside class="panel">
     <h2>Best-fit sponsors</h2>
@@ -154,7 +154,7 @@ def render_workflow_pack_page() -> None:
     <div class="eyebrow">Free operator resource</div>
     <h1>The Solo Operator AI Workflow Pack</h1>
     <p>A practical pack for turning AI tools into repeatable systems. Built for people who need leverage, not another list of shiny apps.</p>
-    <p><a class="button" href="{SIGNUP}">Get the workflow pack</a></p>
+    <p><a class="button" href="{SIGNUP}">Subscribe and get the pack</a> <a class="button secondary" href="{SIGNUP}">Subscribe to the newsletter</a></p>
   </div>
   <aside class="panel">
     <h2>Built for</h2>
@@ -182,8 +182,8 @@ def render_workflow_pack_page() -> None:
   <li>Review outputs before trusting the system with client-facing work.</li>
 </ol>
 <h2>Get the pack</h2>
-<p>Join ForgeCore and get the workflow pack plus future operator-grade AI workflows.</p>
-<p><a class="button" href="{SIGNUP}">Get the workflow pack</a></p>
+<p>Join ForgeCore and get the workflow pack plus future operator-grade AI workflows. This signup also subscribes you to the ForgeCore newsletter.</p>
+<p><a class="button" href="{SIGNUP}">Subscribe and get the pack</a></p>
 """
     write_page(slug, base_page(title, description, slug, body, schema))
 
@@ -223,10 +223,16 @@ def ensure_homepage_links() -> None:
     if not homepage.exists():
         return
     text = homepage.read_text(encoding="utf-8")
-    if "/newsletter-advertising/" in text and "/workflow-pack/" in text:
+    # Normalize any lead-magnet CTA that incorrectly points straight to the Kit form.
+    text = text.replace(f'href="{SIGNUP}">Get the workflow pack</a>', 'href="/workflow-pack/">Get the workflow pack</a>')
+    text = text.replace(f'href="{SIGNUP}">Get the Solo Operator AI Workflow Pack</a>', 'href="/workflow-pack/">Get the Solo Operator AI Workflow Pack</a>')
+    if "Subscribe to the newsletter" not in text and "</header>" in text:
+        text = text.replace("</header>", f'<div class="wrap"><p><a class="button" href="{SIGNUP}">Subscribe to the newsletter</a> <a class="button secondary" href="/workflow-pack/">Get the workflow pack</a></p></div></header>', 1)
+    if "/newsletter-advertising/" in text and "/workflow-pack/" in text and "Subscribe to the newsletter" in text:
+        homepage.write_text(text, encoding="utf-8")
         return
     block = """
-<section class="lead-magnet"><div><div class="eyebrow">Build the business wrapper</div><h2>Get the workflow pack or sponsor ForgeCore</h2><p>ForgeCore is building a practical AI workflow library for solo operators. Readers can grab the free workflow pack; sponsors can reach an audience looking for useful AI tools and systems.</p></div><a class="button" href="/workflow-pack/">Get the workflow pack</a> <a class="button secondary" href="/newsletter-advertising/">Advertise</a></section>
+<section class="lead-magnet"><div><div class="eyebrow">Build the business wrapper</div><h2>Subscribe to ForgeCore or get the workflow pack</h2><p>Subscribe for practical AI workflows, or preview the free Solo Operator AI Workflow Pack before joining.</p></div><a class="button" href="https://forge-daily.kit.com/232bce5a31">Subscribe to the newsletter</a> <a class="button secondary" href="/workflow-pack/">Get the workflow pack</a> <a class="button secondary" href="/newsletter-advertising/">Advertise</a></section>
 """
     text = text.replace("</div></main>", block + "</div></main>", 1) if "</div></main>" in text else text + block
     homepage.write_text(text, encoding="utf-8")
