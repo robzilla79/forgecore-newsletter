@@ -1,10 +1,10 @@
-name: Generate PM Newsletter Issue
+name: Prepare PM Newsletter Issue
 
 on:
   schedule:
-    # Target send window: 4:21 PM Central during daylight time, 3:21 PM Central during standard time.
-    # GitHub cron runs in UTC; the odd minute avoids top-of-hour queue congestion.
-    - cron: '21 21 * * *'
+    # Prepare window: 1:30 PM Central during daylight time, 12:30 PM Central during standard time.
+    # Email delivery happens later in send-pm.yml.
+    - cron: '30 18 * * *'
   workflow_dispatch:
   push:
     paths:
@@ -16,7 +16,7 @@ permissions:
   actions: read
 
 jobs:
-  generate-pm:
+  prepare-pm:
     uses: ./.github/workflows/generate.yml
     secrets: inherit
     with:
