@@ -1,0 +1,20 @@
+{
+  "period": "YYYY-MM-DD to YYYY-MM-DD",
+  "sessions": 0,
+  "pageviews": 0,
+  "newsletter_signups": 0,
+  "cta_clicks": 0,
+  "affiliate_clicks": 0,
+  "sponsor_page_views": 0,
+  "top_pages": [
+    {"path": "/ai-tools/content-repurposing/", "views": 0},
+    {"path": "/ai-tools/client-onboarding/", "views": 0},
+    {"path": "/workflows/solo-founder-ai-automation/", "views": 0}
+  ],
+  "top_queries": [
+    {"query": "ai content repurposing workflow", "clicks": 0, "impressions": 0},
+    {"query": "ai client onboarding workflow", "clicks": 0, "impressions": 0},
+    {"query": "ai automation tools for solo founders", "clicks": 0, "impressions": 0}
+  ],
+  "notes": "Copy this file to state/traffic-report.json and replace sample values with Cloudflare Web Analytics, Google Search Console, Kit/Beehiiv, and affiliate dashboard exports."
+}
