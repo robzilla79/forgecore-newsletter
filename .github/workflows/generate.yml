@@ -1,4 +1,4 @@
-name: Generate Newsletter Issue
+name: Prepare Newsletter Issue
 
 on:
   workflow_call:
@@ -42,11 +42,11 @@ on:
         default: 'false'
 
 concurrency:
-  group: forgecore-newsletter-${{ inputs.issue_slot || github.event.inputs.issue_slot || 'manual' }}
+  group: forgecore-prepare-${{ inputs.issue_slot || github.event.inputs.issue_slot || 'manual' }}
   cancel-in-progress: true
 
 jobs:
-  generate:
+  prepare:
     permissions:
       contents: write
       actions: read
@@ -86,7 +86,6 @@ jobs:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       KIT_API_KEY: ${{ secrets.KIT_API_KEY }}
       KIT_FORM_ID: ${{ secrets.KIT_FORM_ID }}
-      KIT_SEND_MODE: 'draft'
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -150,15 +149,11 @@ jobs:
       - name: Verify publish
         run: python verify_publish.py
 
-      - name: Create Kit draft
-        run: python kit_publish.py
-        continue-on-error: true
-
       - name: Summarize failure artifacts
         if: failure()
         run: |
           {
-            echo "## ForgeCore newsletter run failed"
+            echo "## ForgeCore newsletter preparation failed"
             echo ""
             echo "Issue slot: ${ISSUE_SLOT:-manual}"
             echo "Commit: ${GITHUB_SHA}"
@@ -178,7 +173,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: forgecore-failure-${{ env.ISSUE_SLOT || 'manual' }}-${{ github.run_id }}
+          name: forgecore-prepare-failure-${{ env.ISSUE_SLOT || 'manual' }}-${{ github.run_id }}
           if-no-files-found: warn
           retention-days: 14
           path: |
@@ -193,7 +188,7 @@ jobs:
             site/dist/rss.xml
             site/dist/sitemap.xml
 
-      - name: Commit generated content
+      - name: Commit prepared content
         if: success()
         run: |
           git config user.name "ForgeCore AI Bot"
@@ -202,16 +197,16 @@ jobs:
           if git diff --staged --quiet; then
             echo "Nothing to commit"
           else
-            git stash push --include-untracked --message forgecore-generated-content
+            git stash push --include-untracked --message forgecore-prepared-content
             git pull --rebase origin main
             git stash pop
             git add content/issues/ research/ state/ site/dist/ HEARTBEAT.md
             TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M UTC')
-            git commit -m "auto: ${ISSUE_SLOT:-manual} newsletter issue $TIMESTAMP [bot]"
+            git commit -m "auto: prepare ${ISSUE_SLOT:-manual} newsletter issue $TIMESTAMP [bot]"
             git push
           fi
 
-      - name: Deploy to Cloudflare Pages
+      - name: Deploy prepared web version to Cloudflare Pages
         if: success() && env.ENABLE_CLOUDFLARE_DEPLOY == '1'
         uses: cloudflare/wrangler-action@v3
         with:
