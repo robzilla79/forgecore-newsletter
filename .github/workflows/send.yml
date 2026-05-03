@@ -69,16 +69,37 @@ jobs:
       - name: Confirm prepared slot issue exists
         run: |
           python - <<'PY'
+          import json
           from pathlib import Path
           from utils import issue_path_for_today
+
+          def record_blocks_slot_email(record):
+              if not isinstance(record, dict):
+                  return False
+              return record.get("email_delivery") == "scheduled_or_sent" or record.get("mode") == "public"
+
           issue = issue_path_for_today()
           email = Path('content/email') / issue.name
+          sent_log_path = Path('state/kit_sent.json')
+          sent_log = {}
+          if sent_log_path.exists():
+              try:
+                  sent_log = json.loads(sent_log_path.read_text(encoding='utf-8'))
+              except Exception:
+                  sent_log = {}
+          existing = sent_log.get(issue.stem)
+          already_sent = record_blocks_slot_email(existing)
+
           print(f"Prepared issue path: {issue}")
           print(f"Locked email path: {email}")
+          print(f"Already sent record: {already_sent}")
+
           if not issue.exists():
               raise SystemExit(f"Prepared issue not found for ISSUE_SLOT. Refusing to send: {issue}")
-          if not email.exists():
-              raise SystemExit(f"Locked email snapshot not found for ISSUE_SLOT. Refusing to send: {email}")
+          if already_sent:
+              print("Slot already has a public Kit record. Continuing so kit_publish.py can skip idempotently.")
+          elif not email.exists():
+              raise SystemExit(f"Locked email snapshot not found for unsent ISSUE_SLOT. Refusing to send: {email}")
           PY
 
       - name: Render current prepared web output
