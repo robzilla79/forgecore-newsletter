@@ -4,8 +4,10 @@ kit_publish.py
 
 Publishes the current ForgeCore issue to Kit (formerly ConvertKit).
 
-Production AM/PM GitHub Actions runs send immediately. Manual/non-slot runs
-stay as drafts unless explicitly configured otherwise.
+Hard production rule:
+  - Email delivery may happen at most once per AM slot and once per PM slot per date.
+  - Website publishing/quality updates may happen later, but they must not trigger
+    another email for a slot that has already been published/sent.
 
 Required env vars:
   KIT_API_KEY        - API key from Kit -> Settings -> Developer -> API Key
@@ -20,8 +22,8 @@ Optional env vars:
 Safety rules for immediate sends:
   - only slot-specific issues may send: YYYY-MM-DD-am.md or YYYY-MM-DD-pm.md
   - ISSUE_SLOT must match the issue slot
-  - only one AM and one PM issue may be sent per issue date
-  - already-sent issue slugs are skipped idempotently
+  - only one AM and one PM issue may be emailed per issue date
+  - any prior public record for the same date/slot blocks another email attempt
 
 Kit API behavior:
   - public=true publishes the broadcast to the web
@@ -60,7 +62,7 @@ ISSUE_SLOT_ENV = os.environ.get("ISSUE_SLOT", "").strip().lower()
 GITHUB_ACTIONS = os.environ.get("GITHUB_ACTIONS", "").strip().lower() == "true"
 
 # ForgeCore production rule: AM/PM GitHub Actions newsletter runs send immediately.
-# The per-issue sent log and slot guard below prevent duplicate sends when a workflow reruns.
+# The per-date/per-slot guard below prevents duplicate sends when workflows rerun.
 if GITHUB_ACTIONS and ISSUE_SLOT_ENV in {"am", "pm"}:
     SEND_MODE = "public"
 else:
@@ -137,6 +139,23 @@ def parse_slot_issue_slug(issue_slug: str) -> tuple[str, str] | None:
     return match.group(1), match.group(2)
 
 
+def record_blocks_slot_email(record: dict) -> bool:
+    """Return true when an existing log record should block another slot email.
+
+    Conservative by design: older records may only have mode=public and no
+    email_delivery field. Treat those as slot-consuming because sending a second
+    email is worse than missing one historical resend. Future records include
+    email_delivery=scheduled_or_sent when send_at was provided.
+    """
+    if not isinstance(record, dict):
+        return False
+    if record.get("email_delivery") == "scheduled_or_sent":
+        return True
+    if record.get("mode") == "public":
+        return True
+    return False
+
+
 def sent_public_slots_for_date(sent_log: dict, issue_date: str) -> set[str]:
     slots: set[str] = set()
     for slug, record in sent_log.items():
@@ -144,9 +163,7 @@ def sent_public_slots_for_date(sent_log: dict, issue_date: str) -> set[str]:
         if not parsed:
             continue
         sent_date, sent_slot = parsed
-        if sent_date != issue_date:
-            continue
-        if isinstance(record, dict) and record.get("mode") == "public" and record.get("email_delivery") == "scheduled_or_sent":
+        if sent_date == issue_date and record_blocks_slot_email(record):
             slots.add(sent_slot)
     return slots
 
@@ -159,14 +176,14 @@ def enforce_public_send_guard(issue_slug: str, sent_log: dict) -> None:
     parsed = parse_slot_issue_slug(issue_slug)
     if not parsed:
         log(
-            "SKIP: immediate Kit send is only allowed for slot-specific issues "
+            "SKIP: immediate Kit email is only allowed for slot-specific issues "
             "named YYYY-MM-DD-am.md or YYYY-MM-DD-pm.md."
         )
         sys.exit(0)
 
     issue_date, issue_slot = parsed
     if ISSUE_SLOT_ENV not in {"am", "pm"}:
-        log("SKIP: immediate Kit send requires ISSUE_SLOT=am or ISSUE_SLOT=pm.")
+        log("SKIP: immediate Kit email requires ISSUE_SLOT=am or ISSUE_SLOT=pm.")
         sys.exit(0)
 
     if ISSUE_SLOT_ENV != issue_slot:
@@ -178,12 +195,15 @@ def enforce_public_send_guard(issue_slug: str, sent_log: dict) -> None:
 
     sent_slots = sent_public_slots_for_date(sent_log, issue_date)
     if issue_slot in sent_slots:
-        log(f"SKIP: {issue_date} {issue_slot.upper()} was already scheduled/sent publicly by email.")
+        log(
+            f"SKIP: {issue_date} {issue_slot.upper()} already has a public Kit record. "
+            "Web output may be updated, but this slot will not email again."
+        )
         sys.exit(0)
 
     if len(sent_slots) >= 2:
         log(
-            f"SKIP: {issue_date} already has two public email sends recorded "
+            f"SKIP: {issue_date} already has two public Kit slot records "
             f"({', '.join(sorted(sent_slots)).upper()})."
         )
         sys.exit(0)
@@ -354,14 +374,15 @@ def create_broadcast(subject: str, email_html: str, preview_text: str) -> tuple[
         "Content-Type": "application/json",
         "Accept": "application/json",
     }
-    send_at = utc_now_iso() if SEND_MODE == "public" else None
+    now = utc_now_iso()
+    send_at = now if SEND_MODE == "public" else None
     payload: dict = {
         "subject": subject,
         "content": email_html,
         "description": preview_text,
         "preview_text": preview_text,
         "public": SEND_MODE == "public",
-        "published_at": utc_now_iso() if SEND_MODE == "public" else None,
+        "published_at": now if SEND_MODE == "public" else None,
         "send_at": send_at,
         "subscriber_filter": [{"all": [{"type": "all_subscribers"}]}],
     }
@@ -395,8 +416,11 @@ def main() -> None:
 
     sent_log = load_sent_log()
     existing = sent_log.get(issue_slug)
-    if isinstance(existing, dict) and existing.get("email_delivery") == "scheduled_or_sent":
-        log(f"Issue {issue_slug} already scheduled/sent to Kit (broadcast_id={existing.get('broadcast_id')}). Skipping.")
+    if isinstance(existing, dict) and record_blocks_slot_email(existing):
+        log(
+            f"Issue {issue_slug} already has a public Kit record "
+            f"(broadcast_id={existing.get('broadcast_id')}). Skipping email."
+        )
         sys.exit(0)
 
     enforce_public_send_guard(issue_slug, sent_log)
