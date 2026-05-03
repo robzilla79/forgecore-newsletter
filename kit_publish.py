@@ -8,6 +8,8 @@ Hard production rule:
   - Email delivery may happen at most once per AM slot and once per PM slot per date.
   - Website publishing/quality updates may happen later, but they must not trigger
     another email for a slot that has already been published/sent.
+  - Production email sends use content/email/YYYY-MM-DD-slot.md, not the mutable
+    content/issues/YYYY-MM-DD-slot.md web article source.
 
 Required env vars:
   KIT_API_KEY        - API key from Kit -> Settings -> Developer -> API Key
@@ -24,6 +26,7 @@ Safety rules for immediate sends:
   - ISSUE_SLOT must match the issue slot
   - only one AM and one PM issue may be emailed per issue date
   - any prior public record for the same date/slot blocks another email attempt
+  - production email source must exist under content/email/
 
 Kit API behavior:
   - public=true publishes the broadcast to the web
@@ -52,7 +55,7 @@ except ImportError:
     print("[kit] ERROR: 'requests' not installed. Run: pip install requests")
     sys.exit(1)
 
-from utils import issue_path_for_today, load_project_env
+from utils import WORKSPACE, issue_path_for_today, load_project_env
 
 load_project_env()
 
@@ -73,10 +76,12 @@ NEWSLETTER_NAME = os.environ.get("NEWSLETTER_NAME", "ForgeCore AI Productivity B
 SPONSOR_EMAIL = os.environ.get("SPONSOR_EMAIL", "sponsors@forgecore.co").strip()
 
 API_BASE = "https://api.kit.com/v4"
-STATE_DIR = Path("state")
+STATE_DIR = WORKSPACE / "state"
 SENT_LOG = STATE_DIR / "kit_sent.json"
-ISSUES_DIR = Path("content/issues")
+ISSUES_DIR = WORKSPACE / "content" / "issues"
+EMAIL_DIR = WORKSPACE / "content" / "email"
 SLOT_ISSUE_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})-(am|pm)$")
+LOCK_COMMENT_RE = re.compile(r"^<!--\nLocked email version for .*?\n-->\n\n", re.DOTALL)
 
 BASE_TEXT = "font-family: Arial, Helvetica, sans-serif; color:#111827; line-height:1.62; font-size:16px;"
 LINK_STYLE = "color:#2563eb; text-decoration:underline;"
@@ -130,6 +135,24 @@ def find_target_issue() -> Path | None:
     if current.exists():
         return current
     return find_latest_issue()
+
+
+def locked_email_path_for_issue(issue_path: Path) -> Path:
+    return EMAIL_DIR / issue_path.name
+
+
+def find_email_source(issue_path: Path) -> Path:
+    """Return the source Markdown to send by email.
+
+    Production public sends must use the locked email snapshot. Draft/manual mode
+    can fall back to the issue source so local tests remain convenient.
+    """
+    locked = locked_email_path_for_issue(issue_path)
+    if SEND_MODE == "public":
+        if not locked.exists():
+            raise FileNotFoundError(f"Locked email snapshot missing. Refusing to send: {locked.as_posix()}")
+        return locked
+    return locked if locked.exists() else issue_path
 
 
 def parse_slot_issue_slug(issue_slug: str) -> tuple[str, str] | None:
@@ -211,9 +234,9 @@ def enforce_public_send_guard(issue_slug: str, sent_log: dict) -> None:
 
 def parse_frontmatter(text: str) -> tuple[dict, str]:
     meta: dict = {}
-    body = text
-    if text.startswith("---"):
-        parts = text.split("---", 2)
+    body = LOCK_COMMENT_RE.sub("", text)
+    if body.startswith("---"):
+        parts = body.split("---", 2)
         if len(parts) >= 3:
             fm_block = parts[1]
             body = parts[2].strip()
@@ -234,7 +257,7 @@ def title_from_markdown(text: str, fallback: str) -> str:
 def preview_from_markdown(text: str, fallback: str) -> str:
     for line in text.splitlines():
         stripped = line.strip()
-        if not stripped or stripped.startswith("#") or stripped.startswith("---") or stripped.startswith("-"):
+        if not stripped or stripped.startswith("#") or stripped.startswith("---") or stripped.startswith("-") or stripped.startswith("<!--"):
             continue
         preview = re.sub(r"\s+", " ", stripped)
         return preview[:180]
@@ -253,10 +276,11 @@ def inline_md(text: str) -> str:
 
 
 def markdown_to_html(md: str) -> str:
-    lines = md.split("\n")
+    lines = LOCK_COMMENT_RE.sub("", md).split("\n")
     out: list[str] = []
     in_ul = False
     in_code = False
+    in_comment = False
     code_lines: list[str] = []
 
     def close_ul() -> None:
@@ -267,6 +291,13 @@ def markdown_to_html(md: str) -> str:
 
     for line in lines:
         stripped = line.rstrip()
+        if stripped.startswith("<!--"):
+            in_comment = not stripped.endswith("-->")
+            continue
+        if in_comment:
+            if stripped.endswith("-->"):
+                in_comment = False
+            continue
         if stripped.startswith("```"):
             close_ul()
             if in_code:
@@ -412,7 +443,7 @@ def main() -> None:
         sys.exit(2)
 
     issue_slug = issue_path.stem
-    log(f"Found issue: {issue_path}")
+    log(f"Found web issue: {issue_path}")
 
     sent_log = load_sent_log()
     existing = sent_log.get(issue_slug)
@@ -424,8 +455,10 @@ def main() -> None:
         sys.exit(0)
 
     enforce_public_send_guard(issue_slug, sent_log)
+    email_source = find_email_source(issue_path)
+    log(f"Using email source: {email_source}")
 
-    raw = issue_path.read_text(encoding="utf-8")
+    raw = email_source.read_text(encoding="utf-8")
     meta, body_md = parse_frontmatter(raw)
 
     title = meta.get("title") or title_from_markdown(body_md, f"{NEWSLETTER_NAME} — {issue_slug}")
@@ -449,6 +482,7 @@ def main() -> None:
         "email_delivery": "scheduled_or_sent" if send_at else "not_scheduled",
         "send_at": send_at,
         "issue_path": issue_path.as_posix(),
+        "email_source_path": email_source.as_posix(),
         "issue_slot": parse_slot_issue_slug(issue_slug)[1] if parse_slot_issue_slug(issue_slug) else "legacy",
         "web_url": f"{SITE_BASE_URL}/{issue_slug}/",
     }
