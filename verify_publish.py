@@ -3,7 +3,7 @@
 
 Fails the workflow if publish_site.py did not render the newest valid issue
 onto the homepage, article route, RSS feed, sitemap, and SEO metadata layer in
-the expected order.
+the expected order. Also verifies evergreen growth pages and the lead magnet.
 """
 from __future__ import annotations
 
@@ -13,7 +13,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 ISSUES_DIR = ROOT / "content" / "issues"
 DIST_DIR = ROOT / "site" / "dist"
-STATIC_PAGE_SLUGS = {"ai-tools"}
+STATIC_PAGE_SLUGS = {
+    "ai-tools",
+    "workflows/solo-founder-ai-automation",
+    "ai-tools/content-repurposing",
+    "ai-tools/client-onboarding",
+    "ai-tools/newsletter-growth",
+    "ai-tools/automation",
+    "ai-tools/ai-seo-aeo",
+}
 REQUIRED_SECTIONS = (
     "## Hook",
     "## Top Story",
@@ -31,6 +39,7 @@ BAD_MARKERS = (
     "raw intel",
     "[EMPTY RESPONSE]",
 )
+LEAD_MAGNET = "The Solo Operator AI Workflow Pack"
 
 
 def is_valid_issue(path: Path) -> bool:
@@ -58,8 +67,11 @@ def issue_sort_key(path: Path) -> tuple[str, int, str]:
     return (date_key, slot_rank, path.name)
 
 
-def first_href_slug(html: str) -> str:
-    match = re.search(r'<h2><a href="/([^"/]+)/">', html)
+def first_latest_issue_slug(homepage_html: str) -> str:
+    marker = 'Latest operator playbooks'
+    if marker in homepage_html:
+        homepage_html = homepage_html.split(marker, 1)[1]
+    match = re.search(r'<h2><a href="/([^"/]+)/">', homepage_html)
     return match.group(1) if match else ""
 
 
@@ -69,7 +81,7 @@ def first_rss_slug(xml: str) -> str:
 
 
 def first_sitemap_issue_slug(xml: str) -> str:
-    slugs = re.findall(r"<loc>https://news\.forgecore\.co/([^/]+)/</loc>", xml)
+    slugs = re.findall(r"<loc>https://news\.forgecore\.co/([^<]+?)/</loc>", xml)
     for slug in slugs:
         if slug and slug not in STATIC_PAGE_SLUGS:
             return slug
@@ -77,14 +89,24 @@ def first_sitemap_issue_slug(xml: str) -> str:
 
 
 def require_static_pages(homepage_html: str, sitemap_xml: str) -> None:
-    tools_path = "/ai-tools/"
-    tools_page = DIST_DIR / "ai-tools" / "index.html"
-    if not tools_page.exists():
-        raise SystemExit("AI tools directory missing: site/dist/ai-tools/index.html")
-    if tools_path not in homepage_html:
+    for slug in sorted(STATIC_PAGE_SLUGS):
+        page = DIST_DIR / slug / "index.html"
+        url = f"https://news.forgecore.co/{slug}/"
+        if not page.exists():
+            raise SystemExit(f"Static growth page missing: site/dist/{slug}/index.html")
+        html = page.read_text(encoding="utf-8")
+        if '<link rel="canonical"' not in html or 'application/ld+json' not in html:
+            raise SystemExit(f"Static growth page missing SEO metadata: {slug}")
+        if LEAD_MAGNET not in html:
+            raise SystemExit(f"Static growth page missing lead magnet CTA: {slug}")
+        if url not in sitemap_xml:
+            raise SystemExit(f"Sitemap missing static growth page URL: {url}")
+    if "/ai-tools/" not in homepage_html:
         raise SystemExit("Homepage missing AI tools directory link")
-    if "https://news.forgecore.co/ai-tools/" not in sitemap_xml:
-        raise SystemExit("Sitemap missing AI tools directory URL")
+    if LEAD_MAGNET not in homepage_html:
+        raise SystemExit("Homepage missing lead magnet CTA")
+    if "/workflows/solo-founder-ai-automation/" not in homepage_html:
+        raise SystemExit("Homepage missing workflow library link")
 
 
 def require_metadata(html: str, slug: str) -> None:
@@ -113,6 +135,7 @@ def require_site_polish(homepage_html: str, article_html: str, slug: str) -> Non
     }
     article_required = {
         "back link": "Back to all playbooks",
+        "lead magnet": LEAD_MAGNET,
         "mailto sponsor link": "mailto:sponsors@forgecore.co",
     }
     for label, snippet in homepage_required.items():
@@ -156,8 +179,8 @@ def main() -> int:
 
     if f"/{slug}/" not in homepage_html and slug not in homepage_html:
         raise SystemExit(f"Latest issue not linked from homepage: {slug}")
-    if first_href_slug(homepage_html) != slug:
-        raise SystemExit(f"Latest issue is not first on homepage: expected {slug}, found {first_href_slug(homepage_html) or 'none'}")
+    if first_latest_issue_slug(homepage_html) != slug:
+        raise SystemExit(f"Latest issue is not first in latest-issues section: expected {slug}, found {first_latest_issue_slug(homepage_html) or 'none'}")
     if first_rss_slug(rss_xml) != slug:
         raise SystemExit(f"Latest issue is not first in RSS: expected {slug}, found {first_rss_slug(rss_xml) or 'none'}")
     if first_sitemap_issue_slug(sitemap_xml) != slug:
