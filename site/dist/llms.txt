@@ -1,0 +1,20 @@
+# ForgeCore
+
+ForgeCore helps solo founders, creators, consultants, builders, indie hackers, and small business operators use AI tools to build systems, save time, and create income.
+
+## Start here
+
+- AI Tools Directory: https://news.forgecore.co/ai-tools/
+- AI SEO and AEO Workflow: https://news.forgecore.co/ai-tools/ai-seo-aeo/
+- AI Content Repurposing Workflow: https://news.forgecore.co/ai-tools/content-repurposing/
+- AI Client Onboarding Workflow: https://news.forgecore.co/ai-tools/client-onboarding/
+- AI Automation Tools for Solo Operators: https://news.forgecore.co/ai-tools/automation/
+- Newsletter Growth Workflow: https://news.forgecore.co/ai-tools/newsletter-growth/
+
+## Best content types
+
+ForgeCore publishes practical AI workflows, tool comparisons, operator playbooks, bad-fit warnings, and monetization-focused AI systems for solo operators.
+
+## Trust policy
+
+ForgeCore recommendations should include workflow fit, simpler alternatives, bad-fit warnings, and disclosure when partner or affiliate links are used. llms.txt is a content map, not a ranking guarantee.
