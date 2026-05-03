@@ -23,6 +23,7 @@ DIST_DIR = ROOT / "site" / "dist"
 HARDENING_SCRIPTS = (
     ROOT / "ai_search_hardening.py",
     ROOT / "business_hardening.py",
+    ROOT / "lead_magnet_hardening.py",
 )
 STATIC_PAGE_SLUGS = {
     "ai-tools",
@@ -38,7 +39,7 @@ BUSINESS_PAGE_MARKERS = {
         "Advertise with ForgeCore",
         "Best-fit sponsors",
         "Sponsor placements",
-        "Sample sponsor block",
+        "Starter package",
         "mailto:sponsors@forgecore.co",
         '"@type":"Organization"',
         '"@type":"BreadcrumbList"',
@@ -49,6 +50,7 @@ BUSINESS_PAGE_MARKERS = {
         "10 copy/paste prompts",
         "Tool decision matrix",
         "Bad-fit warning checklist",
+        "Read the workflow pack now",
         '"@type":"CreativeWork"',
         '"@type":"BreadcrumbList"',
     ),
