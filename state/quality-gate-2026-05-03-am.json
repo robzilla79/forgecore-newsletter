@@ -1,0 +1,86 @@
+{
+  "passed": true,
+  "fallback_published": false,
+  "checks": {
+    "exists": true,
+    "issue_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-03-am.md",
+    "word_count": 803,
+    "required_sections_present": [
+      "## Hook",
+      "## Top Story",
+      "## Why It Matters",
+      "## Highlights",
+      "## Tool of the Week",
+      "## Workflow",
+      "## CTA",
+      "## Sources"
+    ],
+    "url_count": 4,
+    "source_links": [
+      "https://forge-daily.kit.com/232bce5a31",
+      "https://ollama.com",
+      "https://www.techradar.com/news/the-benefits-of-local-ai",
+      "https://www.forbes.com/sites/bernardmarr/2022/01/10/the-importance-of-data-privacy-in-ai/"
+    ],
+    "has_sources_section": true,
+    "sources_section_entries": 3,
+    "has_code_block": true,
+    "has_tool_recommendation": true,
+    "has_trust_warning": true,
+    "has_affiliate_reference": true,
+    "has_affiliate_disclosure": true,
+    "required_cta_url": "https://forge-daily.kit.com/232bce5a31",
+    "critic_expected_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/critic-review-2026-05-03-am.json",
+    "critic_review": {
+      "passed": true,
+      "issue": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-03-am.md",
+      "model": "gpt-4o-mini",
+      "fallback_model": "gpt-4o-mini",
+      "overall_score": 10.0,
+      "min_overall_required": 6.5,
+      "min_category_required": 6.0,
+      "consistent_pass_overall": 9.0,
+      "scores": {
+        "headline_strength": 7.0,
+        "hook_strength": 5.0,
+        "specificity": 8.0,
+        "originality": 6.0,
+        "readability": 7.0,
+        "tone": 8.0,
+        "utility": 9.0,
+        "non_repetition": 8.0
+      },
+      "weak_categories": [],
+      "strengths": [
+        "Specific focus on solo founders",
+        "Clear utility in enhancing data privacy and efficiency",
+        "Concrete implementation steps provided"
+      ],
+      "weaknesses": [
+        "Weak hook that doesn't immediately engage the reader",
+        "Lacks a compelling narrative to draw in the audience"
+      ],
+      "must_fix": [
+        "Enhance the hook to better capture interest",
+        "Clarify the implementation steps to ensure they are actionable this week"
+      ],
+      "rewrite_plan": [
+        "Revise the hook to create a stronger emotional connection",
+        "Add examples or case studies to illustrate the benefits of local AI",
+        "Ensure implementation steps are concise and actionable"
+      ],
+      "summary": "The issue provides actionable insights for solo founders on managing client data securely with local AI, but lacks a strong hook and could benefit from clearer implementation steps.",
+      "verdict": "needs_revision",
+      "consistency_note": "Critic output was internally inconsistent: high overall score (10.00) with weak categories hook_strength. Overall score takes precedence for publish gating.",
+      "run_token": "pass-2-1777813852810224866",
+      "artifact_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/critic-review-2026-05-03-am.json"
+    },
+    "errors": [],
+    "warnings": [],
+    "fallback_publish_enabled": false,
+    "validation_only": true
+  },
+  "issue": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-03-am.md",
+  "run_token": "",
+  "artifact_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/quality-gate-2026-05-03-am.json"
+}

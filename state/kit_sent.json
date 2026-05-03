@@ -24,5 +24,15 @@
     "issue_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-03-pm.md",
     "issue_slot": "pm",
     "web_url": "https://news.forgecore.co/2026-05-03-pm/"
+  },
+  "2026-05-03-am": {
+    "broadcast_id": 23960398,
+    "subject": "How Solo Founders Can Securely Manage Client Data with Local AI",
+    "sent_at": "2026-05-03T13:10:57.127159+00:00",
+    "mode": "public",
+    "requested_mode": "draft",
+    "issue_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-03-am.md",
+    "issue_slot": "am",
+    "web_url": "https://news.forgecore.co/2026-05-03-am/"
   }
 }
