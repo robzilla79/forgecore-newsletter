@@ -69,11 +69,16 @@ jobs:
       - name: Confirm prepared slot issue exists
         run: |
           python - <<'PY'
+          from pathlib import Path
           from utils import issue_path_for_today
-          path = issue_path_for_today()
-          print(f"Prepared issue path: {path}")
-          if not path.exists():
-              raise SystemExit(f"Prepared issue not found for ISSUE_SLOT. Refusing to send: {path}")
+          issue = issue_path_for_today()
+          email = Path('content/email') / issue.name
+          print(f"Prepared issue path: {issue}")
+          print(f"Locked email path: {email}")
+          if not issue.exists():
+              raise SystemExit(f"Prepared issue not found for ISSUE_SLOT. Refusing to send: {issue}")
+          if not email.exists():
+              raise SystemExit(f"Locked email snapshot not found for ISSUE_SLOT. Refusing to send: {email}")
           PY
 
       - name: Render current prepared web output
@@ -81,6 +86,9 @@ jobs:
 
       - name: Apply AI search hardening
         run: python ai_search_hardening.py
+
+      - name: Apply business hardening
+        run: python business_hardening.py
 
       - name: Verify prepared issue before email
         run: python verify_publish.py
