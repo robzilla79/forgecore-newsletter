@@ -11,9 +11,11 @@ DIST_DIR = ROOT / "site" / "dist"
 HARDENING_SCRIPTS = (
     ROOT / "ai_search_hardening.py",
     ROOT / "business_hardening.py",
+    ROOT / "lead_magnet_hardening.py",
 )
 SITE_BASE = "https://news.forgecore.co"
 SIGNUP = "https://forge-daily.kit.com/232bce5a31"
+PACK_SLUG = "downloads/solo-operator-ai-workflow-pack"
 BUSINESS_PAGES = {
     "subscribe": (
         "Subscribe to ForgeCore",
@@ -40,6 +42,7 @@ BUSINESS_PAGES = {
         "Tool decision matrix",
         "Bad-fit warning checklist",
         "Subscribe and get the pack",
+        "Read the workflow pack now",
         "Subscribe to the newsletter",
         '"@type":"CreativeWork"',
         '"@type":"BreadcrumbList"',
@@ -51,6 +54,14 @@ BUSINESS_PAGES = {
         "Most AI newsletters tell you what happened",
         '"@type":"CollectionPage"',
         '"@type":"BreadcrumbList"',
+    ),
+    PACK_SLUG: (
+        "The Solo Operator AI Workflow Pack",
+        "Tool decision matrix",
+        "Bad-fit warning checklist",
+        "Automation readiness checklist",
+        "10 workflow checklists",
+        '"@type":"CreativeWork"',
     ),
 }
 STATIC_PAGES = (
@@ -126,6 +137,7 @@ def require_discovery_files() -> tuple[str, str]:
         "https://news.forgecore.co/workflow-pack/",
         "https://news.forgecore.co/newsletter-advertising/",
         "https://news.forgecore.co/archive/",
+        "https://news.forgecore.co/downloads/solo-operator-ai-workflow-pack/",
     ):
         if marker not in llms:
             raise SystemExit(f"llms.txt missing marker: {marker}")
@@ -165,6 +177,8 @@ def require_business_pages(sitemap: str) -> None:
     workflow_html = read(DIST_DIR / "workflow-pack" / "index.html")
     if f'href="{SIGNUP}">Subscribe and get the pack</a>' not in workflow_html:
         raise SystemExit("Workflow-pack page missing conversion CTA to Kit")
+    if 'href="/downloads/solo-operator-ai-workflow-pack/">Read the workflow pack now</a>' not in workflow_html:
+        raise SystemExit("Workflow-pack page missing link to real workflow pack asset")
 
 
 def main() -> int:
