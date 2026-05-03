@@ -1,0 +1,19 @@
+name: Send AM Newsletter Email
+
+on:
+  schedule:
+    # Target send window: 10:07 AM Central during daylight time, 9:07 AM Central during standard time.
+    # This workflow sends the already-prepared AM issue once. It does not generate or rewrite content.
+    - cron: '7 15 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  send-am:
+    uses: ./.github/workflows/send.yml
+    secrets: inherit
+    with:
+      issue_slot: am
