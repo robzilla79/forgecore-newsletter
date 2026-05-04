@@ -12,6 +12,7 @@ itself does not yet have dedicated hardening steps before verification.
 """
 from __future__ import annotations
 
+import os
 import re
 import subprocess
 import sys
@@ -73,9 +74,11 @@ BAD_MARKERS = (
     "[EMPTY RESPONSE]",
 )
 LEAD_MAGNET = "The Solo Operator AI Workflow Pack"
-BLOCKED_SOURCE_PATTERNS = (
+NON_SOURCE_URL_PATTERNS = (
     "forge-daily.kit.com",
     "forgecore-newsletter.beehiiv.com",
+    "kit.com",
+    "beehiiv.com",
     "example.com",
 )
 AI_CRAWLER_MARKERS = (
@@ -151,19 +154,36 @@ def first_sitemap_issue_slug(xml: str) -> str:
     return ""
 
 
-def source_urls(markdown: str) -> list[str]:
+def raw_source_urls(markdown: str) -> list[str]:
     section = markdown.split("## Sources", 1)[-1]
     urls = re.findall(r"https?://[^\s)]+", section)
     return [url.rstrip(".,]") for url in urls]
 
 
+def is_non_source_url(url: str) -> bool:
+    normalized = url.strip().rstrip("/").lower()
+    primary_cta = os.getenv("PRIMARY_CTA_URL", "").strip().rstrip("/").lower()
+    if primary_cta and normalized == primary_cta:
+        return True
+    return any(pattern in normalized for pattern in NON_SOURCE_URL_PATTERNS)
+
+
+def source_urls(markdown: str) -> list[str]:
+    """Return only editorial/source URLs, excluding CTA and placeholder links.
+
+    The newsletter issue may include the signup URL near or even inside the
+    Sources section. That should not count as a cited source, but it also should
+    not block a publish when enough real editorial sources remain.
+    """
+    return [url for url in raw_source_urls(markdown) if not is_non_source_url(url)]
+
+
 def require_source_relevance(markdown: str, slug: str) -> None:
     urls = source_urls(markdown)
+    ignored = [url for url in raw_source_urls(markdown) if is_non_source_url(url)]
     if len(urls) < 3:
-        raise SystemExit(f"AI search source gate failed for {slug}: fewer than 3 source URLs")
-    blocked = [url for url in urls if any(pattern in url for pattern in BLOCKED_SOURCE_PATTERNS)]
-    if blocked:
-        raise SystemExit(f"AI search source gate failed for {slug}: CTA or placeholder URL counted as source: {blocked[0]}")
+        suffix = f"; ignored non-source URLs: {len(ignored)}" if ignored else ""
+        raise SystemExit(f"AI search source gate failed for {slug}: fewer than 3 editorial source URLs{suffix}")
     lower = markdown.lower()
     source_blob = "\n".join(urls).lower()
     if "ollama" in lower and "ollama" not in source_blob:
