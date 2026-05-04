@@ -20,7 +20,7 @@ https://news.forgecore.co
 Newsletter signup:
 
 ```text
-https://forgecore-newsletter.beehiiv.com/
+https://news.forgecore.co/
 ```
 
 ---
@@ -241,7 +241,7 @@ KIT_SIGNUP_URL
 SITE_DOMAIN=news.forgecore.co
 SITE_BASE_URL=https://news.forgecore.co
 NEWSLETTER_NAME=ForgeCore AI Productivity Brief
-PRIMARY_CTA_URL=https://forgecore-newsletter.beehiiv.com/
+PRIMARY_CTA_URL=https://news.forgecore.co/
 SPONSOR_EMAIL=sponsors@forgecore.co
 ENABLE_CLOUDFLARE_DEPLOY=1
 AUTO_REPAIR_PATHS=0
@@ -354,7 +354,7 @@ Content requirements:
 - “do not use this if” warning
 - tradeoffs such as cost, privacy, quality, maintenance, or speed
 - real source URLs
-- Beehiiv/Kit signup URL
+- Kit signup URL or owned-site newsletter signup URL
 - sponsor email
 
 ---
