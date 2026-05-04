@@ -1,0 +1,86 @@
+{
+  "passed": true,
+  "fallback_published": false,
+  "checks": {
+    "exists": true,
+    "issue_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-04-am.md",
+    "word_count": 898,
+    "required_sections_present": [
+      "## Hook",
+      "## Top Story",
+      "## Why It Matters",
+      "## Highlights",
+      "## Tool of the Week",
+      "## Workflow",
+      "## CTA",
+      "## Sources"
+    ],
+    "url_count": 6,
+    "source_links": [
+      "https://blog.hubspot.com/marketing/aeo-competitor-analysis",
+      "https://forge-daily.kit.com/232bce5a31",
+      "https://blog.hubspot.com/marketing/aeo-prompt-tracking",
+      "https://openai.com/index/building-the-compute-infrastructure-for-the-intelligence-age",
+      "https://openai.com/index/cybersecurity-in-the-intelligence-age",
+      "https://openai.com/index/advanced-account-security"
+    ],
+    "has_sources_section": true,
+    "sources_section_entries": 6,
+    "has_code_block": true,
+    "has_tool_recommendation": true,
+    "has_trust_warning": true,
+    "has_affiliate_reference": false,
+    "has_affiliate_disclosure": false,
+    "required_cta_url": "https://forge-daily.kit.com/232bce5a31",
+    "critic_expected_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/critic-review-2026-05-04-am.json",
+    "critic_review": {
+      "passed": true,
+      "issue": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-04-am.md",
+      "model": "gpt-4o-mini",
+      "fallback_model": "gpt-4o-mini",
+      "overall_score": 10.0,
+      "min_overall_required": 6.5,
+      "min_category_required": 6.0,
+      "consistent_pass_overall": 9.0,
+      "scores": {
+        "headline_strength": 7.0,
+        "hook_strength": 5.0,
+        "specificity": 8.0,
+        "originality": 6.0,
+        "readability": 7.0,
+        "tone": 8.0,
+        "utility": 9.0,
+        "non_repetition": 8.0
+      },
+      "weak_categories": [],
+      "strengths": [
+        "Clear actionable steps for AEO competitor analysis.",
+        "Specific tool recommendations."
+      ],
+      "weaknesses": [
+        "The hook could be more compelling to draw in readers.",
+        "Some sections could be more concise."
+      ],
+      "must_fix": [
+        "Enhance the hook to better capture the reader's interest."
+      ],
+      "rewrite_plan": [
+        "Revise the hook to make it more engaging.",
+        "Streamline sections for better readability.",
+        "Ensure all tool mentions are clearly tied to specific outcomes."
+      ],
+      "summary": "The issue provides actionable insights for solo operators on AEO competitor analysis but lacks clarity in some areas and could benefit from a stronger hook.",
+      "verdict": "needs_revision",
+      "consistency_note": "Critic output was internally inconsistent: high overall score (10.00) with weak categories hook_strength. Overall score takes precedence for publish gating.",
+      "run_token": "pass-2-1777902762802978380",
+      "artifact_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/critic-review-2026-05-04-am.json"
+    },
+    "errors": [],
+    "warnings": [],
+    "fallback_publish_enabled": false,
+    "validation_only": true
+  },
+  "issue": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-04-am.md",
+  "run_token": "",
+  "artifact_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/quality-gate-2026-05-04-am.json"
+}
