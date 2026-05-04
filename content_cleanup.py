@@ -1,16 +1,13 @@
 #!/usr/bin/env python3
 """Quarantine legacy or low-quality issue files before site rendering.
 
-Purpose: keep the public archive focused on useful ForgeCore issues.
-This does not permanently delete content. It moves rejected files into
-content/issues/quarantine/ so they stop appearing in archive, RSS, sitemap,
-and generated public article pages after the next site render.
+Hard rule for active AM/PM operations:
+- Cleanup may quarantine old legacy experiments.
+- Cleanup must NOT silently remove recent AM/PM issues from the public archive.
+- If a recent AM/PM issue is invalid, fail loudly so the operator/repair loop can fix it.
 
-Important recovery rule:
-- Existing PM issues may still use the AM workflow/playbook section contract.
-- Future PM issues may use the PM Brief contract.
-- Cleanup must accept both for PM files so a deploy-only action can never
-  remove valid historical PM issues just because the editorial format changed.
+This prevents a newsletter from "disappearing" because a deploy, business audit,
+or cleanup pass decided to move it out of content/issues without a repair step.
 """
 from __future__ import annotations
 
@@ -23,9 +20,6 @@ ISSUES_DIR = ROOT / "content" / "issues"
 QUARANTINE_DIR = ISSUES_DIR / "quarantine"
 ACTIVE_SLOT_RE = re.compile(r"^\d{4}-\d{2}-\d{2}-(am|pm)\.md$")
 DATE_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})")
-
-# Keep the first real AM/PM operating era and future issues. Older one-off
-# experiments are not strong enough to remain in the public archive.
 MIN_ACTIVE_DATE = "2026-05-02"
 
 AM_WORKFLOW_SECTIONS = (
@@ -38,7 +32,6 @@ AM_WORKFLOW_SECTIONS = (
     "## CTA",
     "## Sources",
 )
-
 PM_BRIEF_SECTIONS = (
     "## The 3 Signals",
     "## Tool Watch",
@@ -47,7 +40,6 @@ PM_BRIEF_SECTIONS = (
     "## Tomorrow's Move",
     "## Sources",
 )
-
 BAD_MARKERS = (
     "No concrete content returned",
     "Missing Content",
@@ -57,7 +49,6 @@ BAD_MARKERS = (
     "TODO",
     "lorem ipsum",
 )
-
 LOW_TRUST_SOURCE_MARKERS = (
     "techradar.com/news/the-benefits-of-local-ai",
     "forbes.com/sites/bernardmarr/2022/01/10/the-importance-of-data-privacy-in-ai",
@@ -79,6 +70,10 @@ def issue_slot(path: Path) -> str:
     if path.stem.endswith("-am"):
         return "am"
     return ""
+
+
+def is_recent_active_issue(path: Path) -> bool:
+    return ACTIVE_SLOT_RE.fullmatch(path.name) is not None and issue_date(path) >= MIN_ACTIVE_DATE
 
 
 def has_sections(text: str, sections: tuple[str, ...]) -> bool:
@@ -160,20 +155,29 @@ def main() -> int:
         print("[content_cleanup] SKIP: content/issues missing")
         return 0
     moved = []
+    active_failures = []
     for path in sorted(ISSUES_DIR.glob("*.md")):
         text = path.read_text(encoding="utf-8", errors="ignore")
         reason = quarantine_reason(path, text)
         if not reason:
             continue
+        if is_recent_active_issue(path):
+            active_failures.append((path.name, reason))
+            continue
         target = unique_target(path)
         shutil.move(path.as_posix(), target.as_posix())
         moved.append((path.name, target.relative_to(ROOT).as_posix(), reason))
     if moved:
-        print("[content_cleanup] Quarantined public-archive issues:")
+        print("[content_cleanup] Quarantined legacy public-archive issues:")
         for name, target, reason in moved:
             print(f"- {name} -> {target}: {reason}")
     else:
-        print("[content_cleanup] No issues needed quarantine")
+        print("[content_cleanup] No legacy issues needed quarantine")
+    if active_failures:
+        print("[content_cleanup] BLOCKED: recent AM/PM issues need repair instead of quarantine:")
+        for name, reason in active_failures:
+            print(f"- {name}: {reason}")
+        raise SystemExit(1)
     return 0
 
 
