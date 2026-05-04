@@ -6,6 +6,10 @@ on:
     # This workflow sends the already-prepared AM issue once. It does not generate or rewrite content.
     - cron: '7 15 * * *'
   workflow_dispatch:
+  push:
+    paths:
+      - 'state/manual-am-send.txt'
+      - '.github/workflows/send-am.yml'
 
 permissions:
   contents: write
