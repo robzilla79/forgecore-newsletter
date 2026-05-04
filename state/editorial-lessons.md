@@ -736,3 +736,21 @@
   - Start the Hook with the operator outcome or decision, not a product announcement.
   - Name the exact operator persona, job-to-be-done, tool stack, and tradeoff.
   - Make the headline name the workflow, operator, tool choice, or measurable outcome.
+
+
+---
+
+## 2026-05-04 20:05:12 UTC — /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-04-pm.md
+- Improvement result: changed (rewritten issue saved)
+- Critic score: 10.0 | verdict: needs_revision
+- Weaknesses found:
+  - Enhance the hook to better engage readers
+  - Strengthen the headline to reflect the actionable nature of the content
+  - Revise the headline to emphasize actionable outcomes
+  - Improve the hook to create a sense of urgency or importance
+  - Ensure all implementation steps are clear and actionable this week
+  - Weak hook that doesn't grab attention
+- Rules for future issues:
+  - Start the Hook with the operator outcome or decision, not a product announcement.
+  - Make the headline name the workflow, operator, tool choice, or measurable outcome.
+  - Turn vague advice into 3-6 named steps plus one prompt, checklist, config, or command block.
