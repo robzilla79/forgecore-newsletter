@@ -6,6 +6,10 @@ on:
     # Email delivery happens later in send-am.yml.
     - cron: '30 12 * * *'
   workflow_dispatch:
+  push:
+    paths:
+      - 'state/manual-am-run.txt'
+      - '.github/workflows/generate-am.yml'
 
 permissions:
   contents: write
