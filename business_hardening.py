@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
-"""Render lean ForgeCore growth pages after the baseline site render.
+"""Render lean ForgeCore business pages and homepage growth blocks.
 
-Purpose:
-- make subscription and lead-magnet paths clear
-- expose sponsor and archive pages
-- add homepage positioning/proof
-- keep sitemap and llms.txt updated
+This script runs after publish_site.py. It must never append markup after the
+closing document tags; if the expected homepage insertion point is missing, it
+fails loudly so broken HTML does not deploy silently.
 """
 from __future__ import annotations
 
@@ -21,12 +19,14 @@ SITE_BASE = "https://news.forgecore.co"
 SIGNUP = "https://forge-daily.kit.com/232bce5a31"
 SPONSOR_EMAIL = "sponsors@forgecore.co"
 TAGLINE = "Practical AI workflows, tools, and ROI cases for operators"
+PACK_DOWNLOAD_SLUG = "downloads/solo-operator-ai-workflow-pack"
 
 BUSINESS_PAGES = {
     "subscribe": "Subscribe to ForgeCore",
     "workflow-pack": "The Solo Operator AI Workflow Pack",
     "newsletter-advertising": "Advertise with ForgeCore",
     "archive": "ForgeCore AI Workflow Archive",
+    PACK_DOWNLOAD_SLUG: "The Solo Operator AI Workflow Pack",
 }
 
 WORKFLOW_CARDS = [
@@ -41,6 +41,13 @@ WORKFLOW_CARDS = [
 
 def safe_json_ld(data: dict) -> str:
     return json.dumps(data, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
+
+
+def breadcrumbs(slug: str, name: str) -> dict:
+    return {"@type": "BreadcrumbList", "itemListElement": [
+        {"@type": "ListItem", "position": 1, "name": "ForgeCore", "item": f"{SITE_BASE}/"},
+        {"@type": "ListItem", "position": 2, "name": name, "item": f"{SITE_BASE}/{slug}/"},
+    ]}
 
 
 def base_page(title: str, description: str, slug: str, body: str, schema: dict) -> str:
@@ -97,13 +104,6 @@ def write_page(slug: str, html_text: str) -> None:
     out.write_text(html_text, encoding="utf-8")
 
 
-def breadcrumbs(slug: str, name: str) -> dict:
-    return {"@type": "BreadcrumbList", "itemListElement": [
-        {"@type": "ListItem", "position": 1, "name": "ForgeCore", "item": f"{SITE_BASE}/"},
-        {"@type": "ListItem", "position": 2, "name": name, "item": f"{SITE_BASE}/{slug}/"},
-    ]}
-
-
 def issue_sort_key(path: Path) -> tuple[str, int, str]:
     stem = path.stem.lower()
     match = re.search(r"(\d{4}-\d{2}-\d{2})", stem)
@@ -147,7 +147,7 @@ def render_workflow_pack_page() -> None:
         breadcrumbs(slug, "Workflow Pack"),
     ]}
     body = f"""
-<section class="hero"><div><div class="eyebrow">Free operator resource</div><h1>The Solo Operator AI Workflow Pack</h1><p>A practical pack for turning AI tools into repeatable systems. Built for people who need leverage, not another list of shiny apps.</p><p><a class="button" href="{SIGNUP}">Subscribe and get the pack</a> <a class="button secondary" href="/subscribe/">Subscribe to the newsletter</a></p></div><aside class="panel"><h2>Built for</h2><ul><li>Solo founders</li><li>Creators and newsletter operators</li><li>Consultants and freelancers</li><li>Indie hackers and small business operators</li></ul></aside></section>
+<section class="hero"><div><div class="eyebrow">Free operator resource</div><h1>The Solo Operator AI Workflow Pack</h1><p>A practical pack for turning AI tools into repeatable systems. Built for people who need leverage, not another list of shiny apps.</p><p><a class="button" href="{SIGNUP}">Subscribe and get the pack</a> <a class="button secondary" href="/{PACK_DOWNLOAD_SLUG}/">Read the workflow pack now</a> <a class="button secondary" href="/subscribe/">Subscribe to the newsletter</a></p></div><aside class="panel"><h2>Built for</h2><ul><li>Solo founders</li><li>Creators and newsletter operators</li><li>Consultants and freelancers</li><li>Indie hackers and small business operators</li></ul></aside></section>
 <h2>What is inside</h2><div class="grid"><section class="card"><h3>10 workflow checklists</h3><p>Content repurposing, client onboarding, sales follow-up, newsletter growth, research, tool selection, automation, local AI, lead magnets, and weekly review.</p></section><section class="card"><h3>10 copy/paste prompts</h3><p>Prompts designed to turn messy business tasks into clear steps, drafts, summaries, and decision tables.</p></section><section class="card"><h3>Tool decision matrix</h3><p>Choose between manual checklist, ChatGPT, no-code automation, local AI, or a dedicated SaaS tool.</p></section><section class="card"><h3>Bad-fit warning checklist</h3><p>A trust guardrail that helps you avoid buying tools when a simpler workflow is enough.</p></section></div>
 <h2>Get the pack</h2><p>Join ForgeCore and get the workflow pack plus future operator-grade AI workflows.</p><p><a class="button" href="{SIGNUP}">Subscribe and get the pack</a></p>
 """
@@ -164,7 +164,7 @@ def render_advertising_page() -> None:
         breadcrumbs(slug, "Advertise"),
     ]}
     body = f"""
-<section class="hero"><div><div class="eyebrow">Sponsor ForgeCore</div><h1>Reach operators who buy tools to save time, build systems, and create income.</h1><p>ForgeCore is built for solo founders, creators, consultants, builders, indie hackers, and small business operators who want practical AI workflows instead of hype.</p><p><a class="button" href="mailto:{SPONSOR_EMAIL}?subject=ForgeCore sponsorship inquiry">Email {SPONSOR_EMAIL}</a> <a class="button secondary" href="/subscribe/">Subscribe to see the newsletter</a></p></div><aside class="panel"><h2>Best-fit sponsors</h2><ul><li>AI tools for content, automation, sales, research, video, design, or operations.</li><li>SaaS products for solo founders, consultants, creators, and small businesses.</li><li>Workflow templates, courses, communities, and services with clear operator value.</li></ul></aside></section>
+<section class="hero"><div><div class="eyebrow">Sponsor ForgeCore</div><h1>Reach operators who buy tools to save time, build systems, and create income.</h1><p>ForgeCore is built for solo founders, creators, builders, indie hackers, consultants, and small business operators who want practical AI workflows instead of hype.</p><p><a class="button" href="mailto:{SPONSOR_EMAIL}?subject=ForgeCore sponsorship inquiry">Email {SPONSOR_EMAIL}</a> <a class="button secondary" href="/subscribe/">Subscribe to see the newsletter</a></p></div><aside class="panel"><h2>Best-fit sponsors</h2><ul><li>AI tools for content, automation, sales, research, video, design, or operations.</li><li>SaaS products for solo founders, consultants, creators, and small businesses.</li><li>Workflow templates, courses, communities, and services with clear operator value.</li></ul></aside></section>
 <h2>Audience</h2><div class="grid"><section class="card"><h3>Who reads ForgeCore</h3><p>Solo founders, builders, creators, consultants, indie hackers, and small business operators adopting AI workflows.</p></section><section class="card"><h3>What they want</h3><p>Tools and systems that help them make money, save time, automate work, choose better tools, and avoid wasting money.</p></section><section class="card"><h3>Content format</h3><p>Practical playbooks, workflow breakdowns, tool comparisons, bad-fit warnings, and implementation prompts.</p></section><section class="card"><h3>Trust policy</h3><p>ForgeCore prioritizes useful recommendations, disclosure, simpler alternatives, and bad-fit warnings.</p></section></div>
 <h2>Sponsor placements</h2><table><tr><th>Placement</th><th>What sponsor gets</th><th>Best for</th></tr><tr><td>Newsletter sponsor block</td><td>Short native placement with sponsor CTA in an AM or PM issue.</td><td>Tools and offers with broad operator fit.</td></tr><tr><td>Tool of the Week</td><td>Workflow-based mention with use case, bad-fit warning, and simpler alternative.</td><td>AI/SaaS tools with a clear job-to-be-done.</td></tr><tr><td>Workflow page placement</td><td>Longer-term visibility inside a relevant evergreen workflow page.</td><td>Products with strong search-intent alignment.</td></tr></table>
 <h2>Starter package</h2><p>Early sponsor test placements are available for tools with a clear solo-operator use case. Email for current rates and availability.</p><p><a class="button" href="mailto:{SPONSOR_EMAIL}?subject=ForgeCore sponsorship inquiry">Request sponsor details</a></p>
@@ -197,10 +197,28 @@ def render_archive_page() -> None:
     write_page(slug, base_page(title, description, slug, body, schema))
 
 
+def render_pack_download_page() -> None:
+    slug = PACK_DOWNLOAD_SLUG
+    title = "The Solo Operator AI Workflow Pack | ForgeCore"
+    description = "Copy/paste AI workflow checklists, prompts, a tool decision matrix, and automation readiness guidance for solo operators."
+    schema = {"@context": "https://schema.org", "@graph": [
+        {"@type": "CreativeWork", "name": "The Solo Operator AI Workflow Pack", "url": f"{SITE_BASE}/{slug}/", "description": description},
+        breadcrumbs(slug, "Workflow Pack Download"),
+    ]}
+    body = """
+<section class="hero"><div><div class="eyebrow">Workflow pack</div><h1>The Solo Operator AI Workflow Pack</h1><p>Use these checklists to turn AI tools into practical systems for content, onboarding, research, automation, and weekly operating reviews.</p></div><aside class="panel"><h2>Use this when</h2><ul><li>You need a repeatable AI workflow.</li><li>You are choosing between manual, AI, and automation.</li><li>You want to avoid buying the wrong tool.</li></ul></aside></section>
+<h2>Tool decision matrix</h2><table><tr><th>Use</th><th>Best starting point</th><th>Upgrade when</th></tr><tr><td>One-off task</td><td>Manual checklist</td><td>The same task repeats weekly</td></tr><tr><td>Drafting or summarizing</td><td>ChatGPT or similar assistant</td><td>You need a saved workflow</td></tr><tr><td>Private notes</td><td>Local AI with review</td><td>You need permissions and audit logs</td></tr><tr><td>Stable handoff</td><td>No-code automation</td><td>The process has clear inputs and outputs</td></tr></table>
+<h2>Bad-fit warning checklist</h2><ul><li>Do not automate a process you cannot explain manually.</li><li>Do not paste sensitive data into AI tools without policy approval.</li><li>Do not buy a tool until the workflow has repeated enough to justify it.</li><li>Do not skip human review for client-facing outputs.</li></ul>
+<h2>Automation readiness checklist</h2><ul><li>The task repeats at least weekly.</li><li>The input format is predictable.</li><li>The output has a clear owner and review step.</li><li>The failure mode is acceptable or easy to catch.</li></ul>
+<h2>10 workflow checklists</h2><ol><li>Content repurposing</li><li>Client onboarding</li><li>Sales follow-up</li><li>Newsletter growth</li><li>Research brief</li><li>Tool selection</li><li>Automation triage</li><li>Local AI notes</li><li>Lead magnet build</li><li>Weekly operator review</li></ol>
+"""
+    write_page(slug, base_page(title, description, slug, body, schema))
+
+
 def ensure_sitemap_pages() -> None:
     sitemap = DIST_DIR / "sitemap.xml"
     if not sitemap.exists():
-        return
+        raise SystemExit("Cannot update sitemap: site/dist/sitemap.xml is missing")
     text = sitemap.read_text(encoding="utf-8")
     additions = []
     for slug in BUSINESS_PAGES:
@@ -208,7 +226,9 @@ def ensure_sitemap_pages() -> None:
         if loc not in text:
             additions.append(f"<url><loc>{loc}</loc></url>")
     if additions:
-        text = text.replace("</urlset>", "".join(additions) + "</urlset>") if "</urlset>" in text else text + "\n" + "\n".join(additions)
+        if "</urlset>" not in text:
+            raise SystemExit("Cannot update sitemap: closing </urlset> tag is missing")
+        text = text.replace("</urlset>", "".join(additions) + "</urlset>")
         sitemap.write_text(text, encoding="utf-8")
 
 
@@ -220,20 +240,40 @@ def ensure_llms_pages() -> None:
     lines = {
         "- Subscribe to ForgeCore: https://news.forgecore.co/subscribe/",
         "- Workflow Pack: https://news.forgecore.co/workflow-pack/",
+        "- Workflow Pack Download: https://news.forgecore.co/downloads/solo-operator-ai-workflow-pack/",
         "- Archive: https://news.forgecore.co/archive/",
         "- Advertise with ForgeCore: https://news.forgecore.co/newsletter-advertising/",
     }
     missing = [line for line in sorted(lines) if line not in text]
     if missing:
-        text = text.rstrip() + "\n" + "\n".join(missing) + "\n"
-        llms.write_text(text, encoding="utf-8")
+        llms.write_text(text.rstrip() + "\n" + "\n".join(missing) + "\n", encoding="utf-8")
+
+
+def insert_before_homepage_main_close(text: str, block: str) -> str:
+    markers = ["</div></main>", "</main>"]
+    for marker in markers:
+        pos = text.find(marker)
+        if pos != -1:
+            return text[:pos] + block + text[pos:]
+    raise SystemExit("Homepage hardening failed: no </main> insertion point found")
+
+
+def remove_after_html(text: str) -> str:
+    marker = "</html>"
+    pos = text.find(marker)
+    if pos == -1:
+        raise SystemExit("Homepage hardening failed: missing closing </html> tag")
+    tail = text[pos + len(marker):].strip()
+    if tail:
+        text = text[:pos + len(marker)] + "\n"
+    return text
 
 
 def ensure_homepage_links() -> None:
     homepage = DIST_DIR / "index.html"
     if not homepage.exists():
-        return
-    text = homepage.read_text(encoding="utf-8")
+        raise SystemExit("Cannot harden homepage: site/dist/index.html is missing")
+    text = remove_after_html(homepage.read_text(encoding="utf-8"))
     text = text.replace(f'href="{SIGNUP}">Subscribe for weekly operator-grade AI workflows</a>', 'href="/subscribe/">Subscribe to the newsletter</a>')
     text = text.replace(f'href="{SIGNUP}">Subscribe to the newsletter</a>', 'href="/subscribe/">Subscribe to the newsletter</a>')
     text = text.replace(f'href="{SIGNUP}">Get the workflow pack</a>', 'href="/workflow-pack/">Get the workflow pack</a>')
@@ -243,7 +283,7 @@ def ensure_homepage_links() -> None:
         proof = """
 <section class="lead-magnet" id="forgecore-proof-positioning"><div><div class="eyebrow">Why ForgeCore is different</div><h2>Not generic AI news. Practical workflows for solo operators.</h2><p>Most AI newsletters tell you what happened. ForgeCore shows you what to do with AI: save time, choose better tools, automate repeatable work, and build income assets.</p><div class="proof"><div><strong>Built for operators</strong><br>Solo founders, creators, consultants, builders, and small business owners.</div><div><strong>Every issue has a job</strong><br>Make money, save time, automate work, or avoid bad tool spend.</div><div><strong>Workflow-first</strong><br>Tools are judged by use case, bad-fit warning, and simpler alternative.</div></div></div><a class="button" href="/subscribe/">Subscribe to the newsletter</a> <a class="button secondary" href="/archive/">Read the archive</a></section>
 """
-        text = text.replace("</div></main>", proof + "</div></main>", 1) if "</div></main>" in text else text + proof
+        text = insert_before_homepage_main_close(text, proof)
 
     if "forgecore-workflow-cards" not in text:
         cards = "".join(
@@ -253,13 +293,16 @@ def ensure_homepage_links() -> None:
         block = f"""
 <section id="forgecore-workflow-cards"><h2 class="section-heading">AI tools by workflow</h2><div class="grid">{cards}</div></section>
 """
-        text = text.replace("</div></main>", block + "</div></main>", 1) if "</div></main>" in text else text + block
+        text = insert_before_homepage_main_close(text, block)
 
-    if "/subscribe/" not in text or "/newsletter-advertising/" not in text or "/workflow-pack/" not in text or "/archive/" not in text:
+    if not all(marker in text for marker in ("/subscribe/", "/newsletter-advertising/", "/workflow-pack/", "/archive/")):
         block = """
 <section class="lead-magnet"><div><div class="eyebrow">Start here</div><h2>Subscribe, get the workflow pack, or browse the archive.</h2><p>Use ForgeCore to turn AI tools into practical systems.</p></div><a class="button" href="/subscribe/">Subscribe to the newsletter</a> <a class="button secondary" href="/workflow-pack/">Get the workflow pack</a> <a class="button secondary" href="/archive/">Read the archive</a> <a class="button secondary" href="/newsletter-advertising/">Advertise</a></section>
 """
-        text = text.replace("</div></main>", block + "</div></main>", 1) if "</div></main>" in text else text + block
+        text = insert_before_homepage_main_close(text, block)
+
+    if "</html>" in text and text.split("</html>", 1)[1].strip():
+        raise SystemExit("Homepage hardening failed: markup exists after </html>")
     homepage.write_text(text, encoding="utf-8")
 
 
@@ -269,6 +312,7 @@ def main() -> int:
     render_workflow_pack_page()
     render_advertising_page()
     render_archive_page()
+    render_pack_download_page()
     ensure_sitemap_pages()
     ensure_llms_pages()
     ensure_homepage_links()
