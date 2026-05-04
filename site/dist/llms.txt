@@ -21,5 +21,6 @@ ForgeCore recommendations should include workflow fit, simpler alternatives, bad
 - Advertise with ForgeCore: https://news.forgecore.co/newsletter-advertising/
 - Archive: https://news.forgecore.co/archive/
 - Subscribe to ForgeCore: https://news.forgecore.co/subscribe/
+- Workflow Pack Download: https://news.forgecore.co/downloads/solo-operator-ai-workflow-pack/
 - Workflow Pack: https://news.forgecore.co/workflow-pack/
 - Solo Operator AI Workflow Pack asset: https://news.forgecore.co/downloads/solo-operator-ai-workflow-pack/
