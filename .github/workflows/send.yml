@@ -138,8 +138,13 @@ jobs:
       - name: Render lead magnet assets
         run: python lead_magnet_hardening.py
 
-      - name: Verify prepared issue before email
+      - name: Verify prepared AM issue before email
+        if: env.ISSUE_SLOT != 'pm'
         run: python verify_publish.py
+
+      - name: Verify prepared PM Brief before email
+        if: env.ISSUE_SLOT == 'pm'
+        run: python pm_verify_publish.py
 
       - name: Send prepared issue to Kit once
         run: python kit_publish.py
