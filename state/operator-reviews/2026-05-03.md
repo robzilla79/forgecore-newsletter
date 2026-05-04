@@ -1,23 +1,20 @@
 # ForgeCore Operator Review — 2026-05-03
 
-Generated: 2026-05-03 14:31:03 UTC
+Generated: 2026-05-04 00:00:03 UTC
 
 ## Executive Status
 
 - Site status: **OK**
 - Recent issue health: **2 OK / 0 attention** among latest two issues
-- Duplicate-topic risk: **Attention**
+- Duplicate-topic risk: **OK**
 - Traffic/conversion data: **Attention**
 - Recommended next move: Connect traffic and conversion data so the next topic selection can optimize for reader behavior.
 
 ## Latest Issues
 
 - `2026-05-03-pm` — Local AI Client Data Workflow: A Safer Solo Operator Playbook (1004 words, 6 URLs) — OK
-- `2026-05-03-am` — How Solo Founders Can Securely Manage Client Data with Local AI (803 words, 4 URLs) — OK
 - `2026-05-02-pm` — How Solo Founders Can Automate Client Onboarding with AI (690 words, 5 URLs) — OK
 - `2026-05-02-am` — AEO Competitor Analysis: A Solo Operator Playbook for Getting Cited by AI Answers (731 words, 5 URLs) — OK
-- `2026-05-01-am` — Build a 3-Step AI Follow-Up System That Saves 5 Hours a Week (970 words, 8 URLs) — OK
-- `2026-05-01` — How Solo Operators Can Leverage Ollama's New Features to Streamline Workflows (514 words, 5 URLs) — OK
 
 ## Site Checks
 
@@ -54,7 +51,7 @@ Generated: 2026-05-03 14:31:03 UTC
 
 ## Duplicate Topic Watchlist
 
-- 0.71 — `2026-05-01` and `2026-04-30` look close: How Solo Operators Can Leverage Ollama's New Features to Streamline Workflows / How Solo Operators Can Use Ollama's New Features to Streamline AI Workflows ## Hook
+- No high-risk duplicate titles detected among recent issues.
 
 ## Operator Notes
 
