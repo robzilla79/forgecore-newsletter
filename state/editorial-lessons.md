@@ -718,3 +718,21 @@
 - Rules for future issues:
   - Start the Hook with the operator outcome or decision, not a product announcement.
   - CTA must tell the reader what to try this week and include subscribe plus sponsor links.
+
+
+---
+
+## 2026-05-04 14:41:11 UTC — /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-04-am.md
+- Improvement result: changed (rewritten issue saved)
+- Critic score: 10.0 | verdict: needs_revision
+- Weaknesses found:
+  - Enhance the hook to better capture attention
+  - Add specific examples or case studies to illustrate points
+  - Revise the hook to make it more engaging
+  - Incorporate specific examples or case studies
+  - Ensure the headline reflects the actionable nature of the content
+  - Weak initial hook
+- Rules for future issues:
+  - Start the Hook with the operator outcome or decision, not a product announcement.
+  - Name the exact operator persona, job-to-be-done, tool stack, and tradeoff.
+  - Make the headline name the workflow, operator, tool choice, or measurable outcome.
