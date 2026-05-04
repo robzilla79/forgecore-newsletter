@@ -61,12 +61,7 @@ def issue_sort_key(path: Path) -> tuple[str, int, str]:
     stem = path.stem.lower()
     match = re.search(r"(\d{4}-\d{2}-\d{2})", stem)
     date_key = match.group(1) if match else "0000-00-00"
-    if stem.endswith("-pm"):
-        slot_rank = 2
-    elif stem.endswith("-am"):
-        slot_rank = 1
-    else:
-        slot_rank = 0
+    slot_rank = 2 if stem.endswith("-pm") else 1 if stem.endswith("-am") else 0
     return (date_key, slot_rank, path.name)
 
 
@@ -100,11 +95,7 @@ def malformed_section_count(text: str, section: str) -> int:
 
 
 def topic_tokens(value: str) -> set[str]:
-    out: set[str] = set()
-    for token in re.findall(r"[a-z0-9]+", value.lower()):
-        if len(token) >= 3 and token not in STOPWORDS:
-            out.add(token)
-    return out
+    return {token for token in re.findall(r"[a-z0-9]+", value.lower()) if len(token) >= 3 and token not in STOPWORDS}
 
 
 def topic_similarity(left: str, right: str) -> float:
@@ -130,18 +121,30 @@ def latest_json(prefix: str) -> dict[str, Any]:
     return load_json(files[0]) if files else {}
 
 
-def kit_status_for_latest(latest_slug: str) -> str:
+def json_for_slug(prefix: str, slug: str) -> dict[str, Any]:
+    if slug:
+        path = STATE_DIR / f"{prefix}{slug}.json"
+        if path.exists():
+            return load_json(path)
+    return latest_json(prefix)
+
+
+def kit_status_for_latest(latest_slug: str, latest_title: str) -> list[str]:
     sent = load_json(KIT_SENT_LOG)
     if not sent:
-        return "Kit latest: no draft/send log found"
-    if latest_slug in sent:
-        item = sent.get(latest_slug, {}) if isinstance(sent.get(latest_slug), dict) else {}
-        return (
-            "Kit latest: synced; "
-            f"mode={item.get('mode', 'unknown')}; "
-            f"broadcast_id={item.get('broadcast_id', 'unknown')}"
-        )
-    return f"Kit latest: no entry for `{latest_slug}`"
+        return ["Kit latest: no draft/send log found"]
+    if latest_slug not in sent:
+        return [f"Kit latest: no entry for `{latest_slug}`"]
+    item = sent.get(latest_slug, {}) if isinstance(sent.get(latest_slug), dict) else {}
+    lines = [
+        "Kit latest: synced; "
+        f"mode={item.get('mode', 'unknown')}; "
+        f"broadcast_id={item.get('broadcast_id', 'unknown')}"
+    ]
+    subject = str(item.get("subject") or "").strip()
+    if subject and latest_title and subject != latest_title:
+        lines.append(f"Kit subject drift: Attention — sent-log subject `{subject}` does not match latest title `{latest_title}`")
+    return lines
 
 
 def site_status(latest_slug: str) -> tuple[str, list[str]]:
@@ -157,6 +160,8 @@ def site_status(latest_slug: str) -> tuple[str, list[str]]:
         checks.append("homepage links latest issue")
     else:
         checks.append("homepage missing latest issue link")
+    if homepage_html and "</html>" in homepage_html and homepage_html.split("</html>", 1)[1].strip():
+        checks.append("homepage has markup after closing html tag")
     if article.exists():
         article_html = load_text(article)
         checks.append("latest article route exists" if "<article" in article_html else "latest article markup missing")
@@ -173,7 +178,7 @@ def site_status(latest_slug: str) -> tuple[str, list[str]]:
             checks.append(f"growth page OK: {slug}")
         else:
             checks.append(f"growth page missing or unsitemapped: {slug}")
-    bad = [item for item in checks if "missing" in item]
+    bad = [item for item in checks if "missing" in item or "after closing html" in item]
     return ("Attention" if bad else "OK", checks)
 
 
@@ -210,8 +215,6 @@ def duplicate_risks(issues: list[dict[str, Any]]) -> list[str]:
 
 def traffic_summary() -> tuple[str, list[str], list[str]]:
     data = load_json(TRAFFIC_REPORT)
-    lines: list[str] = []
-    actions: list[str] = []
     if not data:
         return (
             "Attention",
@@ -222,29 +225,23 @@ def traffic_summary() -> tuple[str, list[str], list[str]]:
             ["Connect traffic and conversion exports so topic decisions are based on actual reader behavior."],
         )
 
-    period = data.get("period", "unknown period")
-    lines.append(f"Period: {period}")
+    lines: list[str] = [f"Period: {data.get('period', 'unknown period')}"]
+    actions: list[str] = []
     for metric in ["sessions", "pageviews", "newsletter_signups", "cta_clicks", "affiliate_clicks", "sponsor_page_views"]:
         if metric in data:
             lines.append(f"{metric.replace('_', ' ').title()}: {data.get(metric)}")
-    top_pages = data.get("top_pages", []) or []
-    top_queries = data.get("top_queries", []) or []
-    if top_pages:
-        lines.append("Top pages: " + "; ".join(f"{item.get('path', item)} ({item.get('views', 'n/a')})" if isinstance(item, dict) else str(item) for item in top_pages[:5]))
-    else:
+    if not data.get("top_pages"):
         actions.append("Add top page data to identify which workflows attract readers.")
-    if top_queries:
-        lines.append("Top search queries: " + "; ".join(f"{item.get('query', item)} ({item.get('clicks', 'n/a')})" if isinstance(item, dict) else str(item) for item in top_queries[:5]))
-    else:
+    if not data.get("top_queries"):
         actions.append("Add Search Console query data to steer article and landing-page topics.")
     if not data.get("newsletter_signups"):
         actions.append("Review lead magnet CTA placement once signup data is available.")
     return ("OK" if not actions else "Attention", lines, actions)
 
 
-def state_summary(latest_slug: str) -> list[str]:
-    quality = latest_json("quality-gate-")
-    critic = latest_json("critic-review-")
+def state_summary(latest_slug: str, latest_title: str) -> list[str]:
+    quality = json_for_slug("quality-gate-", latest_slug)
+    critic = json_for_slug("critic-review-", latest_slug)
     affiliate = latest_json("affiliate-linker-")
     monetization = latest_json("monetization-guard-")
     lines: list[str] = []
@@ -253,18 +250,21 @@ def state_summary(latest_slug: str) -> list[str]:
         checks = quality.get("checks", {}) if isinstance(quality.get("checks"), dict) else {}
         errors = checks.get("errors", [])
         warnings = checks.get("warnings", [])
-        lines.append(f"Quality gate latest: {'passed' if passed else 'failed'}; errors={len(errors)}, warnings={len(warnings)}")
+        lines.append(f"Quality gate for latest issue: {'passed' if passed else 'failed'}; errors={len(errors)}, warnings={len(warnings)}")
     else:
-        lines.append("Quality gate latest: no artifact found")
+        lines.append(f"Quality gate for latest issue: no artifact found for `{latest_slug}`")
     if critic:
+        verdict = critic.get("verdict", "unknown")
+        passed = critic.get("passed")
+        nuance = "attention" if passed and verdict not in {"pass", "approved", "accept"} else "ok"
         lines.append(
-            "Critic latest: "
+            "Critic for latest issue: "
             f"score={critic.get('overall_score', 'unknown')}; "
-            f"verdict={critic.get('verdict', 'unknown')}; "
+            f"passed={passed}; verdict={verdict}; status={nuance}; "
             f"weak={', '.join(critic.get('weak_categories', []) or []) or 'none'}"
         )
     else:
-        lines.append("Critic latest: no artifact found")
+        lines.append(f"Critic for latest issue: no artifact found for `{latest_slug}`")
     if affiliate:
         activated = affiliate.get("activated_links", []) or []
         tools = ", ".join(item.get("tool", "unknown") for item in activated if isinstance(item, dict)) or "none"
@@ -279,8 +279,7 @@ def state_summary(latest_slug: str) -> list[str]:
         )
     else:
         lines.append("Monetization guard latest: no artifact found")
-    if latest_slug:
-        lines.append(kit_status_for_latest(latest_slug))
+    lines.extend(kit_status_for_latest(latest_slug, latest_title))
     return lines
 
 
@@ -301,6 +300,7 @@ def build_report() -> str:
     issue_paths = issue_files(limit=8)
     issues = [issue_health(path) for path in issue_paths]
     latest_slug = issues[0]["slug"] if issues else ""
+    latest_title = issues[0]["title"] if issues else ""
     site_label, site_checks = site_status(latest_slug) if latest_slug else ("Attention", ["no issues found"])
     duplicate_items = duplicate_risks(issues)
     traffic_label, traffic_lines, traffic_actions = traffic_summary()
@@ -359,7 +359,7 @@ def build_report() -> str:
             lines.append(f"- {action}")
 
     lines.extend(["", "## Quality / Critic / Affiliate / Monetization / Kit Artifacts", ""])
-    for line in state_summary(latest_slug):
+    for line in state_summary(latest_slug, latest_title):
         lines.append(f"- {line}")
 
     lines.extend(["", "## Duplicate Topic Watchlist", ""])
@@ -374,7 +374,7 @@ def build_report() -> str:
         "## Operator Notes",
         "",
         "- This report does not generate, edit, publish, or deploy newsletter content.",
-        "- It is a daily dashboard for spotting quality drift, duplicate topics, affiliate activation, monetization guard status, Kit draft sync, growth-page coverage, traffic signals, and deployment problems.",
+        "- It is a daily dashboard for spotting quality drift, duplicate topics, affiliate activation, monetization guard status, Kit subject drift, growth-page coverage, traffic signals, and deployment problems.",
     ])
     return "\n".join(lines).rstrip() + "\n"
 
