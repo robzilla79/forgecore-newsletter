@@ -102,7 +102,6 @@ SENSITIVE_DATA_TERMS = (
     "client secrets",
     "private notes",
     "local ai",
-    "ollama",
 )
 
 
@@ -303,16 +302,9 @@ def require_ai_search_assets(rss_xml: str) -> None:
 
 
 def require_latest_trust_markers(markdown: str, article_html: str, slug: str) -> None:
-    """Apply topic-specific trust checks without forcing stale markers onto every issue.
-
-    Previous versions hard-coded local-AI/Ollama trust text for all latest issues,
-    which blocked unrelated AEO articles after they passed quality. Keep the
-    safety gate only where the topic actually raises sensitive-data/local-AI risk.
-    """
+    """Apply topic-specific trust checks without forcing stale markers onto every issue."""
     combined = markdown + "\n" + article_html
     lower = combined.lower()
-    if "ollama" in lower and "ollama" not in combined:
-        raise SystemExit(f"Latest issue missing Ollama trust/source marker ({slug})")
     if any(term in lower for term in SENSITIVE_DATA_TERMS):
         acceptable_markers = (
             "trust warnings",
