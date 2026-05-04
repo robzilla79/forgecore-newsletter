@@ -1,0 +1,4 @@
+Manual AM preparation trigger.
+
+Last trigger: 2026-05-04T13:24:00Z
+Reason: recover AM issue preparation after publish source gate fix.
