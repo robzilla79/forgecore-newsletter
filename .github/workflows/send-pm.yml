@@ -6,6 +6,10 @@ on:
     # This workflow sends the already-prepared PM issue once. It does not generate or rewrite content.
     - cron: '21 21 * * *'
   workflow_dispatch:
+  push:
+    paths:
+      - 'state/manual-pm-send.txt'
+      - '.github/workflows/send-pm.yml'
 
 permissions:
   contents: write
