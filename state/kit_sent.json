@@ -34,5 +34,18 @@
     "issue_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-03-am.md",
     "issue_slot": "am",
     "web_url": "https://news.forgecore.co/2026-05-03-am/"
+  },
+  "2026-05-04-am": {
+    "broadcast_id": 23976360,
+    "subject": "Mastering AEO Competitor Analysis: A Solo Operator's Guide to Boosting Visibility in AI-Driven Search",
+    "sent_at": "2026-05-04T15:49:08.215879+00:00",
+    "mode": "public",
+    "requested_mode": "public",
+    "email_delivery": "scheduled_or_sent",
+    "send_at": "2026-05-04T15:49:07Z",
+    "issue_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-04-am.md",
+    "email_source_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/email/2026-05-04-am.md",
+    "issue_slot": "am",
+    "web_url": "https://news.forgecore.co/2026-05-04-am/"
   }
 }
