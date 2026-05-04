@@ -1,0 +1,4 @@
+Manual PM recovery trigger.
+
+Last trigger: 2026-05-04T18:05:00Z
+Reason: scheduled ChatGPT PM check lacked repo access and today's PM issue was missing.
