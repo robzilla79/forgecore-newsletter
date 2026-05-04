@@ -1,5 +1,5 @@
 Manual PM send trigger.
 
-Triggered at: 2026-05-04T20:25:00Z
-Reason: 2026-05-04-pm was prepared and locked but not present in state/kit_sent.json.
+Triggered at: 2026-05-04T22:05:00Z
+Reason: fresh send run needed from current main after adding missing pm_verify_publish.py.
 Guardrails: kit_publish.py duplicate-send protection remains active.
