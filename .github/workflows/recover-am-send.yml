@@ -1,0 +1,19 @@
+name: Recover AM Newsletter Send
+
+on:
+  schedule:
+    # Recovery check: 10:45 AM Central during daylight time, 9:45 AM Central during standard time.
+    # Sends the already-prepared AM issue only if Kit sent log does not already block the slot.
+    - cron: '45 15 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  recover-am-send:
+    uses: ./.github/workflows/send.yml
+    secrets: inherit
+    with:
+      issue_slot: am
