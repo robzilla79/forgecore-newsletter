@@ -4,6 +4,8 @@ on:
   workflow_dispatch:
   push:
     paths:
+      - 'content/issues/**'
+      - 'content/email/**'
       - 'content_cleanup.py'
       - 'publish_site.py'
       - 'ai_search_hardening.py'
