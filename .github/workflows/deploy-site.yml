@@ -10,6 +10,7 @@ on:
       - 'business_hardening.py'
       - 'lead_magnet_hardening.py'
       - 'verify_site_updates.py'
+      - 'functions/**'
       - 'lead-magnets/**'
       - 'monetization/affiliate-registry.json'
       - '.github/workflows/deploy-site.yml'
