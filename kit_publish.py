@@ -64,8 +64,6 @@ REQUESTED_SEND_MODE = os.environ.get("KIT_SEND_MODE", "draft").strip().lower()
 ISSUE_SLOT_ENV = os.environ.get("ISSUE_SLOT", "").strip().lower()
 GITHUB_ACTIONS = os.environ.get("GITHUB_ACTIONS", "").strip().lower() == "true"
 
-# ForgeCore production rule: AM/PM GitHub Actions newsletter runs send immediately.
-# The per-date/per-slot guard below prevents duplicate sends when workflows rerun.
 if GITHUB_ACTIONS and ISSUE_SLOT_ENV in {"am", "pm"}:
     SEND_MODE = "public"
 else:
@@ -142,11 +140,6 @@ def locked_email_path_for_issue(issue_path: Path) -> Path:
 
 
 def find_email_source(issue_path: Path) -> Path:
-    """Return the source Markdown to send by email.
-
-    Production public sends must use the locked email snapshot. Draft/manual mode
-    can fall back to the issue source so local tests remain convenient.
-    """
     locked = locked_email_path_for_issue(issue_path)
     if SEND_MODE == "public":
         if not locked.exists():
@@ -163,13 +156,6 @@ def parse_slot_issue_slug(issue_slug: str) -> tuple[str, str] | None:
 
 
 def record_blocks_slot_email(record: dict) -> bool:
-    """Return true when an existing log record should block another slot email.
-
-    Conservative by design: older records may only have mode=public and no
-    email_delivery field. Treat those as slot-consuming because sending a second
-    email is worse than missing one historical resend. Future records include
-    email_delivery=scheduled_or_sent when send_at was provided.
-    """
     if not isinstance(record, dict):
         return False
     if record.get("email_delivery") == "scheduled_or_sent":
@@ -192,43 +178,25 @@ def sent_public_slots_for_date(sent_log: dict, issue_date: str) -> set[str]:
 
 
 def enforce_public_send_guard(issue_slug: str, sent_log: dict) -> None:
-    """Exit safely when an immediate send would violate ForgeCore send policy."""
     if SEND_MODE != "public":
         return
-
     parsed = parse_slot_issue_slug(issue_slug)
     if not parsed:
-        log(
-            "SKIP: immediate Kit email is only allowed for slot-specific issues "
-            "named YYYY-MM-DD-am.md or YYYY-MM-DD-pm.md."
-        )
+        log("SKIP: immediate Kit email is only allowed for slot-specific issues named YYYY-MM-DD-am.md or YYYY-MM-DD-pm.md.")
         sys.exit(0)
-
     issue_date, issue_slot = parsed
     if ISSUE_SLOT_ENV not in {"am", "pm"}:
         log("SKIP: immediate Kit email requires ISSUE_SLOT=am or ISSUE_SLOT=pm.")
         sys.exit(0)
-
     if ISSUE_SLOT_ENV != issue_slot:
-        log(
-            f"SKIP: ISSUE_SLOT={ISSUE_SLOT_ENV!r} does not match issue slug slot "
-            f"{issue_slot!r} for {issue_slug}."
-        )
+        log(f"SKIP: ISSUE_SLOT={ISSUE_SLOT_ENV!r} does not match issue slug slot {issue_slot!r} for {issue_slug}.")
         sys.exit(0)
-
     sent_slots = sent_public_slots_for_date(sent_log, issue_date)
     if issue_slot in sent_slots:
-        log(
-            f"SKIP: {issue_date} {issue_slot.upper()} already has a public Kit record. "
-            "Web output may be updated, but this slot will not email again."
-        )
+        log(f"SKIP: {issue_date} {issue_slot.upper()} already has a public Kit record. Web output may be updated, but this slot will not email again.")
         sys.exit(0)
-
     if len(sent_slots) >= 2:
-        log(
-            f"SKIP: {issue_date} already has two public Kit slot records "
-            f"({', '.join(sorted(sent_slots)).upper()})."
-        )
+        log(f"SKIP: {issue_date} already has two public Kit slot records ({', '.join(sorted(sent_slots)).upper()}).")
         sys.exit(0)
 
 
@@ -302,12 +270,7 @@ def markdown_to_html(md: str) -> str:
             close_ul()
             if in_code:
                 code = html.escape("\n".join(code_lines))
-                out.append(
-                    "<pre style='background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;"
-                    "padding:14px;overflow:auto;color:#111827;font-size:14px;line-height:1.5;'><code>"
-                    + code
-                    + "</code></pre>"
-                )
+                out.append("<pre style='background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:14px;overflow:auto;color:#111827;font-size:14px;line-height:1.5;'><code>" + code + "</code></pre>")
                 code_lines = []
                 in_code = False
             else:
@@ -348,12 +311,7 @@ def markdown_to_html(md: str) -> str:
     close_ul()
     if in_code:
         code = html.escape("\n".join(code_lines))
-        out.append(
-            "<pre style='background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;"
-            "padding:14px;overflow:auto;color:#111827;font-size:14px;line-height:1.5;'><code>"
-            + code
-            + "</code></pre>"
-        )
+        out.append("<pre style='background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:14px;overflow:auto;color:#111827;font-size:14px;line-height:1.5;'><code>" + code + "</code></pre>")
     return "\n".join(out)
 
 
@@ -395,6 +353,21 @@ def build_email_html(body_md: str, issue_slug: str) -> str:
 """.strip()
 
 
+def subscriber_filter_payload() -> list[dict] | None:
+    """Return a Kit v4-compatible subscriber filter, or None for account default.
+
+    Kit v4 rejected the old all_subscribers filter with: "Only `segment` or `tag`
+    filters allowed". Use explicit segment/tag filters only when configured.
+    """
+    segment_id = os.environ.get("KIT_SEGMENT_ID", "").strip()
+    tag_id = os.environ.get("KIT_TAG_ID", "").strip()
+    if segment_id:
+        return [{"segment": segment_id}]
+    if tag_id:
+        return [{"tag": tag_id}]
+    return None
+
+
 def create_broadcast(subject: str, email_html: str, preview_text: str) -> tuple[dict, str | None]:
     if SEND_MODE not in {"draft", "public"}:
         raise ValueError(f"Unsupported KIT_SEND_MODE={SEND_MODE!r}; expected draft or public")
@@ -415,14 +388,17 @@ def create_broadcast(subject: str, email_html: str, preview_text: str) -> tuple[
         "public": SEND_MODE == "public",
         "published_at": now if SEND_MODE == "public" else None,
         "send_at": send_at,
-        "subscriber_filter": [{"all": [{"type": "all_subscribers"}]}],
     }
+    filters = subscriber_filter_payload()
+    if filters:
+        payload["subscriber_filter"] = filters
 
     log(f"POST {url}")
     log(f"Subject: {subject}")
     log(f"Requested mode: {REQUESTED_SEND_MODE}")
     log(f"Effective mode: {SEND_MODE}")
     log(f"send_at: {send_at or 'null (draft only)'}")
+    log(f"subscriber_filter: {'configured' if filters else 'omitted (Kit default audience)'}")
 
     resp = requests.post(url, headers=headers, json=payload, timeout=30)
     log(f"Response: {resp.status_code}")
@@ -448,10 +424,7 @@ def main() -> None:
     sent_log = load_sent_log()
     existing = sent_log.get(issue_slug)
     if isinstance(existing, dict) and record_blocks_slot_email(existing):
-        log(
-            f"Issue {issue_slug} already has a public Kit record "
-            f"(broadcast_id={existing.get('broadcast_id')}). Skipping email."
-        )
+        log(f"Issue {issue_slug} already has a public Kit record (broadcast_id={existing.get('broadcast_id')}). Skipping email.")
         sys.exit(0)
 
     enforce_public_send_guard(issue_slug, sent_log)
