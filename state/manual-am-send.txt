@@ -1,0 +1,4 @@
+Manual AM send trigger.
+
+Last trigger: 2026-05-04T15:36:00Z
+Reason: recover AM Kit send after prepared issue was committed late.
