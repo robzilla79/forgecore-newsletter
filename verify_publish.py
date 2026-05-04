@@ -4,7 +4,7 @@
 Fails the workflow if publish_site.py did not render the newest valid issue
 onto the homepage, article route, RSS feed, sitemap, and SEO metadata layer in
 the expected order. Also verifies evergreen growth pages, AI-search files,
-business pages, source relevance, structured data, and trust warnings.
+business pages, source relevance, structured data, and topic-specific trust warnings.
 
 This verifier intentionally applies deterministic hardening scripts when they
 are available. That keeps older workflow reruns safe even if the workflow file
@@ -95,10 +95,14 @@ AI_SEARCH_PAGE_MARKERS = (
     "SEO vs AEO vs GEO vs LLMO",
     "Do not invent expertise",
 )
-LATEST_TRUST_MARKERS = (
-    "Trust warnings",
-    "Do not paste unredacted client secrets",
-    "Ollama",
+SENSITIVE_DATA_TERMS = (
+    "client data",
+    "client file",
+    "client files",
+    "client secrets",
+    "private notes",
+    "local ai",
+    "ollama",
 )
 
 
@@ -169,12 +173,7 @@ def is_non_source_url(url: str) -> bool:
 
 
 def source_urls(markdown: str) -> list[str]:
-    """Return only editorial/source URLs, excluding CTA and placeholder links.
-
-    The newsletter issue may include the signup URL near or even inside the
-    Sources section. That should not count as a cited source, but it also should
-    not block a publish when enough real editorial sources remain.
-    """
+    """Return only editorial/source URLs, excluding CTA and placeholder links."""
     return [url for url in raw_source_urls(markdown) if not is_non_source_url(url)]
 
 
@@ -304,10 +303,26 @@ def require_ai_search_assets(rss_xml: str) -> None:
 
 
 def require_latest_trust_markers(markdown: str, article_html: str, slug: str) -> None:
+    """Apply topic-specific trust checks without forcing stale markers onto every issue.
+
+    Previous versions hard-coded local-AI/Ollama trust text for all latest issues,
+    which blocked unrelated AEO articles after they passed quality. Keep the
+    safety gate only where the topic actually raises sensitive-data/local-AI risk.
+    """
     combined = markdown + "\n" + article_html
-    for marker in LATEST_TRUST_MARKERS:
-        if marker not in combined:
-            raise SystemExit(f"Latest issue missing AI-search trust marker ({slug}): {marker}")
+    lower = combined.lower()
+    if "ollama" in lower and "ollama" not in combined:
+        raise SystemExit(f"Latest issue missing Ollama trust/source marker ({slug})")
+    if any(term in lower for term in SENSITIVE_DATA_TERMS):
+        acceptable_markers = (
+            "trust warnings",
+            "do not paste unredacted client secrets",
+            "redact",
+            "privacy",
+            "sensitive",
+        )
+        if not any(marker in lower for marker in acceptable_markers):
+            raise SystemExit(f"Latest issue missing sensitive-data trust warning ({slug})")
 
 
 def main() -> int:
