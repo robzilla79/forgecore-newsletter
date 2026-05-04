@@ -5,6 +5,12 @@ Purpose: keep the public archive focused on useful ForgeCore issues.
 This does not permanently delete content. It moves rejected files into
 content/issues/quarantine/ so they stop appearing in archive, RSS, sitemap,
 and generated public article pages after the next site render.
+
+Important recovery rule:
+- Existing PM issues may still use the AM workflow/playbook section contract.
+- Future PM issues may use the PM Brief contract.
+- Cleanup must accept both for PM files so a deploy-only action can never
+  remove valid historical PM issues just because the editorial format changed.
 """
 from __future__ import annotations
 
@@ -22,7 +28,7 @@ DATE_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})")
 # experiments are not strong enough to remain in the public archive.
 MIN_ACTIVE_DATE = "2026-05-02"
 
-REQUIRED_SECTIONS = (
+AM_WORKFLOW_SECTIONS = (
     "## Hook",
     "## Top Story",
     "## Why It Matters",
@@ -30,6 +36,15 @@ REQUIRED_SECTIONS = (
     "## Tool of the Week",
     "## Workflow",
     "## CTA",
+    "## Sources",
+)
+
+PM_BRIEF_SECTIONS = (
+    "## The 3 Signals",
+    "## Tool Watch",
+    "## Operator Opportunity",
+    "## Skip / Caution",
+    "## Tomorrow's Move",
     "## Sources",
 )
 
@@ -58,6 +73,48 @@ def issue_date(path: Path) -> str:
     return match.group(1) if match else "0000-00-00"
 
 
+def issue_slot(path: Path) -> str:
+    if path.stem.endswith("-pm"):
+        return "pm"
+    if path.stem.endswith("-am"):
+        return "am"
+    return ""
+
+
+def has_sections(text: str, sections: tuple[str, ...]) -> bool:
+    lower = text.lower()
+    return all(section.lower() in lower for section in sections)
+
+
+def missing_sections(text: str, sections: tuple[str, ...]) -> list[str]:
+    lower = text.lower()
+    return [section for section in sections if section.lower() not in lower]
+
+
+def has_valid_issue_contract(path: Path, text: str) -> bool:
+    slot = issue_slot(path)
+    if slot == "pm":
+        return has_sections(text, AM_WORKFLOW_SECTIONS) or has_sections(text, PM_BRIEF_SECTIONS)
+    return has_sections(text, AM_WORKFLOW_SECTIONS)
+
+
+def contract_failure_reason(path: Path, text: str) -> str:
+    if issue_slot(path) == "pm":
+        am_missing = missing_sections(text, AM_WORKFLOW_SECTIONS)
+        pm_missing = missing_sections(text, PM_BRIEF_SECTIONS)
+        return "missing PM-compatible section contract; AM missing: " + ", ".join(am_missing[:2]) + "; PM missing: " + ", ".join(pm_missing[:2])
+    missing = missing_sections(text, AM_WORKFLOW_SECTIONS)
+    return "missing required section: " + (missing[0] if missing else "unknown")
+
+
+def source_url_count(text: str) -> int:
+    if "## Sources" not in text:
+        return 0
+    sources = text.split("## Sources", 1)[-1]
+    urls = re.findall(r"https?://[^\s)]+", sources)
+    return len(list(dict.fromkeys(urls)))
+
+
 def quarantine_reason(path: Path, text: str) -> str | None:
     if path.parent.name == "quarantine":
         return None
@@ -67,20 +124,16 @@ def quarantine_reason(path: Path, text: str) -> str | None:
         return f"older than active archive cutoff {MIN_ACTIVE_DATE}"
     if not text.lstrip().startswith("# "):
         return "missing top-level title"
-    if word_count(text) < 500:
+    if word_count(text) < 450:
         return "too thin for public archive"
     lower = text.lower()
     for marker in BAD_MARKERS:
         if marker.lower() in lower:
             return f"contains bad marker: {marker}"
-    missing = [section for section in REQUIRED_SECTIONS if section.lower() not in lower]
-    if missing:
-        return "missing required section: " + missing[0]
-    if "## Sources" in text:
-        sources = text.split("## Sources", 1)[-1]
-        urls = re.findall(r"https?://[^\s)]+", sources)
-        if len(urls) < 3:
-            return "fewer than three sources"
+    if not has_valid_issue_contract(path, text):
+        return contract_failure_reason(path, text)
+    if source_url_count(text) < 3:
+        return "fewer than three sources"
     for marker in LOW_TRUST_SOURCE_MARKERS:
         if marker in lower:
             return f"contains weak/low-fit source marker: {marker}"
