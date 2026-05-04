@@ -1,0 +1,19 @@
+name: Recover PM Newsletter Send
+
+on:
+  schedule:
+    # Recovery check: 4:45 PM Central during daylight time, 3:45 PM Central during standard time.
+    # Sends the already-prepared PM issue only if Kit sent log does not already block the slot.
+    - cron: '45 21 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  recover-pm-send:
+    uses: ./.github/workflows/send.yml
+    secrets: inherit
+    with:
+      issue_slot: pm
