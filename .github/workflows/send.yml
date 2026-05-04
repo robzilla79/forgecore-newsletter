@@ -71,13 +71,36 @@ jobs:
           python - <<'PY'
           import json
           from pathlib import Path
-          from utils import issue_path_for_today
+          from utils import issue_path_for_today, issue_slot, local_now, LOCAL_TZ_NAME
+
+          SEND_WINDOWS = {
+              "am": (10, 7),
+              "pm": (16, 21),
+          }
 
           def record_blocks_slot_email(record):
               if not isinstance(record, dict):
                   return False
               return record.get("email_delivery") == "scheduled_or_sent" or record.get("mode") == "public"
 
+          def assert_send_window(slot, already_sent):
+              if already_sent:
+                  return
+              hour_min = SEND_WINDOWS.get(slot)
+              if not hour_min:
+                  raise SystemExit(f"Unknown ISSUE_SLOT for send window: {slot!r}")
+              now = local_now()
+              current_minutes = now.hour * 60 + now.minute
+              allowed_minutes = hour_min[0] * 60 + hour_min[1]
+              print(f"Local time: {now.strftime('%Y-%m-%d %H:%M:%S %Z')} ({LOCAL_TZ_NAME})")
+              print(f"Earliest allowed {slot.upper()} send time: {hour_min[0]:02d}:{hour_min[1]:02d} local")
+              if current_minutes < allowed_minutes:
+                  raise SystemExit(
+                      f"Refusing early unsent {slot.upper()} email. "
+                      f"Current local time is before {hour_min[0]:02d}:{hour_min[1]:02d}."
+                  )
+
+          slot = issue_slot()
           issue = issue_path_for_today()
           email = Path('content/email') / issue.name
           sent_log_path = Path('state/kit_sent.json')
@@ -96,6 +119,7 @@ jobs:
 
           if not issue.exists():
               raise SystemExit(f"Prepared issue not found for ISSUE_SLOT. Refusing to send: {issue}")
+          assert_send_window(slot, already_sent)
           if already_sent:
               print("Slot already has a public Kit record. Continuing so kit_publish.py can skip idempotently.")
           elif not email.exists():
