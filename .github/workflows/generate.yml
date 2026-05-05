@@ -149,6 +149,9 @@ jobs:
       - name: Publish site
         run: python publish_site.py
 
+      - name: Apply visual hardening
+        run: python visual_hardening.py
+
       - name: Apply AI search hardening
         run: python ai_search_hardening.py
 
