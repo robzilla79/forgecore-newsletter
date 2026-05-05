@@ -158,6 +158,9 @@ jobs:
       - name: Render lead magnet assets
         run: python lead_magnet_hardening.py
 
+      - name: Render ops dashboard status
+        run: python ops_status.py
+
       - name: Verify publish
         run: python verify_publish.py
 
@@ -200,6 +203,8 @@ jobs:
             site/dist/index.html
             site/dist/rss.xml
             site/dist/sitemap.xml
+            site/dist/ops/index.html
+            site/dist/status/forgecore-status.json
 
       - name: Commit prepared content
         if: success()
