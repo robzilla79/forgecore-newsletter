@@ -1,5 +1,5 @@
 Manual PM send trigger.
 
-Triggered at: 2026-05-04T22:45:00Z
-Reason: PM did not send; rerun after unblocking PM Brief verifier from RSS/sitemap indexing lag.
+Triggered at: 2026-05-05T02:08:30Z
+Reason: PM publish contract repair completed; rerun send after homepage/RSS/sitemap include 2026-05-04-pm.
 Guardrails: kit_publish.py duplicate-send protection remains active.
