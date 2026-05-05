@@ -9,6 +9,7 @@ import json
 import os
 import re
 from pathlib import Path
+from urllib.parse import urlparse
 
 from issue_contract import BANNED_TOKENS, REQUIRED_SECTIONS
 from utils import WORKSPACE, artifact_suffix_for_issue, dump_json, issue_path_for_today, load_text
@@ -196,7 +197,13 @@ def collect_errors_and_warnings(text: str, critic: dict | None, critic_expected_
     unique_urls = list(dict.fromkeys(urls))
     if len(unique_urls) < MIN_SOURCE_LINKS:
         errors.append(f"Not enough real URLs: found {len(unique_urls)}, need at least {MIN_SOURCE_LINKS}")
-    if any("example.com" in url.lower() for url in unique_urls):
+    if any(
+        (host == "example.com" or host.endswith(".example.com"))
+        for host in (
+            (urlparse(url).hostname or "").lower().rstrip(".")
+            for url in unique_urls
+        )
+    ):
         errors.append("example.com URL found in issue content")
 
     if "```" not in text:
