@@ -1,0 +1,59 @@
+name: Repair Dropped Newsletter Run
+
+on:
+  workflow_dispatch:
+    inputs:
+      issue_slot:
+        description: 'Newsletter slot to repair'
+        required: true
+        type: choice
+        options:
+          - am
+          - pm
+      repair_action:
+        description: 'Repair action to run'
+        required: true
+        type: choice
+        options:
+          - prepare_only
+          - send_only
+          - prepare_and_send
+        default: prepare_only
+      reason:
+        description: 'Why this repair is being run'
+        required: false
+        default: 'Manual dropped-run recovery'
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: forgecore-repair-${{ github.event.inputs.issue_slot }}
+  cancel-in-progress: false
+
+jobs:
+  prepare-repair:
+    if: ${{ github.event.inputs.repair_action == 'prepare_only' || github.event.inputs.repair_action == 'prepare_and_send' }}
+    name: Repair prepare step
+    uses: ./.github/workflows/generate.yml
+    secrets: inherit
+    with:
+      issue_slot: ${{ github.event.inputs.issue_slot }}
+
+  send-repair-only:
+    if: ${{ github.event.inputs.repair_action == 'send_only' }}
+    name: Repair send step only
+    uses: ./.github/workflows/send.yml
+    secrets: inherit
+    with:
+      issue_slot: ${{ github.event.inputs.issue_slot }}
+
+  send-after-prepare-repair:
+    if: ${{ github.event.inputs.repair_action == 'prepare_and_send' }}
+    name: Repair send step after prepare
+    needs: prepare-repair
+    uses: ./.github/workflows/send.yml
+    secrets: inherit
+    with:
+      issue_slot: ${{ github.event.inputs.issue_slot }}
