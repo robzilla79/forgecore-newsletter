@@ -73,6 +73,30 @@
     @media (max-width: 640px) { .value-grid { grid-template-columns:1fr; } header { padding-top:26px; } .button { width:100%; } }
   
 /* forgecore visual hardening */
+header {
+  position:sticky;
+  top:0;
+  z-index:30;
+  background:radial-gradient(circle at top left,#172554 0,#080b12 34%,#05070d 100%);
+}
+.story {
+  margin:30px 0;
+  padding:20px;
+  border:1px solid rgba(148,163,184,.18);
+  border-radius:16px;
+  background:rgba(15,23,42,.58);
+}
+.story h2 {
+  margin-top:0;
+  font-size:1.6rem;
+  color:#fff;
+  letter-spacing:-.02em;
+}
+.story p {
+  margin:0;
+  color:#cbd5e1;
+  font-size:1.05rem;
+}
 .card::before {
   content:"";
   display:block;
