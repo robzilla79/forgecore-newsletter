@@ -28,6 +28,21 @@ AUTONOMOUS_WORKFLOW = ".github/workflows/autonomous-newsletter-recovery.yml"
 MANUAL_REPAIR_WORKFLOW = ".github/workflows/repair-dropped-newsletter-run.yml"
 DEPLOY_WORKFLOW = ".github/workflows/deploy-site.yml"
 
+# Schedule gates use America/Chicago local time. They are intentionally aligned
+# with the production workflow targets and CEO review windows.
+SLOT_WINDOWS = {
+    "am": {
+        "prepare_due": (7, 45),
+        "send_due": (10, 7),
+        "send_repair_due": (10, 35),
+    },
+    "pm": {
+        "prepare_due": (13, 45),
+        "send_due": (16, 7),
+        "send_repair_due": (16, 50),
+    },
+}
+
 
 def now_central() -> datetime:
     return datetime.now(CENTRAL)
@@ -35,6 +50,22 @@ def now_central() -> datetime:
 
 def utc_now_iso() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def minutes(pair: tuple[int, int]) -> int:
+    return pair[0] * 60 + pair[1]
+
+
+def local_minutes() -> int:
+    now = now_central()
+    return now.hour * 60 + now.minute
+
+
+def fmt_time(pair: tuple[int, int]) -> str:
+    hour, minute = pair
+    suffix = "AM" if hour < 12 else "PM"
+    display_hour = hour % 12 or 12
+    return f"{display_hour}:{minute:02d} {suffix} CT"
 
 
 def read_text(path: Path) -> str:
@@ -78,22 +109,44 @@ def slot_status(slot: str, sent_log: dict) -> dict:
     issue_exists = issue_path.exists()
     email_snapshot_exists = email_path.exists()
     sent = sent_record_blocks_email(record)
+    window = SLOT_WINDOWS[slot]
+    now_min = local_minutes()
+    prepare_due = now_min >= minutes(window["prepare_due"])
+    send_due = now_min >= minutes(window["send_due"])
+    send_repair_due = now_min >= minutes(window["send_repair_due"])
 
     if issue_exists and email_snapshot_exists and sent:
         status = "sent"
         repair_action = "no_action"
-    elif issue_exists and email_snapshot_exists and not sent:
-        status = "needs_send_repair"
-        repair_action = "send_only"
-    elif not issue_exists and not sent:
+        next_expected_action = "No action needed."
+    elif not issue_exists and not prepare_due:
+        status = "pending_prepare"
+        repair_action = "no_action"
+        next_expected_action = f"Prepare window opens at {fmt_time(window['prepare_due'])}."
+    elif issue_exists and email_snapshot_exists and not sent and not send_repair_due:
+        status = "pending_send"
+        repair_action = "no_action"
+        next_expected_action = f"Send is expected around {fmt_time(window['send_due'])}; repair check begins at {fmt_time(window['send_repair_due'])}."
+    elif not issue_exists and prepare_due and not send_repair_due:
+        status = "needs_prepare_repair"
+        repair_action = "prepare_only"
+        next_expected_action = "Prepare window has passed, but send-repair window has not. Prepare the issue without forcing email."
+    elif not issue_exists and send_repair_due:
         status = "needs_prepare_repair"
         repair_action = "prepare_and_send"
+        next_expected_action = "Issue is missing after send-repair window. Autonomous recovery may prepare and send through guarded workflow."
     elif issue_exists and not email_snapshot_exists:
         status = "needs_prepare_repair"
         repair_action = "prepare_only"
+        next_expected_action = "Issue exists but locked email snapshot is missing. Rerun prepare flow."
+    elif issue_exists and email_snapshot_exists and not sent and send_repair_due:
+        status = "needs_send_repair"
+        repair_action = "send_only"
+        next_expected_action = "Issue and email snapshot exist, but no public Kit send record exists after repair window."
     else:
         status = "unknown"
         repair_action = "investigate"
+        next_expected_action = "Unexpected state. Human review required."
 
     rob_approval_required = repair_action == "investigate"
     return {
@@ -109,6 +162,12 @@ def slot_status(slot: str, sent_log: dict) -> dict:
         "web_url": f"{SITE_BASE_URL}/{slug}/",
         "status": status,
         "recommended_repair_action": repair_action,
+        "next_expected_action": next_expected_action,
+        "schedule": {
+            "prepare_due": fmt_time(window["prepare_due"]),
+            "send_due": fmt_time(window["send_due"]),
+            "send_repair_due": fmt_time(window["send_repair_due"]),
+        },
         "autonomous_recovery_workflow": AUTONOMOUS_WORKFLOW,
         "manual_repair_workflow": MANUAL_REPAIR_WORKFLOW,
         "rob_approval_required": rob_approval_required,
@@ -157,19 +216,34 @@ def site_status(latest: dict) -> dict:
 
 def overall_status(am: dict, pm: dict, site: dict) -> dict:
     risks: list[str] = []
+    waiting: list[str] = []
     repair_needed = False
     for slot in (am, pm):
         if slot["recommended_repair_action"] != "no_action":
             repair_needed = True
             risks.append(f"{slot['slot'].upper()} status is {slot['status']}.")
+        elif slot["status"].startswith("pending_"):
+            waiting.append(f"{slot['slot'].upper()} status is {slot['status']}.")
     if site["recommended_repair_action"] != "no_action":
         repair_needed = True
         risks.append("Rendered site output does not fully reflect the latest issue.")
+
+    if repair_needed:
+        status = "repair_needed"
+        current_required_action = "Autonomous recovery should act on the next scheduled check; use manual repair only if urgent."
+    elif waiting:
+        status = "waiting"
+        current_required_action = "No repair needed yet. Waiting for scheduled newsletter window."
+    else:
+        status = "healthy"
+        current_required_action = "No action needed."
+
     return {
-        "status": "repair_needed" if repair_needed else "healthy",
+        "status": status,
         "repair_needed": repair_needed,
         "risks": risks,
-        "current_required_action": "Autonomous recovery should act on the next scheduled check; use manual repair only if urgent." if repair_needed else "No action needed.",
+        "waiting": waiting,
+        "current_required_action": current_required_action,
     }
 
 
@@ -219,7 +293,7 @@ def dashboard_html() -> str:
   <meta name="robots" content="noindex,nofollow">
   <title>ForgeCore Ops Dashboard</title>
   <style>
-    :root{--bg:#07111f;--panel:#0f172a;--muted:#94a3b8;--text:#e5e7eb;--line:#1e293b;--good:#22c55e;--watch:#f59e0b;--bad:#ef4444;--info:#38bdf8}*{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(circle at top left,#1e3a8a 0,#07111f 32%,#020617 100%);color:var(--text)}a{color:#7dd3fc}.wrap{width:min(1180px,94vw);margin:0 auto;padding:28px 0 56px}.hero{display:flex;justify-content:space-between;gap:24px;align-items:flex-end;margin-bottom:22px}.eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.16em;color:#bae6fd;font-weight:900}.hero h1{font-size:clamp(32px,6vw,64px);line-height:.94;letter-spacing:-.06em;margin:10px 0}.hero p{max-width:760px;color:#cbd5e1;font-size:17px}.badge{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}.healthy{color:#86efac;border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.08)}.repair_needed,.risk{color:#fecaca;border-color:rgba(239,68,68,.45);background:rgba(239,68,68,.1)}.watch{color:#fde68a;border-color:rgba(245,158,11,.45);background:rgba(245,158,11,.1)}.unknown{color:#cbd5e1;background:rgba(148,163,184,.08)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.cards3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:16px}.card{background:linear-gradient(180deg,rgba(15,23,42,.94),rgba(15,23,42,.74));border:1px solid rgba(148,163,184,.18);border-radius:22px;padding:20px;box-shadow:0 18px 44px rgba(0,0,0,.25)}.card h2,.card h3{margin:0 0 10px;letter-spacing:-.035em}.muted{color:var(--muted)}.big{font-size:28px;font-weight:950;letter-spacing:-.04em}.kv{display:grid;grid-template-columns:1fr auto;gap:10px;padding:10px 0;border-bottom:1px solid rgba(148,163,184,.12)}.kv:last-child{border-bottom:0}.ok{color:#86efac}.no{color:#fca5a5}.action{border:1px solid rgba(56,189,248,.35);background:rgba(8,47,73,.28);border-radius:18px;padding:16px;margin:18px 0}.code{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;background:#020617;border:1px solid rgba(148,163,184,.18);border-radius:12px;padding:10px;overflow:auto;white-space:pre-wrap}.list{margin:0;padding-left:18px}.list li{margin:6px 0;color:#cbd5e1}.footer{margin-top:18px;color:#64748b;font-size:13px}@media(max-width:840px){.hero{display:block}.grid,.cards3{grid-template-columns:1fr}}
+    :root{--bg:#07111f;--panel:#0f172a;--muted:#94a3b8;--text:#e5e7eb;--line:#1e293b;--good:#22c55e;--watch:#f59e0b;--bad:#ef4444;--info:#38bdf8}*{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(circle at top left,#1e3a8a 0,#07111f 32%,#020617 100%);color:var(--text)}a{color:#7dd3fc}.wrap{width:min(1180px,94vw);margin:0 auto;padding:28px 0 56px}.hero{display:flex;justify-content:space-between;gap:24px;align-items:flex-end;margin-bottom:22px}.eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.16em;color:#bae6fd;font-weight:900}.hero h1{font-size:clamp(32px,6vw,64px);line-height:.94;letter-spacing:-.06em;margin:10px 0}.hero p{max-width:760px;color:#cbd5e1;font-size:17px}.badge{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}.healthy{color:#86efac;border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.08)}.repair_needed,.risk{color:#fecaca;border-color:rgba(239,68,68,.45);background:rgba(239,68,68,.1)}.waiting,.pending_prepare,.pending_send{color:#bfdbfe;border-color:rgba(59,130,246,.45);background:rgba(59,130,246,.1)}.watch{color:#fde68a;border-color:rgba(245,158,11,.45);background:rgba(245,158,11,.1)}.unknown{color:#cbd5e1;background:rgba(148,163,184,.08)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.cards3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:16px}.card{background:linear-gradient(180deg,rgba(15,23,42,.94),rgba(15,23,42,.74));border:1px solid rgba(148,163,184,.18);border-radius:22px;padding:20px;box-shadow:0 18px 44px rgba(0,0,0,.25)}.card h2,.card h3{margin:0 0 10px;letter-spacing:-.035em}.muted{color:var(--muted)}.big{font-size:28px;font-weight:950;letter-spacing:-.04em}.kv{display:grid;grid-template-columns:1fr auto;gap:10px;padding:10px 0;border-bottom:1px solid rgba(148,163,184,.12)}.kv:last-child{border-bottom:0}.ok{color:#86efac}.no{color:#fca5a5}.action{border:1px solid rgba(56,189,248,.35);background:rgba(8,47,73,.28);border-radius:18px;padding:16px;margin:18px 0}.code{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;background:#020617;border:1px solid rgba(148,163,184,.18);border-radius:12px;padding:10px;overflow:auto;white-space:pre-wrap}.list{margin:0;padding-left:18px}.list li{margin:6px 0;color:#cbd5e1}.footer{margin-top:18px;color:#64748b;font-size:13px}@media(max-width:840px){.hero{display:block}.grid,.cards3{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
@@ -228,7 +302,7 @@ def dashboard_html() -> str:
       <div>
         <div class="eyebrow">ForgeCore AI Team OS</div>
         <h1>Ops Dashboard</h1>
-        <p>Public-safe production oversight for Rob: AM/PM publishing, autonomous GitHub recovery, Kit send-record presence, static site freshness, and current repair recommendations.</p>
+        <p>Public-safe production oversight for Rob: AM/PM publishing, autonomous GitHub recovery, Kit send-record presence, static site freshness, and schedule-aware repair recommendations.</p>
       </div>
       <div id="overallBadge" class="badge unknown">Loading</div>
     </section>
@@ -258,15 +332,24 @@ def dashboard_html() -> str:
 <script>
 const yesNo = (v) => v ? '<span class="ok">yes</span>' : '<span class="no">no</span>';
 function row(label, value){ return `<div class="kv"><span class="muted">${label}</span><strong>${value}</strong></div>`; }
+function slotBadgeClass(slot){
+  if (slot.status === 'sent') return 'healthy';
+  if (slot.status === 'pending_prepare' || slot.status === 'pending_send') return slot.status;
+  if (slot.recommended_repair_action !== 'no_action') return 'repair_needed';
+  return 'watch';
+}
 function slotHtml(slot){
   return [
-    row('Status', `<span class="badge ${slot.status === 'sent' ? 'healthy' : 'watch'}">${slot.status}</span>`),
+    row('Status', `<span class="badge ${slotBadgeClass(slot)}">${slot.status}</span>`),
     row('Slug', slot.slug),
     row('Issue exists', yesNo(slot.issue_exists)),
     row('Email snapshot exists', yesNo(slot.email_snapshot_exists)),
     row('Kit sent record exists', yesNo(slot.kit_sent_record_exists)),
-    row('Broadcast id present', yesNo(slot.broadcast_id_present)),
     row('Recommended repair', slot.recommended_repair_action),
+    row('Next expected action', slot.next_expected_action),
+    row('Prepare due', slot.schedule.prepare_due),
+    row('Send due', slot.schedule.send_due),
+    row('Repair check', slot.schedule.send_repair_due),
     row('Rob approval required', yesNo(slot.rob_approval_required))
   ].join('');
 }
@@ -282,12 +365,15 @@ function siteHtml(site){
 }
 function repairText(data){
   const repairs = [];
+  const pending = [];
   for (const slot of [data.am, data.pm]) {
     if (slot.recommended_repair_action !== 'no_action') repairs.push(`${slot.slot.toUpperCase()}: ${slot.recommended_repair_action}`);
+    else if (slot.status.startsWith('pending_')) pending.push(`${slot.slot.toUpperCase()}: ${slot.status}`);
   }
   if (data.site.recommended_repair_action !== 'no_action') repairs.push(`SITE: ${data.site.recommended_repair_action}`);
-  if (!repairs.length) return 'No repair needed right now.';
-  return `Autonomous recovery should act on the next scheduled check: ${repairs.join(' · ')}`;
+  if (repairs.length) return `Autonomous recovery should act on the next scheduled check: ${repairs.join(' · ')}`;
+  if (pending.length) return `No repair needed yet. Waiting on schedule: ${pending.join(' · ')}`;
+  return 'No repair needed right now.';
 }
 function repairInputs(data){
   const target = [data.am, data.pm].find(s => s.recommended_repair_action !== 'no_action');
