@@ -8,6 +8,7 @@ on:
       - 'content/email/**'
       - 'content_cleanup.py'
       - 'publish_site.py'
+      - 'ops_status.py'
       - 'ai_search_hardening.py'
       - 'business_hardening.py'
       - 'lead_magnet_hardening.py'
@@ -77,6 +78,9 @@ jobs:
 
       - name: Render lead magnet assets
         run: python lead_magnet_hardening.py
+
+      - name: Render ops dashboard status
+        run: python ops_status.py
 
       - name: Verify site without newsletter send dependency
         run: python verify_site_updates.py
