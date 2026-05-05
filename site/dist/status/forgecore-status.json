@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-05-05T19:10:18Z",
-  "generated_at_central": "2026-05-05T14:10:18-05:00",
+  "generated_at": "2026-05-05T19:59:58Z",
+  "generated_at_central": "2026-05-05T14:59:58-05:00",
   "public_safe": true,
   "overall": {
     "status": "waiting",
@@ -37,7 +37,7 @@
   "pm": {
     "slot": "pm",
     "slug": "2026-05-05-pm",
-    "title": "How Solo Founders Can Streamline Client Onboarding with AI",
+    "title": "How Solo Founders Can Automate Client Onboarding with AI",
     "issue_path": "content/issues/2026-05-05-pm.md",
     "email_path": "content/email/2026-05-05-pm.md",
     "issue_exists": true,
@@ -59,7 +59,7 @@
   },
   "latest_issue": {
     "slug": "2026-05-05-pm",
-    "title": "How Solo Founders Can Streamline Client Onboarding with AI",
+    "title": "How Solo Founders Can Automate Client Onboarding with AI",
     "path": "content/issues/2026-05-05-pm.md",
     "exists": true,
     "web_url": "https://news.forgecore.co/2026-05-05-pm/"

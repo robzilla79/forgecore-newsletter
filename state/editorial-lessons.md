@@ -809,3 +809,21 @@
 - Rules for future issues:
   - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
   - Any affiliate or partner-link language must include a clear commission disclosure.
+
+
+---
+
+## 2026-05-05 19:59:52 UTC — /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-05-pm.md
+- Improvement result: changed (rewritten issue saved)
+- Critic score: 8.0 | verdict: publishable
+- Weaknesses found:
+  - Enhance the headline for greater impact
+  - Add more examples or case studies to illustrate effectiveness
+  - Refine the hook to better capture attention
+  - Headline could be more compelling
+  - Some sections could use more depth
+  - Tool of the Week must include a concrete tool recommendation
+- Rules for future issues:
+  - Make the headline name the workflow, operator, tool choice, or measurable outcome.
+  - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
+  - Start the Hook with the operator outcome or decision, not a product announcement.
