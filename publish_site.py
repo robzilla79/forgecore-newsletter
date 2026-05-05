@@ -43,6 +43,14 @@ REQUIRED_SECTIONS = (
     "CTA",
     "Sources",
 )
+PM_REQUIRED_SECTIONS = (
+    "The 3 Signals",
+    "Tool Watch",
+    "Operator Opportunity",
+    "Skip / Caution",
+    "Tomorrow's Move",
+    "Sources",
+)
 BAD_MARKERS = (
     "No concrete content returned",
     "Missing Content",
@@ -240,6 +248,11 @@ def canonical_url(path: str = "") -> str:
     return f"{SITE_BASE_URL}/{clean_path}/" if clean_path else f"{SITE_BASE_URL}/"
 
 
+def issue_has_sections(text: str, sections: tuple[str, ...]) -> bool:
+    lower = text.lower()
+    return all(f"## {section}".lower() in lower for section in sections)
+
+
 def is_valid_issue(text: str) -> bool:
     if len(text.split()) < 350:
         return False
@@ -247,8 +260,7 @@ def is_valid_issue(text: str) -> bool:
         return False
     if not text.lstrip().startswith("# "):
         return False
-    lower = text.lower()
-    return all(f"## {section}".lower() in lower for section in REQUIRED_SECTIONS)
+    return issue_has_sections(text, REQUIRED_SECTIONS) or issue_has_sections(text, PM_REQUIRED_SECTIONS)
 
 
 def inline_markdown(value: str) -> str:
