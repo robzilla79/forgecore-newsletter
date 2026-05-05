@@ -1,0 +1,1 @@
+trigger PM publish contract patch
