@@ -1,15 +1,16 @@
 {
-  "generated_at": "2026-05-05T13:35:27Z",
-  "generated_at_central": "2026-05-05T08:35:27-05:00",
+  "generated_at": "2026-05-05T13:45:17Z",
+  "generated_at_central": "2026-05-05T08:45:17-05:00",
   "public_safe": true,
   "overall": {
-    "status": "repair_needed",
-    "repair_needed": true,
-    "risks": [
-      "AM status is needs_send_repair.",
-      "PM status is needs_prepare_repair."
+    "status": "waiting",
+    "repair_needed": false,
+    "risks": [],
+    "waiting": [
+      "AM status is pending_send.",
+      "PM status is pending_prepare."
     ],
-    "current_required_action": "Autonomous recovery should act on the next scheduled check; use manual repair only if urgent."
+    "current_required_action": "No repair needed yet. Waiting for scheduled newsletter window."
   },
   "am": {
     "slot": "am",
@@ -22,8 +23,14 @@
     "kit_sent_record_exists": false,
     "broadcast_id_present": false,
     "web_url": "https://news.forgecore.co/2026-05-05-am/",
-    "status": "needs_send_repair",
-    "recommended_repair_action": "send_only",
+    "status": "pending_send",
+    "recommended_repair_action": "no_action",
+    "next_expected_action": "Send is expected around 10:07 AM CT; repair check begins at 10:35 AM CT.",
+    "schedule": {
+      "prepare_due": "7:45 AM CT",
+      "send_due": "10:07 AM CT",
+      "send_repair_due": "10:35 AM CT"
+    },
     "autonomous_recovery_workflow": ".github/workflows/autonomous-newsletter-recovery.yml",
     "manual_repair_workflow": ".github/workflows/repair-dropped-newsletter-run.yml",
     "rob_approval_required": false
@@ -39,8 +46,14 @@
     "kit_sent_record_exists": false,
     "broadcast_id_present": false,
     "web_url": "https://news.forgecore.co/2026-05-05-pm/",
-    "status": "needs_prepare_repair",
-    "recommended_repair_action": "prepare_and_send",
+    "status": "pending_prepare",
+    "recommended_repair_action": "no_action",
+    "next_expected_action": "Prepare window opens at 1:45 PM CT.",
+    "schedule": {
+      "prepare_due": "1:45 PM CT",
+      "send_due": "4:07 PM CT",
+      "send_repair_due": "4:50 PM CT"
+    },
     "autonomous_recovery_workflow": ".github/workflows/autonomous-newsletter-recovery.yml",
     "manual_repair_workflow": ".github/workflows/repair-dropped-newsletter-run.yml",
     "rob_approval_required": false
