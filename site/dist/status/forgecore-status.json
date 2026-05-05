@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-05-05T13:06:55Z",
-  "generated_at_central": "2026-05-05T08:06:55-05:00",
+  "generated_at": "2026-05-05T13:19:54Z",
+  "generated_at_central": "2026-05-05T08:19:54-05:00",
   "public_safe": true,
   "overall": {
     "status": "repair_needed",
@@ -9,7 +9,7 @@
       "AM status is needs_prepare_repair.",
       "PM status is needs_prepare_repair."
     ],
-    "current_required_action": "Run the recommended repair workflow or investigate listed risks."
+    "current_required_action": "Autonomous recovery should act on the next scheduled check; use manual repair only if urgent."
   },
   "am": {
     "slot": "am",
@@ -24,6 +24,8 @@
     "web_url": "https://news.forgecore.co/2026-05-05-am/",
     "status": "needs_prepare_repair",
     "recommended_repair_action": "prepare_and_send",
+    "autonomous_recovery_workflow": ".github/workflows/autonomous-newsletter-recovery.yml",
+    "manual_repair_workflow": ".github/workflows/repair-dropped-newsletter-run.yml",
     "rob_approval_required": false
   },
   "pm": {
@@ -39,6 +41,8 @@
     "web_url": "https://news.forgecore.co/2026-05-05-pm/",
     "status": "needs_prepare_repair",
     "recommended_repair_action": "prepare_and_send",
+    "autonomous_recovery_workflow": ".github/workflows/autonomous-newsletter-recovery.yml",
+    "manual_repair_workflow": ".github/workflows/repair-dropped-newsletter-run.yml",
     "rob_approval_required": false
   },
   "latest_issue": {
@@ -56,14 +60,19 @@
     "sitemap_has_latest": true,
     "latest_article_route_exists": true,
     "status": "fresh",
-    "recommended_repair_action": "no_action"
+    "recommended_repair_action": "no_action",
+    "deploy_workflow": ".github/workflows/deploy-site.yml"
   },
-  "repair_workflow": ".github/workflows/repair-dropped-newsletter-run.yml",
+  "autonomous_recovery_workflow": ".github/workflows/autonomous-newsletter-recovery.yml",
+  "manual_repair_workflow": ".github/workflows/repair-dropped-newsletter-run.yml",
+  "deploy_workflow": ".github/workflows/deploy-site.yml",
   "source_docs": [
     "docs/forgecore-ai-team-os-ceo-monitoring.md",
     "docs/kit-newsletter-ops.md",
     "docs/cloudflare-github-ops.md",
-    "docs/dropped-newsletter-run-repair.md"
+    "docs/dropped-newsletter-run-repair.md",
+    "docs/autonomous-github-recovery.md",
+    "docs/ops-dashboard.md"
   ],
-  "privacy_note": "Public-safe v1 excludes subscriber counts, private Kit metrics, API responses, secrets, and workflow logs."
+  "privacy_note": "Public-safe v1 excludes subscriber counts, private Kit metrics, API responses, secrets, revenue data, and workflow logs."
 }
