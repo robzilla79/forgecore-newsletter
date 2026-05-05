@@ -2,8 +2,12 @@
 """Publish verification for ForgeCore PM Brief issues.
 
 This verifier is intentionally narrower than the AM verifier. It confirms the
-PM source issue has the PM Brief contract and only requires rendered output when
-publish_site.py produced the PM route.
+PM source issue has the PM Brief contract and confirms the rendered PM article
+route when publish_site.py produced it.
+
+PM Briefs are allowed to send even if homepage/RSS/sitemap indexing lags behind
+the PM route. The send path uses the locked email snapshot, and indexing should
+be repaired separately instead of blocking the time-sensitive Kit send.
 """
 from __future__ import annotations
 
@@ -13,7 +17,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 DIST_DIR = ROOT / "site" / "dist"
 ISSUES_DIR = ROOT / "content" / "issues"
-SITE_BASE = "https://news.forgecore.co"
 PM_REQUIRED_SECTIONS = (
     "## The 3 Signals",
     "## Tool Watch",
@@ -53,12 +56,6 @@ def main() -> int:
         require("<article" in html, f"PM article route missing article markup: {slug}")
         require('<link rel="canonical"' in html, f"PM article missing canonical metadata: {slug}")
         require('application/ld+json' in html, f"PM article missing JSON-LD: {slug}")
-
-    rss = DIST_DIR / "rss.xml"
-    sitemap = DIST_DIR / "sitemap.xml"
-    if article.exists() and rss.exists() and sitemap.exists():
-        require(f"{SITE_BASE}/{slug}/" in rss.read_text(encoding="utf-8"), f"RSS missing PM issue URL: {slug}")
-        require(f"{SITE_BASE}/{slug}/" in sitemap.read_text(encoding="utf-8"), f"Sitemap missing PM issue URL: {slug}")
 
     print(f"PM publish verified: {slug}")
     return 0
