@@ -21,23 +21,13 @@ OG_IMAGE_URL = "https://news.forgecore.co/images/visuals/default-workflow.svg"
 VISUAL_CSS = f"""
 {CSS_MARKER}
 .card::before {{
-  content:"AI WORKFLOW";
-  display:flex;
-  align-items:center;
-  height:64px;
-  margin:0 0 16px;
-  padding:0 14px;
-  border-radius:14px;
-  border:1px solid rgba(56,189,248,.22);
-  background:
-    radial-gradient(circle at 12% 30%, rgba(56,189,248,.34), transparent 24%),
-    radial-gradient(circle at 88% 24%, rgba(167,139,250,.24), transparent 28%),
-    linear-gradient(135deg, rgba(15,23,42,.96), rgba(8,47,73,.48));
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
-  color:#bae6fd;
-  font-size:.72rem;
-  font-weight:900;
-  letter-spacing:.16em;
+  content:"";
+  display:block;
+  height:7px;
+  margin:0 0 18px;
+  border-radius:999px;
+  background:linear-gradient(90deg, rgba(56,189,248,.86), rgba(167,139,250,.62), rgba(45,212,191,.50));
+  box-shadow:0 0 22px rgba(56,189,248,.18);
 }}
 .tool-card::before {{ display:none; }}
 .fc-article-visual {{
@@ -139,7 +129,7 @@ VISUAL_CSS = f"""
   .fc-workflow-visual {{ grid-template-columns:.9fr 1.1fr; align-items:center; }}
 }}
 @media (max-width:640px) {{
-  .card::before {{ height:52px; margin-bottom:14px; border-radius:12px; font-size:.66rem; }}
+  .card::before {{ height:6px; margin-bottom:16px; }}
   .fc-article-visual, .fc-article-visual-inner {{ min-height:210px; }}
 }}
 """
