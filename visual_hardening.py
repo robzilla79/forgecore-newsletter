@@ -16,10 +16,35 @@ DIST_DIR = WORKSPACE / "site" / "dist"
 VISUAL_DIR = DIST_DIR / "images" / "visuals"
 CSS_MARKER = "/* forgecore visual hardening */"
 ARTICLE_MARKER = "<!-- forgecore-article-visuals -->"
+HOMEPAGE_STORY_MARKER = "<!-- forgecore-homepage-story -->"
 OG_IMAGE_URL = "https://news.forgecore.co/images/visuals/default-workflow.svg"
 
 VISUAL_CSS = f"""
 {CSS_MARKER}
+header {{
+  position:sticky;
+  top:0;
+  z-index:30;
+  background:radial-gradient(circle at top left,#172554 0,#080b12 34%,#05070d 100%);
+}}
+.story {{
+  margin:30px 0;
+  padding:20px;
+  border:1px solid rgba(148,163,184,.18);
+  border-radius:16px;
+  background:rgba(15,23,42,.58);
+}}
+.story h2 {{
+  margin-top:0;
+  font-size:1.6rem;
+  color:#fff;
+  letter-spacing:-.02em;
+}}
+.story p {{
+  margin:0;
+  color:#cbd5e1;
+  font-size:1.05rem;
+}}
 .card::before {{
   content:"";
   display:block;
@@ -139,6 +164,14 @@ SVG_ASSETS = {
     "default-warning.svg": """<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"1600\" height=\"900\" viewBox=\"0 0 1600 900\"><rect width=\"1600\" height=\"900\" fill=\"#020617\"/><circle cx=\"1240\" cy=\"180\" r=\"300\" fill=\"#f59e0b\" opacity=\".18\"/><text x=\"110\" y=\"145\" fill=\"#fcd34d\" font-family=\"Inter,Arial,sans-serif\" font-size=\"34\" font-weight=\"800\" letter-spacing=\"8\">FORGECORE</text><text x=\"110\" y=\"235\" fill=\"#fff\" font-family=\"Inter,Arial,sans-serif\" font-size=\"78\" font-weight=\"900\">Bad-Fit Warning</text><text x=\"112\" y=\"300\" fill=\"#cbd5e1\" font-family=\"Inter,Arial,sans-serif\" font-size=\"32\">Use simpler systems before paid tool spend.</text><path d=\"M800 370L1020 720H580L800 370Z\" fill=\"#0f172a\" stroke=\"#f59e0b\" stroke-width=\"10\"/><text x=\"800\" y=\"615\" text-anchor=\"middle\" fill=\"#fcd34d\" font-family=\"Inter,Arial,sans-serif\" font-size=\"150\" font-weight=\"900\">!</text></svg>""",
 }
 
+HOMEPAGE_STORY_BLOCK = f"""
+{HOMEPAGE_STORY_MARKER}
+<section class="story">
+  <h2>Stop drowning in scattered tools</h2>
+  <p>Running a business solo means juggling endless tasks and software. ForgeCore condenses the AI landscape into practical workflows so you can focus on what matters — making money, saving time and avoiding tool fatigue.</p>
+</section>
+"""
+
 
 def write_visual_assets() -> None:
     VISUAL_DIR.mkdir(parents=True, exist_ok=True)
@@ -171,6 +204,22 @@ def add_social_image_meta(text: str) -> str:
             f'<meta name="twitter:image" content="{OG_IMAGE_URL}">\n  <meta name="twitter:description" content=',
             1,
         )
+    return text
+
+
+def add_homepage_designer_copy(text: str) -> str:
+    text = text.replace(
+        '<h1 class="hero-title">Build systems that save time, create leverage, and avoid tool waste.</h1>',
+        '<h1 class="hero-title">Build AI-powered systems that free up your time and grow your business.</h1>',
+        1,
+    )
+    text = text.replace(
+        '<p class="hero-copy">ForgeCore turns AI tool signals into practical playbooks for builders, creators, consultants, indie hackers, and small business operators.</p>',
+        '<p class="hero-copy">ForgeCore condenses the noise of the AI landscape into step-by-step playbooks for builders, creators, consultants, indie hackers, and small business operators. Save hours each week, make more money, and stop drowning in tool overload.</p>',
+        1,
+    )
+    if HOMEPAGE_STORY_MARKER not in text:
+        text = text.replace('<section class="lead-magnet">', HOMEPAGE_STORY_BLOCK + '<section class="lead-magnet">', 1)
     return text
 
 
@@ -214,6 +263,8 @@ def process_html(path: Path) -> bool:
     original = path.read_text(encoding="utf-8")
     text = add_visual_css(original)
     text = add_social_image_meta(text)
+    if path == DIST_DIR / "index.html":
+        text = add_homepage_designer_copy(text)
     text = add_article_visuals(text)
     if text == original:
         return False
