@@ -773,3 +773,22 @@
   - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
   - Name the exact operator persona, job-to-be-done, tool stack, and tradeoff.
   - Make the headline name the workflow, operator, tool choice, or measurable outcome.
+
+
+---
+
+## 2026-05-05 14:38:47 UTC — /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-05-am.md
+- Improvement result: changed (rewritten issue saved)
+- Critic score: 10.0 | verdict: needs_revision
+- Weaknesses found:
+  - Enhance the hook to better capture attention.
+  - Clarify measurable outcomes related to client acquisition.
+  - Revise the hook to make it more engaging.
+  - Add specific metrics or examples of expected outcomes from implementing AEO.
+  - Strengthen the headline to reflect urgency or a unique angle.
+  - The hook could be more compelling to draw in readers.
+- Rules for future issues:
+  - Start the Hook with the operator outcome or decision, not a product announcement.
+  - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
+  - Name the exact operator persona, job-to-be-done, tool stack, and tradeoff.
+  - Make the headline name the workflow, operator, tool choice, or measurable outcome.
