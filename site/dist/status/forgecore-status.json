@@ -1,0 +1,69 @@
+{
+  "generated_at": "2026-05-05T13:02:56Z",
+  "generated_at_central": "2026-05-05T08:02:56-05:00",
+  "public_safe": true,
+  "overall": {
+    "status": "repair_needed",
+    "repair_needed": true,
+    "risks": [
+      "AM status is needs_prepare_repair.",
+      "PM status is needs_prepare_repair."
+    ],
+    "current_required_action": "Run the recommended repair workflow or investigate listed risks."
+  },
+  "am": {
+    "slot": "am",
+    "slug": "2026-05-05-am",
+    "title": "",
+    "issue_path": "content/issues/2026-05-05-am.md",
+    "email_path": "content/email/2026-05-05-am.md",
+    "issue_exists": false,
+    "email_snapshot_exists": false,
+    "kit_sent_record_exists": false,
+    "broadcast_id_present": false,
+    "web_url": "https://news.forgecore.co/2026-05-05-am/",
+    "status": "needs_prepare_repair",
+    "recommended_repair_action": "prepare_and_send",
+    "rob_approval_required": false
+  },
+  "pm": {
+    "slot": "pm",
+    "slug": "2026-05-05-pm",
+    "title": "",
+    "issue_path": "content/issues/2026-05-05-pm.md",
+    "email_path": "content/email/2026-05-05-pm.md",
+    "issue_exists": false,
+    "email_snapshot_exists": false,
+    "kit_sent_record_exists": false,
+    "broadcast_id_present": false,
+    "web_url": "https://news.forgecore.co/2026-05-05-pm/",
+    "status": "needs_prepare_repair",
+    "recommended_repair_action": "prepare_and_send",
+    "rob_approval_required": false
+  },
+  "latest_issue": {
+    "slug": "2026-05-04-pm",
+    "title": "ForgeCore PM Brief \u2014 Agents Are Becoming Business Infrastructure",
+    "path": "content/issues/2026-05-04-pm.md",
+    "exists": true,
+    "web_url": "https://news.forgecore.co/2026-05-04-pm/"
+  },
+  "site": {
+    "site_dist_exists": true,
+    "latest_slug": "2026-05-04-pm",
+    "homepage_has_latest": true,
+    "rss_has_latest": true,
+    "sitemap_has_latest": true,
+    "latest_article_route_exists": true,
+    "status": "fresh",
+    "recommended_repair_action": "no_action"
+  },
+  "repair_workflow": ".github/workflows/repair-dropped-newsletter-run.yml",
+  "source_docs": [
+    "docs/forgecore-ai-team-os-ceo-monitoring.md",
+    "docs/kit-newsletter-ops.md",
+    "docs/cloudflare-github-ops.md",
+    "docs/dropped-newsletter-run-repair.md"
+  ],
+  "privacy_note": "Public-safe v1 excludes subscriber counts, private Kit metrics, API responses, secrets, and workflow logs."
+}
