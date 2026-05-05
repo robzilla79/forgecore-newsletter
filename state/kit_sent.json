@@ -47,5 +47,18 @@
     "email_source_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/email/2026-05-04-am.md",
     "issue_slot": "am",
     "web_url": "https://news.forgecore.co/2026-05-04-am/"
+  },
+  "2026-05-04-pm": {
+    "broadcast_id": 23984390,
+    "subject": "ForgeCore PM Brief \u2014 Agents Are Becoming Business Infrastructure",
+    "sent_at": "2026-05-05T00:48:21.562888+00:00",
+    "mode": "public",
+    "requested_mode": "public",
+    "email_delivery": "scheduled_or_sent",
+    "send_at": "2026-05-05T00:48:21Z",
+    "issue_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-04-pm.md",
+    "email_source_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/email/2026-05-04-pm.md",
+    "issue_slot": "pm",
+    "web_url": "https://news.forgecore.co/2026-05-04-pm/"
   }
 }
