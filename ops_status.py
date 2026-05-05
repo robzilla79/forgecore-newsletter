@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
 """Generate the public-safe ForgeCore ops dashboard and status JSON.
 
-This is intentionally static-first. It reads repo outputs and rendered site files,
-then writes:
+Static-first v1. Reads repo outputs and rendered site files, then writes:
   - site/dist/status/forgecore-status.json
   - site/dist/ops/index.html
 
-Do not include secrets, subscriber counts, private API responses, or workflow logs
-in this public-safe v1 output.
+Public-safe means no secrets, subscriber counts, private API responses, revenue
+metrics, detailed workflow logs, or private Kit dashboard data.
 """
 from __future__ import annotations
 
 import json
-import re
 from datetime import datetime, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -26,6 +24,9 @@ STATE_DIR = WORKSPACE / "state"
 KIT_SENT = STATE_DIR / "kit_sent.json"
 CENTRAL = ZoneInfo("America/Chicago")
 SITE_BASE_URL = "https://news.forgecore.co"
+AUTONOMOUS_WORKFLOW = ".github/workflows/autonomous-newsletter-recovery.yml"
+MANUAL_REPAIR_WORKFLOW = ".github/workflows/repair-dropped-newsletter-run.yml"
+DEPLOY_WORKFLOW = ".github/workflows/deploy-site.yml"
 
 
 def now_central() -> datetime:
@@ -94,6 +95,7 @@ def slot_status(slot: str, sent_log: dict) -> dict:
         status = "unknown"
         repair_action = "investigate"
 
+    rob_approval_required = repair_action == "investigate"
     return {
         "slot": slot,
         "slug": slug,
@@ -107,7 +109,9 @@ def slot_status(slot: str, sent_log: dict) -> dict:
         "web_url": f"{SITE_BASE_URL}/{slug}/",
         "status": status,
         "recommended_repair_action": repair_action,
-        "rob_approval_required": repair_action in {"investigate"},
+        "autonomous_recovery_workflow": AUTONOMOUS_WORKFLOW,
+        "manual_repair_workflow": MANUAL_REPAIR_WORKFLOW,
+        "rob_approval_required": rob_approval_required,
     }
 
 
@@ -147,6 +151,7 @@ def site_status(latest: dict) -> dict:
         "latest_article_route_exists": article_route_exists,
         "status": "fresh" if healthy else "stale_or_incomplete",
         "recommended_repair_action": "no_action" if healthy else "deploy-site",
+        "deploy_workflow": DEPLOY_WORKFLOW,
     }
 
 
@@ -160,15 +165,11 @@ def overall_status(am: dict, pm: dict, site: dict) -> dict:
     if site["recommended_repair_action"] != "no_action":
         repair_needed = True
         risks.append("Rendered site output does not fully reflect the latest issue.")
-    if repair_needed:
-        status = "repair_needed"
-    else:
-        status = "healthy"
     return {
-        "status": status,
+        "status": "repair_needed" if repair_needed else "healthy",
         "repair_needed": repair_needed,
         "risks": risks,
-        "current_required_action": "Run the recommended repair workflow or investigate listed risks." if repair_needed else "No action needed.",
+        "current_required_action": "Autonomous recovery should act on the next scheduled check; use manual repair only if urgent." if repair_needed else "No action needed.",
     }
 
 
@@ -188,14 +189,18 @@ def build_status() -> dict:
         "pm": pm,
         "latest_issue": latest,
         "site": site,
-        "repair_workflow": ".github/workflows/repair-dropped-newsletter-run.yml",
+        "autonomous_recovery_workflow": AUTONOMOUS_WORKFLOW,
+        "manual_repair_workflow": MANUAL_REPAIR_WORKFLOW,
+        "deploy_workflow": DEPLOY_WORKFLOW,
         "source_docs": [
             "docs/forgecore-ai-team-os-ceo-monitoring.md",
             "docs/kit-newsletter-ops.md",
             "docs/cloudflare-github-ops.md",
             "docs/dropped-newsletter-run-repair.md",
+            "docs/autonomous-github-recovery.md",
+            "docs/ops-dashboard.md",
         ],
-        "privacy_note": "Public-safe v1 excludes subscriber counts, private Kit metrics, API responses, secrets, and workflow logs.",
+        "privacy_note": "Public-safe v1 excludes subscriber counts, private Kit metrics, API responses, secrets, revenue data, and workflow logs.",
     }
 
 
@@ -214,7 +219,7 @@ def dashboard_html() -> str:
   <meta name="robots" content="noindex,nofollow">
   <title>ForgeCore Ops Dashboard</title>
   <style>
-    :root{--bg:#07111f;--panel:#0f172a;--muted:#94a3b8;--text:#e5e7eb;--line:#1e293b;--good:#22c55e;--watch:#f59e0b;--bad:#ef4444;--info:#38bdf8}*{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(circle at top left,#1e3a8a 0,#07111f 32%,#020617 100%);color:var(--text)}a{color:#7dd3fc}.wrap{width:min(1180px,94vw);margin:0 auto;padding:28px 0 56px}.hero{display:flex;justify-content:space-between;gap:24px;align-items:flex-end;margin-bottom:22px}.eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.16em;color:#bae6fd;font-weight:900}.hero h1{font-size:clamp(32px,6vw,64px);line-height:.94;letter-spacing:-.06em;margin:10px 0}.hero p{max-width:760px;color:#cbd5e1;font-size:17px}.badge{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}.healthy{color:#86efac;border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.08)}.repair_needed,.risk{color:#fecaca;border-color:rgba(239,68,68,.45);background:rgba(239,68,68,.1)}.watch{color:#fde68a;border-color:rgba(245,158,11,.45);background:rgba(245,158,11,.1)}.unknown{color:#cbd5e1;background:rgba(148,163,184,.08)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.cards3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:16px}.card{background:linear-gradient(180deg,rgba(15,23,42,.94),rgba(15,23,42,.74));border:1px solid rgba(148,163,184,.18);border-radius:22px;padding:20px;box-shadow:0 18px 44px rgba(0,0,0,.25)}.card h2,.card h3{margin:0 0 10px;letter-spacing:-.035em}.muted{color:var(--muted)}.big{font-size:30px;font-weight:950;letter-spacing:-.04em}.kv{display:grid;grid-template-columns:1fr auto;gap:10px;padding:10px 0;border-bottom:1px solid rgba(148,163,184,.12)}.kv:last-child{border-bottom:0}.ok{color:#86efac}.no{color:#fca5a5}.warn{color:#fde68a}.action{border:1px solid rgba(56,189,248,.35);background:rgba(8,47,73,.28);border-radius:18px;padding:16px;margin:18px 0}.code{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;background:#020617;border:1px solid rgba(148,163,184,.18);border-radius:12px;padding:10px;overflow:auto}.button{display:inline-flex;align-items:center;justify-content:center;margin-top:10px;padding:10px 14px;border-radius:999px;background:linear-gradient(135deg,#38bdf8,#a78bfa);color:#04111f;font-weight:900;text-decoration:none}.list{margin:0;padding-left:18px}.list li{margin:6px 0;color:#cbd5e1}.footer{margin-top:18px;color:#64748b;font-size:13px}@media(max-width:840px){.hero{display:block}.grid,.cards3{grid-template-columns:1fr}}
+    :root{--bg:#07111f;--panel:#0f172a;--muted:#94a3b8;--text:#e5e7eb;--line:#1e293b;--good:#22c55e;--watch:#f59e0b;--bad:#ef4444;--info:#38bdf8}*{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(circle at top left,#1e3a8a 0,#07111f 32%,#020617 100%);color:var(--text)}a{color:#7dd3fc}.wrap{width:min(1180px,94vw);margin:0 auto;padding:28px 0 56px}.hero{display:flex;justify-content:space-between;gap:24px;align-items:flex-end;margin-bottom:22px}.eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.16em;color:#bae6fd;font-weight:900}.hero h1{font-size:clamp(32px,6vw,64px);line-height:.94;letter-spacing:-.06em;margin:10px 0}.hero p{max-width:760px;color:#cbd5e1;font-size:17px}.badge{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}.healthy{color:#86efac;border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.08)}.repair_needed,.risk{color:#fecaca;border-color:rgba(239,68,68,.45);background:rgba(239,68,68,.1)}.watch{color:#fde68a;border-color:rgba(245,158,11,.45);background:rgba(245,158,11,.1)}.unknown{color:#cbd5e1;background:rgba(148,163,184,.08)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.cards3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:16px}.card{background:linear-gradient(180deg,rgba(15,23,42,.94),rgba(15,23,42,.74));border:1px solid rgba(148,163,184,.18);border-radius:22px;padding:20px;box-shadow:0 18px 44px rgba(0,0,0,.25)}.card h2,.card h3{margin:0 0 10px;letter-spacing:-.035em}.muted{color:var(--muted)}.big{font-size:28px;font-weight:950;letter-spacing:-.04em}.kv{display:grid;grid-template-columns:1fr auto;gap:10px;padding:10px 0;border-bottom:1px solid rgba(148,163,184,.12)}.kv:last-child{border-bottom:0}.ok{color:#86efac}.no{color:#fca5a5}.action{border:1px solid rgba(56,189,248,.35);background:rgba(8,47,73,.28);border-radius:18px;padding:16px;margin:18px 0}.code{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;background:#020617;border:1px solid rgba(148,163,184,.18);border-radius:12px;padding:10px;overflow:auto;white-space:pre-wrap}.list{margin:0;padding-left:18px}.list li{margin:6px 0;color:#cbd5e1}.footer{margin-top:18px;color:#64748b;font-size:13px}@media(max-width:840px){.hero{display:block}.grid,.cards3{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
@@ -223,7 +228,7 @@ def dashboard_html() -> str:
       <div>
         <div class="eyebrow">ForgeCore AI Team OS</div>
         <h1>Ops Dashboard</h1>
-        <p>Public-safe production oversight for Rob: AM/PM publishing, Kit send-record presence, static site freshness, and the current repair recommendation.</p>
+        <p>Public-safe production oversight for Rob: AM/PM publishing, autonomous GitHub recovery, Kit send-record presence, static site freshness, and current repair recommendations.</p>
       </div>
       <div id="overallBadge" class="badge unknown">Loading</div>
     </section>
@@ -235,7 +240,7 @@ def dashboard_html() -> str:
     </div>
 
     <section class="action">
-      <h2>Repair recommendation</h2>
+      <h2>Autonomous recovery recommendation</h2>
       <p id="repairCopy" class="muted">Loading status...</p>
       <div id="repairInputs" class="code">—</div>
     </section>
@@ -244,11 +249,11 @@ def dashboard_html() -> str:
       <section class="card"><h2>AM slot</h2><div id="amSlot"></div></section>
       <section class="card"><h2>PM slot</h2><div id="pmSlot"></div></section>
       <section class="card"><h2>Site freshness</h2><div id="siteStatus"></div></section>
-      <section class="card"><h2>CEO oversight boundaries</h2><ul class="list"><li>Do not resend if Kit or state/kit_sent.json already shows a public send.</li><li>Rob approval required for duplicate-send risk, correction emails, sponsor mistakes, or affiliate trust incidents.</li><li>Public-safe v1 excludes private Kit metrics, subscriber counts, secrets, and workflow logs.</li></ul></section>
+      <section class="card"><h2>CEO oversight boundaries</h2><ul class="list"><li>GitHub may autonomously prepare missing issues and send only through the guarded Kit workflow.</li><li>Never resend if Kit or state/kit_sent.json already shows a public send.</li><li>Rob approval is required for duplicate-send risk, correction emails, sponsor mistakes, or affiliate trust incidents.</li><li>Public-safe v1 excludes private Kit metrics, subscriber counts, secrets, revenue data, and workflow logs.</li></ul></section>
     </div>
 
     <section class="card" style="margin-top:16px"><h2>Source docs</h2><div id="sourceDocs"></div></section>
-    <div class="footer">This dashboard is generated by ops_status.py from repo and static site outputs. Live API integrations can be added later through Cloudflare Pages Functions after /ops/ is protected.</div>
+    <div class="footer">Generated by ops_status.py from repo and static site outputs. API-backed private metrics should wait until /ops/ is protected by Cloudflare Access.</div>
   </div>
 <script>
 const yesNo = (v) => v ? '<span class="ok">yes</span>' : '<span class="no">no</span>';
@@ -282,15 +287,15 @@ function repairText(data){
   }
   if (data.site.recommended_repair_action !== 'no_action') repairs.push(`SITE: ${data.site.recommended_repair_action}`);
   if (!repairs.length) return 'No repair needed right now.';
-  return `Repair needed: ${repairs.join(' · ')}`;
+  return `Autonomous recovery should act on the next scheduled check: ${repairs.join(' · ')}`;
 }
 function repairInputs(data){
   const target = [data.am, data.pm].find(s => s.recommended_repair_action !== 'no_action');
   if (!target) {
-    if (data.site.recommended_repair_action !== 'no_action') return 'workflow: .github/workflows/deploy-site.yml';
+    if (data.site.recommended_repair_action !== 'no_action') return `workflow: ${data.deploy_workflow}`;
     return 'no action';
   }
-  return `workflow: ${data.repair_workflow}\nissue_slot: ${target.slot}\nrepair_action: ${target.recommended_repair_action}\nreason: ${target.slot.toUpperCase()} status is ${target.status}`;
+  return `autonomous workflow: ${data.autonomous_recovery_workflow}\nmanual fallback: ${data.manual_repair_workflow}\nissue_slot: ${target.slot}\nallow_send: true\nexpected action: ${target.recommended_repair_action}\nreason: ${target.slot.toUpperCase()} status is ${target.status}`;
 }
 fetch('/status/forgecore-status.json', {cache:'no-store'})
   .then(r => r.json())
