@@ -1,0 +1,87 @@
+{
+  "passed": true,
+  "fallback_published": false,
+  "checks": {
+    "exists": true,
+    "issue_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-05-am.md",
+    "word_count": 889,
+    "required_sections_present": [
+      "## Hook",
+      "## Top Story",
+      "## Why It Matters",
+      "## Highlights",
+      "## Tool of the Week",
+      "## Workflow",
+      "## CTA",
+      "## Sources"
+    ],
+    "url_count": 6,
+    "source_links": [
+      "https://forge-daily.kit.com/232bce5a31",
+      "https://blog.hubspot.com/marketing/aeo-prompt-tracking",
+      "https://zapier.com/blog/ai-subscriptions",
+      "https://openai.com/index/delivering-low-latency-voice-ai-at-scale",
+      "https://openai.com/index/advanced-account-security",
+      "https://blog.hubspot.com/marketing/keyword-clustering"
+    ],
+    "has_sources_section": true,
+    "sources_section_entries": 6,
+    "has_code_block": true,
+    "has_tool_recommendation": true,
+    "has_trust_warning": true,
+    "has_affiliate_reference": false,
+    "has_affiliate_disclosure": false,
+    "required_cta_url": "https://forge-daily.kit.com/232bce5a31",
+    "critic_expected_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/critic-review-2026-05-05-am.json",
+    "critic_review": {
+      "passed": true,
+      "issue": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-05-am.md",
+      "model": "gpt-4o-mini",
+      "fallback_model": "gpt-4o-mini",
+      "overall_score": 10.0,
+      "min_overall_required": 6.5,
+      "min_category_required": 6.0,
+      "consistent_pass_overall": 9.0,
+      "scores": {
+        "headline_strength": 7.0,
+        "hook_strength": 8.0,
+        "specificity": 7.0,
+        "originality": 6.0,
+        "readability": 7.0,
+        "tone": 8.0,
+        "utility": 9.0,
+        "non_repetition": 8.0
+      },
+      "weak_categories": [],
+      "strengths": [
+        "Clear actionable steps for implementation",
+        "Addresses a specific operator persona",
+        "Focuses on measurable outcomes"
+      ],
+      "weaknesses": [
+        "Some sections could be more concise",
+        "Lacks a strong emphasis on immediate execution"
+      ],
+      "must_fix": [
+        "Clarify the immediate benefits of AEO prompt tracking to enhance urgency",
+        "Streamline the workflow steps for better readability"
+      ],
+      "rewrite_plan": [
+        "Refine the hook to emphasize immediate benefits",
+        "Condense the workflow steps for clarity",
+        "Enhance the CTA to stress urgency and immediate action"
+      ],
+      "summary": "The issue provides actionable insights for solo operators to enhance their marketing visibility through AEO prompt tracking, but lacks clarity in some areas.",
+      "verdict": "needs_revision",
+      "run_token": "pass-2-1777988120354689008",
+      "artifact_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/critic-review-2026-05-05-am.json"
+    },
+    "errors": [],
+    "warnings": [],
+    "fallback_publish_enabled": false,
+    "validation_only": true
+  },
+  "issue": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-05-am.md",
+  "run_token": "",
+  "artifact_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/quality-gate-2026-05-05-am.json"
+}

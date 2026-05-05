@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-05-05T13:25:16Z",
-  "generated_at_central": "2026-05-05T08:25:16-05:00",
+  "generated_at": "2026-05-05T13:35:27Z",
+  "generated_at_central": "2026-05-05T08:35:27-05:00",
   "public_safe": true,
   "overall": {
     "status": "repair_needed",
     "repair_needed": true,
     "risks": [
-      "AM status is needs_prepare_repair.",
+      "AM status is needs_send_repair.",
       "PM status is needs_prepare_repair."
     ],
     "current_required_action": "Autonomous recovery should act on the next scheduled check; use manual repair only if urgent."
@@ -14,16 +14,16 @@
   "am": {
     "slot": "am",
     "slug": "2026-05-05-am",
-    "title": "",
+    "title": "Mastering AEO Prompt Tracking: A Solo Operator's Playbook for Enhanced Marketing Visibility",
     "issue_path": "content/issues/2026-05-05-am.md",
     "email_path": "content/email/2026-05-05-am.md",
-    "issue_exists": false,
-    "email_snapshot_exists": false,
+    "issue_exists": true,
+    "email_snapshot_exists": true,
     "kit_sent_record_exists": false,
     "broadcast_id_present": false,
     "web_url": "https://news.forgecore.co/2026-05-05-am/",
-    "status": "needs_prepare_repair",
-    "recommended_repair_action": "prepare_and_send",
+    "status": "needs_send_repair",
+    "recommended_repair_action": "send_only",
     "autonomous_recovery_workflow": ".github/workflows/autonomous-newsletter-recovery.yml",
     "manual_repair_workflow": ".github/workflows/repair-dropped-newsletter-run.yml",
     "rob_approval_required": false
@@ -46,15 +46,15 @@
     "rob_approval_required": false
   },
   "latest_issue": {
-    "slug": "2026-05-04-pm",
-    "title": "ForgeCore PM Brief \u2014 Agents Are Becoming Business Infrastructure",
-    "path": "content/issues/2026-05-04-pm.md",
+    "slug": "2026-05-05-am",
+    "title": "Mastering AEO Prompt Tracking: A Solo Operator's Playbook for Enhanced Marketing Visibility",
+    "path": "content/issues/2026-05-05-am.md",
     "exists": true,
-    "web_url": "https://news.forgecore.co/2026-05-04-pm/"
+    "web_url": "https://news.forgecore.co/2026-05-05-am/"
   },
   "site": {
     "site_dist_exists": true,
-    "latest_slug": "2026-05-04-pm",
+    "latest_slug": "2026-05-05-am",
     "homepage_has_latest": true,
     "rss_has_latest": true,
     "sitemap_has_latest": true,

@@ -1,0 +1,43 @@
+{
+  "passed": true,
+  "issue": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-05-am.md",
+  "model": "gpt-4o-mini",
+  "fallback_model": "gpt-4o-mini",
+  "overall_score": 10.0,
+  "min_overall_required": 6.5,
+  "min_category_required": 6.0,
+  "consistent_pass_overall": 9.0,
+  "scores": {
+    "headline_strength": 7.0,
+    "hook_strength": 8.0,
+    "specificity": 7.0,
+    "originality": 6.0,
+    "readability": 7.0,
+    "tone": 8.0,
+    "utility": 9.0,
+    "non_repetition": 8.0
+  },
+  "weak_categories": [],
+  "strengths": [
+    "Clear actionable steps for implementation",
+    "Addresses a specific operator persona",
+    "Focuses on measurable outcomes"
+  ],
+  "weaknesses": [
+    "Some sections could be more concise",
+    "Lacks a strong emphasis on immediate execution"
+  ],
+  "must_fix": [
+    "Clarify the immediate benefits of AEO prompt tracking to enhance urgency",
+    "Streamline the workflow steps for better readability"
+  ],
+  "rewrite_plan": [
+    "Refine the hook to emphasize immediate benefits",
+    "Condense the workflow steps for clarity",
+    "Enhance the CTA to stress urgency and immediate action"
+  ],
+  "summary": "The issue provides actionable insights for solo operators to enhance their marketing visibility through AEO prompt tracking, but lacks clarity in some areas.",
+  "verdict": "needs_revision",
+  "run_token": "pass-2-1777988120354689008",
+  "artifact_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/critic-review-2026-05-05-am.json"
+}

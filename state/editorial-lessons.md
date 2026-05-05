@@ -754,3 +754,22 @@
   - Start the Hook with the operator outcome or decision, not a product announcement.
   - Make the headline name the workflow, operator, tool choice, or measurable outcome.
   - Turn vague advice into 3-6 named steps plus one prompt, checklist, config, or command block.
+
+
+---
+
+## 2026-05-05 13:35:20 UTC — /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-05-am.md
+- Improvement result: changed (rewritten issue saved)
+- Critic score: 10.0 | verdict: needs_revision
+- Weaknesses found:
+  - Enhance the hook to better capture the reader's attention
+  - Clarify measurable outcomes for the operator
+  - Revise the hook to make it more engaging
+  - Add specific metrics or outcomes that can be expected from implementing AEO prompt tracking
+  - Strengthen the headline to reflect urgency and value
+  - Weak hook that doesn't immediately capture interest
+- Rules for future issues:
+  - Start the Hook with the operator outcome or decision, not a product announcement.
+  - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
+  - Name the exact operator persona, job-to-be-done, tool stack, and tradeoff.
+  - Make the headline name the workflow, operator, tool choice, or measurable outcome.

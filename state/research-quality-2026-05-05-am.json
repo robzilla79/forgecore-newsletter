@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "date": "2026-05-05",
+  "issue_slot": "am",
+  "research_file_count": 12,
+  "word_count": 13558,
+  "unique_url_count": 12,
+  "unique_domain_count": 3,
+  "operator_signal_count": 91,
+  "domains": [
+    "blog.hubspot.com",
+    "openai.com",
+    "zapier.com"
+  ],
+  "errors": [],
+  "warnings": [],
+  "artifact_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/research-quality-2026-05-05-am.json"
+}
