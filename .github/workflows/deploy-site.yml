@@ -94,13 +94,25 @@ jobs:
           if git diff --staged --quiet; then
             echo "No cleanup or rendered site changes to commit"
           else
-            git stash push --include-untracked --message forgecore-site-only-render
-            git pull --rebase origin main
-            git stash pop
+            # Generated dashboard/status files change often. Do not merge stale generated
+            # output from a stash; sync to latest main, regenerate, then commit.
+            git fetch origin main
+            git reset --hard origin/main
+            python content_cleanup.py
+            python publish_site.py
+            python ai_search_hardening.py
+            python business_hardening.py
+            python lead_magnet_hardening.py
+            python ops_status.py
+            python verify_site_updates.py
             git add content/issues/ site/dist/
-            TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M UTC')
-            git commit -m "auto: deploy cleaned site updates $TIMESTAMP [bot]"
-            git push
+            if git diff --staged --quiet; then
+              echo "No cleanup or rendered site changes after sync"
+            else
+              TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M UTC')
+              git commit -m "auto: deploy cleaned site updates $TIMESTAMP [bot]"
+              git push
+            fi
           fi
 
       - name: Deploy site to Cloudflare Pages
