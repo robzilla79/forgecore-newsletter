@@ -8,6 +8,7 @@ on:
       - 'content/email/**'
       - 'content_cleanup.py'
       - 'publish_site.py'
+      - 'visual_hardening.py'
       - 'ops_status.py'
       - 'ai_search_hardening.py'
       - 'business_hardening.py'
@@ -70,6 +71,9 @@ jobs:
       - name: Render site from existing content
         run: python publish_site.py
 
+      - name: Apply visual hardening
+        run: python visual_hardening.py
+
       - name: Apply AI search hardening
         run: python ai_search_hardening.py
 
@@ -100,6 +104,7 @@ jobs:
             git reset --hard origin/main
             python content_cleanup.py
             python publish_site.py
+            python visual_hardening.py
             python ai_search_hardening.py
             python business_hardening.py
             python lead_magnet_hardening.py
