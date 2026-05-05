@@ -1,15 +1,15 @@
 {
-  "generated_at": "2026-05-05T19:59:58Z",
-  "generated_at_central": "2026-05-05T14:59:58-05:00",
+  "generated_at": "2026-05-05T22:41:21Z",
+  "generated_at_central": "2026-05-05T17:41:21-05:00",
   "public_safe": true,
   "overall": {
-    "status": "waiting",
-    "repair_needed": false,
-    "risks": [],
-    "waiting": [
-      "PM status is pending_send."
+    "status": "repair_needed",
+    "repair_needed": true,
+    "risks": [
+      "PM status is needs_send_repair."
     ],
-    "current_required_action": "No repair needed yet. Waiting for scheduled newsletter window."
+    "waiting": [],
+    "current_required_action": "Autonomous recovery should act on the next scheduled check; use manual repair only if urgent."
   },
   "am": {
     "slot": "am",
@@ -45,9 +45,9 @@
     "kit_sent_record_exists": false,
     "broadcast_id_present": false,
     "web_url": "https://news.forgecore.co/2026-05-05-pm/",
-    "status": "pending_send",
-    "recommended_repair_action": "no_action",
-    "next_expected_action": "Send is expected around 4:07 PM CT; repair check begins at 4:50 PM CT.",
+    "status": "needs_send_repair",
+    "recommended_repair_action": "send_only",
+    "next_expected_action": "Issue and email snapshot exist, but no public Kit send record exists after repair window.",
     "schedule": {
       "prepare_due": "1:45 PM CT",
       "send_due": "4:07 PM CT",
