@@ -1,0 +1,105 @@
+name: Refresh Ops Dashboard
+
+on:
+  workflow_dispatch:
+  schedule:
+    # After AM send window, PM send window, and evening dropped-run triage window.
+    # Times are UTC. ops_status.py reports America/Chicago timestamps in the status JSON.
+    - cron: '40 15 * * *'
+    - cron: '55 21 * * *'
+    - cron: '5 0 * * *'
+  push:
+    paths:
+      - 'ops_status.py'
+      - 'content/issues/**'
+      - 'content/email/**'
+      - 'state/kit_sent.json'
+      - 'site/dist/**'
+      - '.github/workflows/ops-dashboard.yml'
+
+concurrency:
+  group: forgecore-ops-dashboard
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  refresh-ops-dashboard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SITE_DOMAIN: news.forgecore.co
+      SITE_BASE_URL: https://news.forgecore.co
+      NEWSLETTER_NAME: ForgeCore AI Productivity Brief
+      NEWSLETTER_TAGLINE: Practical AI workflows, tools, and ROI cases for operators
+      PRIMARY_CTA_TEXT: Get the Solo Operator AI Workflow Pack
+      PRIMARY_CTA_URL: ${{ secrets.KIT_SIGNUP_URL || 'https://forge-daily.kit.com/232bce5a31' }}
+      SPONSOR_EMAIL: sponsors@forgecore.co
+      CLOUDFLARE_PAGES_PROJECT: forgecore-newsletter
+      ENABLE_CLOUDFLARE_DEPLOY: '1'
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Sync to latest main
+        run: |
+          git fetch origin main
+          git checkout main
+          git reset --hard origin/main
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Render current site output
+        run: python publish_site.py
+
+      - name: Apply AI search hardening
+        run: python ai_search_hardening.py
+
+      - name: Apply business hardening
+        run: python business_hardening.py
+
+      - name: Render lead magnet assets
+        run: python lead_magnet_hardening.py
+
+      - name: Render ops dashboard status
+        run: python ops_status.py
+
+      - name: Commit ops dashboard output
+        if: success()
+        run: |
+          git config user.name "ForgeCore AI Bot"
+          git config user.email "bot@forgecore.co"
+          git add site/dist/ops/ site/dist/status/ site/dist/index.html site/dist/rss.xml site/dist/sitemap.xml
+          if git diff --staged --quiet; then
+            echo "No ops dashboard changes to commit"
+          else
+            git stash push --include-untracked --message forgecore-ops-dashboard-refresh
+            git pull --rebase origin main
+            git stash pop
+            git add site/dist/ops/ site/dist/status/ site/dist/index.html site/dist/rss.xml site/dist/sitemap.xml
+            TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M UTC')
+            git commit -m "auto: refresh ops dashboard $TIMESTAMP [bot]"
+            git push
+          fi
+
+      - name: Deploy ops dashboard to Cloudflare Pages
+        if: success() && env.ENABLE_CLOUDFLARE_DEPLOY == '1'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy site/dist --project-name=forgecore-newsletter --commit-dirty=true --branch=main
