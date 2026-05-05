@@ -1,0 +1,41 @@
+{
+  "passed": true,
+  "issue": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-05-pm.md",
+  "model": "gpt-4o-mini",
+  "fallback_model": "gpt-4o-mini",
+  "overall_score": 8.0,
+  "min_overall_required": 6.5,
+  "min_category_required": 6.0,
+  "consistent_pass_overall": 9.0,
+  "scores": {
+    "headline_strength": 8.0,
+    "hook_strength": 7.0,
+    "specificity": 8.0,
+    "originality": 7.0,
+    "readability": 8.0,
+    "tone": 8.0,
+    "utility": 9.0,
+    "non_repetition": 8.0
+  },
+  "weak_categories": [],
+  "strengths": [
+    "Clear focus on solo founders as the target persona.",
+    "Concrete steps for implementation.",
+    "Measurable outcomes in terms of time savings."
+  ],
+  "weaknesses": [
+    "The hook could be more compelling.",
+    "Some sections could benefit from more specific examples."
+  ],
+  "must_fix": [
+    "Enhance the hook to better capture attention."
+  ],
+  "rewrite_plan": [
+    "Revise the hook for stronger engagement.",
+    "Add more specific examples of AI tools in action."
+  ],
+  "summary": "The issue provides actionable insights for solo founders to enhance client onboarding through AI, making it publishable.",
+  "verdict": "publishable",
+  "run_token": "pass-2-1778008213187983846",
+  "artifact_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/critic-review-2026-05-05-pm.json"
+}
