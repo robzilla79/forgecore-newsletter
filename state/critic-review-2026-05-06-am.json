@@ -1,0 +1,44 @@
+{
+  "passed": true,
+  "issue": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-06-am.md",
+  "model": "gpt-4o-mini",
+  "fallback_model": "gpt-4o-mini",
+  "overall_score": 10.0,
+  "min_overall_required": 6.5,
+  "min_category_required": 6.0,
+  "consistent_pass_overall": 9.0,
+  "scores": {
+    "headline_strength": 7.0,
+    "hook_strength": 6.0,
+    "specificity": 8.0,
+    "originality": 7.0,
+    "readability": 6.0,
+    "tone": 7.0,
+    "utility": 8.0,
+    "non_repetition": 8.0
+  },
+  "weak_categories": [],
+  "strengths": [
+    "Specific focus on solo founders",
+    "Clear benefits of local AI",
+    "Concrete steps for implementation"
+  ],
+  "weaknesses": [
+    "Hook could be more engaging",
+    "Some sections lack depth",
+    "Tone could be more authoritative"
+  ],
+  "must_fix": [
+    "Enhance the hook to better capture attention",
+    "Provide more detailed examples or case studies to illustrate benefits"
+  ],
+  "rewrite_plan": [
+    "Revise the hook for stronger engagement",
+    "Expand on the key benefits with real-world examples",
+    "Adjust tone to be more authoritative and confident"
+  ],
+  "summary": "The issue provides actionable insights for solo founders on using local AI for client data management but lacks some clarity and depth in execution.",
+  "verdict": "needs_revision",
+  "run_token": "pass-2-1778080448482060257",
+  "artifact_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/critic-review-2026-05-06-am.json"
+}

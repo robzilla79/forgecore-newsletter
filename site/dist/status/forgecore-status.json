@@ -1,30 +1,31 @@
 {
-  "generated_at": "2026-05-06T03:53:37Z",
-  "generated_at_central": "2026-05-05T22:53:37-05:00",
+  "generated_at": "2026-05-06T15:14:16Z",
+  "generated_at_central": "2026-05-06T10:14:16-05:00",
   "public_safe": true,
   "overall": {
-    "status": "repair_needed",
-    "repair_needed": true,
-    "risks": [
-      "PM status is needs_send_repair."
+    "status": "waiting",
+    "repair_needed": false,
+    "risks": [],
+    "waiting": [
+      "AM status is pending_send.",
+      "PM status is pending_prepare."
     ],
-    "waiting": [],
-    "current_required_action": "Autonomous recovery should act on the next scheduled check; use manual repair only if urgent."
+    "current_required_action": "No repair needed yet. Waiting for scheduled newsletter window."
   },
   "am": {
     "slot": "am",
-    "slug": "2026-05-05-am",
-    "title": "Mastering AEO Prompt Tracking: A Solo Consultant's Playbook for Client Acquisition",
-    "issue_path": "content/issues/2026-05-05-am.md",
-    "email_path": "content/email/2026-05-05-am.md",
+    "slug": "2026-05-06-am",
+    "title": "How Solo Founders Can Use Local AI for Cost-Effective Client Data Management",
+    "issue_path": "content/issues/2026-05-06-am.md",
+    "email_path": "content/email/2026-05-06-am.md",
     "issue_exists": true,
     "email_snapshot_exists": true,
-    "kit_sent_record_exists": true,
-    "broadcast_id_present": true,
-    "web_url": "https://news.forgecore.co/2026-05-05-am/",
-    "status": "sent",
+    "kit_sent_record_exists": false,
+    "broadcast_id_present": false,
+    "web_url": "https://news.forgecore.co/2026-05-06-am/",
+    "status": "pending_send",
     "recommended_repair_action": "no_action",
-    "next_expected_action": "No action needed.",
+    "next_expected_action": "Send is expected around 10:07 AM CT; repair check begins at 10:35 AM CT.",
     "schedule": {
       "prepare_due": "7:45 AM CT",
       "send_due": "10:07 AM CT",
@@ -36,18 +37,18 @@
   },
   "pm": {
     "slot": "pm",
-    "slug": "2026-05-05-pm",
-    "title": "How Solo Founders Can Automate Client Onboarding with AI",
-    "issue_path": "content/issues/2026-05-05-pm.md",
-    "email_path": "content/email/2026-05-05-pm.md",
-    "issue_exists": true,
-    "email_snapshot_exists": true,
+    "slug": "2026-05-06-pm",
+    "title": "",
+    "issue_path": "content/issues/2026-05-06-pm.md",
+    "email_path": "content/email/2026-05-06-pm.md",
+    "issue_exists": false,
+    "email_snapshot_exists": false,
     "kit_sent_record_exists": false,
     "broadcast_id_present": false,
-    "web_url": "https://news.forgecore.co/2026-05-05-pm/",
-    "status": "needs_send_repair",
-    "recommended_repair_action": "send_only",
-    "next_expected_action": "Issue and email snapshot exist, but no public Kit send record exists after repair window.",
+    "web_url": "https://news.forgecore.co/2026-05-06-pm/",
+    "status": "pending_prepare",
+    "recommended_repair_action": "no_action",
+    "next_expected_action": "Prepare window opens at 1:45 PM CT.",
     "schedule": {
       "prepare_due": "1:45 PM CT",
       "send_due": "4:07 PM CT",
@@ -58,15 +59,15 @@
     "rob_approval_required": false
   },
   "latest_issue": {
-    "slug": "2026-05-05-pm",
-    "title": "How Solo Founders Can Automate Client Onboarding with AI",
-    "path": "content/issues/2026-05-05-pm.md",
+    "slug": "2026-05-06-am",
+    "title": "How Solo Founders Can Use Local AI for Cost-Effective Client Data Management",
+    "path": "content/issues/2026-05-06-am.md",
     "exists": true,
-    "web_url": "https://news.forgecore.co/2026-05-05-pm/"
+    "web_url": "https://news.forgecore.co/2026-05-06-am/"
   },
   "site": {
     "site_dist_exists": true,
-    "latest_slug": "2026-05-05-pm",
+    "latest_slug": "2026-05-06-am",
     "homepage_has_latest": true,
     "rss_has_latest": true,
     "sitemap_has_latest": true,
