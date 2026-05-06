@@ -1,13 +1,12 @@
 {
-  "generated_at": "2026-05-06T15:14:16Z",
-  "generated_at_central": "2026-05-06T10:14:16-05:00",
+  "generated_at": "2026-05-06T17:08:34Z",
+  "generated_at_central": "2026-05-06T12:08:34-05:00",
   "public_safe": true,
   "overall": {
     "status": "waiting",
     "repair_needed": false,
     "risks": [],
     "waiting": [
-      "AM status is pending_send.",
       "PM status is pending_prepare."
     ],
     "current_required_action": "No repair needed yet. Waiting for scheduled newsletter window."
@@ -20,12 +19,12 @@
     "email_path": "content/email/2026-05-06-am.md",
     "issue_exists": true,
     "email_snapshot_exists": true,
-    "kit_sent_record_exists": false,
-    "broadcast_id_present": false,
+    "kit_sent_record_exists": true,
+    "broadcast_id_present": true,
     "web_url": "https://news.forgecore.co/2026-05-06-am/",
-    "status": "pending_send",
+    "status": "sent",
     "recommended_repair_action": "no_action",
-    "next_expected_action": "Send is expected around 10:07 AM CT; repair check begins at 10:35 AM CT.",
+    "next_expected_action": "No action needed.",
     "schedule": {
       "prepare_due": "7:45 AM CT",
       "send_due": "10:07 AM CT",
