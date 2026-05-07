@@ -28,7 +28,6 @@ OPENAI_RETRIES = int(os.getenv("OPENAI_RETRIES", "3"))
 MAX_CONTEXT_CHARS = int(os.getenv("MAX_CONTEXT_CHARS", "22000"))
 MIN_CRITIC_OVERALL = float(os.getenv("MIN_CRITIC_OVERALL", "6.5"))
 MIN_CRITIC_CATEGORY = float(os.getenv("MIN_CRITIC_CATEGORY", "6.0"))
-CONSISTENT_PASS_OVERALL = float(os.getenv("CONSISTENT_PASS_OVERALL", "9.0"))
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 RUN_TOKEN = os.getenv("RUN_TOKEN", "").strip()
 
@@ -42,6 +41,9 @@ SCORE_KEYS = [
     "utility",
     "non_repetition",
 ]
+
+PUBLISHABLE_VERDICT = "publishable"
+BLOCKING_VERDICTS = {"needs_revision", "reject"}
 
 
 def call_openai(model: str, prompt: str) -> str:
@@ -117,6 +119,15 @@ def as_list(value: Any, limit: int = 6) -> list[str]:
     return out
 
 
+def normalized_verdict(value: Any) -> str:
+    verdict = str(value or "needs_revision").strip().lower()
+    if verdict in {"publish", "pass", "passed", "approved"}:
+        return PUBLISHABLE_VERDICT
+    if verdict in BLOCKING_VERDICTS or verdict == PUBLISHABLE_VERDICT:
+        return verdict
+    return "needs_revision"
+
+
 def build_prompt(issue_path: Path, issue_text: str) -> str:
     schema = {
         "summary": "One-sentence verdict.",
@@ -164,19 +175,25 @@ def evaluate_issue(path: Path) -> dict[str, Any]:
     overall = clamp(parsed.get("overall_score"))
     if overall == 0.0 and scores:
         overall = round(sum(scores.values()) / len(scores), 2)
-    verdict = str(parsed.get("verdict", "needs_revision")).strip().lower() or "needs_revision"
+    verdict = normalized_verdict(parsed.get("verdict"))
     weak = [key for key, score in scores.items() if score < MIN_CRITIC_CATEGORY]
 
     consistency_note = ""
-    if weak and overall >= CONSISTENT_PASS_OVERALL and verdict != "reject":
+    if weak and overall >= MIN_CRITIC_OVERALL:
         consistency_note = (
-            "Critic output was internally inconsistent: high overall score "
+            "Critic output was internally inconsistent: passing overall score "
             f"({overall:.2f}) with weak categories {', '.join(weak)}. "
-            "Overall score takes precedence for publish gating."
+            "Weak category floors block publishing."
         )
-        weak = []
+    if verdict != PUBLISHABLE_VERDICT and overall >= MIN_CRITIC_OVERALL:
+        verdict_note = (
+            "Critic output was internally inconsistent: passing overall score "
+            f"({overall:.2f}) with blocking verdict '{verdict}'. "
+            "Blocking verdicts prevent publish."
+        )
+        consistency_note = f"{consistency_note} {verdict_note}".strip()
 
-    passed = overall >= MIN_CRITIC_OVERALL and not weak and verdict != "reject"
+    passed = overall >= MIN_CRITIC_OVERALL and not weak and verdict == PUBLISHABLE_VERDICT
 
     result = {
         "passed": passed,
@@ -186,7 +203,6 @@ def evaluate_issue(path: Path) -> dict[str, Any]:
         "overall_score": overall,
         "min_overall_required": MIN_CRITIC_OVERALL,
         "min_category_required": MIN_CRITIC_CATEGORY,
-        "consistent_pass_overall": CONSISTENT_PASS_OVERALL,
         "scores": scores,
         "weak_categories": weak,
         "strengths": as_list(parsed.get("strengths")),
@@ -195,6 +211,7 @@ def evaluate_issue(path: Path) -> dict[str, Any]:
         "rewrite_plan": as_list(parsed.get("rewrite_plan")),
         "summary": str(parsed.get("summary", "")).strip(),
         "verdict": verdict,
+        "blocking_verdict": verdict != PUBLISHABLE_VERDICT,
     }
     if consistency_note:
         result["consistency_note"] = consistency_note
@@ -228,6 +245,7 @@ def main() -> int:
             "rewrite_plan": ["Re-run critic_review.py after fixing model and path handling."],
             "summary": f"critic_review failed: {exc}",
             "verdict": "reject",
+            "blocking_verdict": True,
             "runtime_error": f"{type(exc).__name__}: {exc}",
         }
     result["run_token"] = RUN_TOKEN
