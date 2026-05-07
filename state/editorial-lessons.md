@@ -862,3 +862,22 @@
   - Name the exact operator persona, job-to-be-done, tool stack, and tradeoff.
   - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
   - Start the Hook with the operator outcome or decision, not a product announcement.
+
+
+---
+
+## 2026-05-07 14:33:09 UTC — /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-07-am.md
+- Improvement result: changed (rewritten issue saved)
+- Critic score: 8.0 | verdict: publishable
+- Weaknesses found:
+  - Enhance the hook to make it more engaging.
+  - Add specific examples or case studies to illustrate effectiveness.
+  - Consider tightening language in sections to improve flow.
+  - The hook could be more compelling to draw in readers.
+  - Some sections could benefit from more specific examples or data.
+  - Workflow code block is missing
+- Rules for future issues:
+  - Start the Hook with the operator outcome or decision, not a product announcement.
+  - Name the exact operator persona, job-to-be-done, tool stack, and tradeoff.
+  - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
+  - Turn vague advice into 3-6 named steps plus one prompt, checklist, config, or command block.
