@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-05-07T14:33:14Z",
-  "generated_at_central": "2026-05-07T09:33:14-05:00",
+  "generated_at": "2026-05-07T15:15:23Z",
+  "generated_at_central": "2026-05-07T10:15:23-05:00",
   "public_safe": true,
   "overall": {
     "status": "waiting",
@@ -15,7 +15,7 @@
   "am": {
     "slot": "am",
     "slug": "2026-05-07-am",
-    "title": "How Solo Founders Can Use AI-Powered Video Clipping to Boost Content Distribution",
+    "title": "How Solo Founders Can Leverage AI for Efficient Content Repurposing",
     "issue_path": "content/issues/2026-05-07-am.md",
     "email_path": "content/email/2026-05-07-am.md",
     "issue_exists": true,
@@ -60,7 +60,7 @@
   },
   "latest_issue": {
     "slug": "2026-05-07-am",
-    "title": "How Solo Founders Can Use AI-Powered Video Clipping to Boost Content Distribution",
+    "title": "How Solo Founders Can Leverage AI for Efficient Content Repurposing",
     "path": "content/issues/2026-05-07-am.md",
     "exists": true,
     "web_url": "https://news.forgecore.co/2026-05-07-am/"
