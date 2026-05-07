@@ -1,0 +1,38 @@
+{
+  "passed": true,
+  "issue": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-07-pm.md",
+  "model": "gpt-4o-mini",
+  "fallback_model": "gpt-4o-mini",
+  "overall_score": 8.0,
+  "min_overall_required": 6.5,
+  "min_category_required": 6.0,
+  "consistent_pass_overall": 9.0,
+  "scores": {
+    "headline_strength": 8.0,
+    "hook_strength": 8.0,
+    "specificity": 9.0,
+    "originality": 7.0,
+    "readability": 8.0,
+    "tone": 8.0,
+    "utility": 9.0,
+    "non_repetition": 8.0
+  },
+  "weak_categories": [],
+  "strengths": [
+    "Clear focus on solo founders",
+    "Concrete steps for implementation",
+    "Specific tool recommendation with measurable outcomes"
+  ],
+  "weaknesses": [
+    "Could enhance originality with unique insights or case studies"
+  ],
+  "must_fix": [],
+  "rewrite_plan": [
+    "Incorporate unique case studies or testimonials to enhance originality",
+    "Add more specific examples of time savings or engagement metrics"
+  ],
+  "summary": "The issue provides actionable insights for solo founders to automate content distribution, making it publishable.",
+  "verdict": "publishable",
+  "run_token": "pass-2-1778184192123149694",
+  "artifact_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/critic-review-2026-05-07-pm.json"
+}
