@@ -915,3 +915,21 @@
 - Rules for future issues:
   - Make the headline name the workflow, operator, tool choice, or measurable outcome.
   - Start the Hook with the operator outcome or decision, not a product announcement.
+
+
+---
+
+## 2026-05-08 16:58:50 UTC — /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-08-am.md
+- Improvement result: changed (rewritten issue saved)
+- Critic score: 10.0 | verdict: needs_revision
+- Weaknesses found:
+  - Expand on tool comparisons and specific use cases
+  - Enhance the depth of implementation steps
+  - Add detailed comparisons of ActiveCampaign and Zapier with pros and cons
+  - Include more specific examples of successful automated workflows
+  - Deepen the exploration of potential trade-offs in automation
+  - Lacks detailed comparisons of tools
+- Rules for future issues:
+  - Name the exact operator persona, job-to-be-done, tool stack, and tradeoff.
+  - Turn vague advice into 3-6 named steps plus one prompt, checklist, config, or command block.
+  - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
