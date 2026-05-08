@@ -933,3 +933,19 @@
   - Name the exact operator persona, job-to-be-done, tool stack, and tradeoff.
   - Turn vague advice into 3-6 named steps plus one prompt, checklist, config, or command block.
   - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
+
+
+---
+
+## 2026-05-08 19:58:00 UTC — /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-08-pm.md
+- Improvement result: changed (rewritten issue saved)
+- Critic score: 8.0 | verdict: publishable
+- Weaknesses found:
+  - Enhance the hook to create a stronger emotional connection.
+  - Add more detailed examples of successful onboarding automation.
+  - The hook could be more compelling to draw in readers.
+  - Some sections could benefit from more detailed examples.
+  - Tool of the Week must include a concrete tool recommendation
+- Rules for future issues:
+  - Start the Hook with the operator outcome or decision, not a product announcement.
+  - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
