@@ -1,0 +1,40 @@
+{
+  "passed": true,
+  "issue": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-09-pm.md",
+  "model": "gpt-4o-mini",
+  "fallback_model": "gpt-4o-mini",
+  "overall_score": 8.0,
+  "min_overall_required": 6.5,
+  "min_category_required": 6.0,
+  "consistent_pass_overall": 9.0,
+  "scores": {
+    "headline_strength": 8.0,
+    "hook_strength": 8.0,
+    "specificity": 7.0,
+    "originality": 6.0,
+    "readability": 8.0,
+    "tone": 8.0,
+    "utility": 9.0,
+    "non_repetition": 8.0
+  },
+  "weak_categories": [],
+  "strengths": [
+    "Clear focus on solo founders",
+    "Concrete steps for implementation",
+    "Strong utility in saving time and increasing revenue"
+  ],
+  "weaknesses": [
+    "Could enhance originality with unique insights or case studies",
+    "Specificity in tool recommendations could be improved"
+  ],
+  "must_fix": [],
+  "rewrite_plan": [
+    "Incorporate unique case studies or examples of successful automation",
+    "Enhance tool recommendations with specific features or comparisons",
+    "Add more original insights on the impact of automation on client relationships"
+  ],
+  "summary": "The issue is publishable with a strong focus on actionable automation for solo founders.",
+  "verdict": "publishable",
+  "run_token": "pass-2-1778355787767232769",
+  "artifact_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/critic-review-2026-05-09-pm.json"
+}
