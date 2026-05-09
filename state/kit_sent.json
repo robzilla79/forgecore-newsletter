@@ -112,5 +112,18 @@
     "email_source_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/email/2026-05-08-am.md",
     "issue_slot": "am",
     "web_url": "https://news.forgecore.co/2026-05-08-am/"
+  },
+  "2026-05-09-am": {
+    "broadcast_id": 24055098,
+    "subject": "How Solo Founders Can Use AI-Powered Content Repurposing to Maximize Reach and Revenue",
+    "sent_at": "2026-05-09T16:04:19.061527+00:00",
+    "mode": "public",
+    "requested_mode": "public",
+    "email_delivery": "scheduled_or_sent",
+    "send_at": "2026-05-09T16:04:18Z",
+    "issue_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-09-am.md",
+    "email_source_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/email/2026-05-09-am.md",
+    "issue_slot": "am",
+    "web_url": "https://news.forgecore.co/2026-05-09-am/"
   }
 }
