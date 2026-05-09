@@ -1,30 +1,31 @@
 {
-  "generated_at": "2026-05-09T03:44:35Z",
-  "generated_at_central": "2026-05-08T22:44:35-05:00",
+  "generated_at": "2026-05-09T14:00:09Z",
+  "generated_at_central": "2026-05-09T09:00:09-05:00",
   "public_safe": true,
   "overall": {
-    "status": "repair_needed",
-    "repair_needed": true,
-    "risks": [
-      "PM status is needs_send_repair."
+    "status": "waiting",
+    "repair_needed": false,
+    "risks": [],
+    "waiting": [
+      "AM status is pending_send.",
+      "PM status is pending_prepare."
     ],
-    "waiting": [],
-    "current_required_action": "Autonomous recovery should act on the next scheduled check; use manual repair only if urgent."
+    "current_required_action": "No repair needed yet. Waiting for scheduled newsletter window."
   },
   "am": {
     "slot": "am",
-    "slug": "2026-05-08-am",
-    "title": "How Solo Founders Can Automate Client Follow-Up to Boost Revenue",
-    "issue_path": "content/issues/2026-05-08-am.md",
-    "email_path": "content/email/2026-05-08-am.md",
+    "slug": "2026-05-09-am",
+    "title": "How Solo Founders Can Use AI-Powered Content Repurposing to Maximize Reach and Revenue",
+    "issue_path": "content/issues/2026-05-09-am.md",
+    "email_path": "content/email/2026-05-09-am.md",
     "issue_exists": true,
     "email_snapshot_exists": true,
-    "kit_sent_record_exists": true,
-    "broadcast_id_present": true,
-    "web_url": "https://news.forgecore.co/2026-05-08-am/",
-    "status": "sent",
+    "kit_sent_record_exists": false,
+    "broadcast_id_present": false,
+    "web_url": "https://news.forgecore.co/2026-05-09-am/",
+    "status": "pending_send",
     "recommended_repair_action": "no_action",
-    "next_expected_action": "No action needed.",
+    "next_expected_action": "Send is expected around 10:07 AM CT; repair check begins at 10:35 AM CT.",
     "schedule": {
       "prepare_due": "7:45 AM CT",
       "send_due": "10:07 AM CT",
@@ -36,18 +37,18 @@
   },
   "pm": {
     "slot": "pm",
-    "slug": "2026-05-08-pm",
-    "title": "How Solo Founders Can Automate Client Onboarding to Save Time and Boost Satisfaction",
-    "issue_path": "content/issues/2026-05-08-pm.md",
-    "email_path": "content/email/2026-05-08-pm.md",
-    "issue_exists": true,
-    "email_snapshot_exists": true,
+    "slug": "2026-05-09-pm",
+    "title": "",
+    "issue_path": "content/issues/2026-05-09-pm.md",
+    "email_path": "content/email/2026-05-09-pm.md",
+    "issue_exists": false,
+    "email_snapshot_exists": false,
     "kit_sent_record_exists": false,
     "broadcast_id_present": false,
-    "web_url": "https://news.forgecore.co/2026-05-08-pm/",
-    "status": "needs_send_repair",
-    "recommended_repair_action": "send_only",
-    "next_expected_action": "Issue and email snapshot exist, but no public Kit send record exists after repair window.",
+    "web_url": "https://news.forgecore.co/2026-05-09-pm/",
+    "status": "pending_prepare",
+    "recommended_repair_action": "no_action",
+    "next_expected_action": "Prepare window opens at 1:45 PM CT.",
     "schedule": {
       "prepare_due": "1:45 PM CT",
       "send_due": "4:07 PM CT",
@@ -58,15 +59,15 @@
     "rob_approval_required": false
   },
   "latest_issue": {
-    "slug": "2026-05-08-pm",
-    "title": "How Solo Founders Can Automate Client Onboarding to Save Time and Boost Satisfaction",
-    "path": "content/issues/2026-05-08-pm.md",
+    "slug": "2026-05-09-am",
+    "title": "How Solo Founders Can Use AI-Powered Content Repurposing to Maximize Reach and Revenue",
+    "path": "content/issues/2026-05-09-am.md",
     "exists": true,
-    "web_url": "https://news.forgecore.co/2026-05-08-pm/"
+    "web_url": "https://news.forgecore.co/2026-05-09-am/"
   },
   "site": {
     "site_dist_exists": true,
-    "latest_slug": "2026-05-08-pm",
+    "latest_slug": "2026-05-09-am",
     "homepage_has_latest": true,
     "rss_has_latest": true,
     "sitemap_has_latest": true,
