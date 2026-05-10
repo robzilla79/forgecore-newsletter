@@ -125,5 +125,18 @@
     "email_source_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/email/2026-05-09-am.md",
     "issue_slot": "am",
     "web_url": "https://news.forgecore.co/2026-05-09-am/"
+  },
+  "2026-05-10-am": {
+    "broadcast_id": 24065005,
+    "subject": "How Solo Founders Can Leverage Local AI for Efficient Client Data Management",
+    "sent_at": "2026-05-10T18:41:37.927968+00:00",
+    "mode": "public",
+    "requested_mode": "public",
+    "email_delivery": "scheduled_or_sent",
+    "send_at": "2026-05-10T18:41:37Z",
+    "issue_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-10-am.md",
+    "email_source_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/email/2026-05-10-am.md",
+    "issue_slot": "am",
+    "web_url": "https://news.forgecore.co/2026-05-10-am/"
   }
 }
