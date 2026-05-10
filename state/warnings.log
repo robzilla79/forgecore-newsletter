@@ -189,3 +189,13 @@
 ---
 
 [2026-05-09 19:42:50 UTC] editor recovered from duplicate-topic rejection on attempt 2
+
+
+---
+
+[2026-05-10 18:40:20 UTC] editor duplicate-topic rejection on attempt 1/2: editor generated a topic too similar to recent issue 2026-05-07-pm.md: 'How Solo Founders Can Use AI-Powered Content Distribution to Save Time and Boost Engagement' vs 'How Solo Founders Can Automate Content Distribution to Save Time and Boost Engagement' (similarity=0.78)
+
+
+---
+
+[2026-05-10 18:40:32 UTC] editor recovered from duplicate-topic rejection on attempt 2

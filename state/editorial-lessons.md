@@ -981,3 +981,21 @@
   - Tool of the Week must include a concrete tool recommendation
 - Rules for future issues:
   - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
+
+
+---
+
+## 2026-05-10 18:40:48 UTC — /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-10-am.md
+- Improvement result: changed (rewritten issue saved)
+- Critic score: 10.0 | verdict: needs_revision
+- Weaknesses found:
+  - Enhance the hook to better engage readers
+  - Include specific measurable outcomes for using local AI tools
+  - Revise the hook to make it more compelling and relevant to solo founders
+  - Add specific metrics or case studies to illustrate the benefits of local AI tools
+  - Ensure the tone remains engaging and authoritative throughout
+  - Weak hook that doesn't grab attention
+- Rules for future issues:
+  - Start the Hook with the operator outcome or decision, not a product announcement.
+  - Name the exact operator persona, job-to-be-done, tool stack, and tradeoff.
+  - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.

@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-05-10T16:33:04Z",
-  "generated_at_central": "2026-05-10T11:33:04-05:00",
+  "generated_at": "2026-05-10T18:40:52Z",
+  "generated_at_central": "2026-05-10T13:40:52-05:00",
   "public_safe": true,
   "overall": {
     "status": "repair_needed",
     "repair_needed": true,
     "risks": [
-      "AM status is needs_prepare_repair."
+      "AM status is needs_send_repair."
     ],
     "waiting": [
       "PM status is pending_prepare."
@@ -16,17 +16,17 @@
   "am": {
     "slot": "am",
     "slug": "2026-05-10-am",
-    "title": "",
+    "title": "How Solo Founders Can Leverage Local AI for Efficient Client Data Management",
     "issue_path": "content/issues/2026-05-10-am.md",
     "email_path": "content/email/2026-05-10-am.md",
-    "issue_exists": false,
-    "email_snapshot_exists": false,
+    "issue_exists": true,
+    "email_snapshot_exists": true,
     "kit_sent_record_exists": false,
     "broadcast_id_present": false,
     "web_url": "https://news.forgecore.co/2026-05-10-am/",
-    "status": "needs_prepare_repair",
-    "recommended_repair_action": "prepare_and_send",
-    "next_expected_action": "Issue is missing after send-repair window. Autonomous recovery may prepare and send through guarded workflow.",
+    "status": "needs_send_repair",
+    "recommended_repair_action": "send_only",
+    "next_expected_action": "Issue and email snapshot exist, but no public Kit send record exists after repair window.",
     "schedule": {
       "prepare_due": "7:45 AM CT",
       "send_due": "10:07 AM CT",
@@ -60,15 +60,15 @@
     "rob_approval_required": false
   },
   "latest_issue": {
-    "slug": "2026-05-09-pm",
-    "title": "How Solo Founders Can Automate Client Follow-Up to Boost Revenue",
-    "path": "content/issues/2026-05-09-pm.md",
+    "slug": "2026-05-10-am",
+    "title": "How Solo Founders Can Leverage Local AI for Efficient Client Data Management",
+    "path": "content/issues/2026-05-10-am.md",
     "exists": true,
-    "web_url": "https://news.forgecore.co/2026-05-09-pm/"
+    "web_url": "https://news.forgecore.co/2026-05-10-am/"
   },
   "site": {
     "site_dist_exists": true,
-    "latest_slug": "2026-05-09-pm",
+    "latest_slug": "2026-05-10-am",
     "homepage_has_latest": true,
     "rss_has_latest": true,
     "sitemap_has_latest": true,
