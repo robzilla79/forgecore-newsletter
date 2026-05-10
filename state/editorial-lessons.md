@@ -999,3 +999,21 @@
   - Start the Hook with the operator outcome or decision, not a product announcement.
   - Name the exact operator persona, job-to-be-done, tool stack, and tradeoff.
   - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
+
+
+---
+
+## 2026-05-10 19:42:23 UTC — /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-10-pm.md
+- Improvement result: changed (rewritten issue saved)
+- Critic score: 10.0 | verdict: needs_revision
+- Weaknesses found:
+  - Expand on the evaluation criteria for choosing AI tools
+  - Provide more diverse examples of client inquiries and responses
+  - Enhance the decision point section with specific evaluation criteria for AI tools
+  - Include a broader range of examples for common client inquiries
+  - Strengthen the hook to better capture the urgency of automation
+  - Lacks depth in tool evaluation
+- Rules for future issues:
+  - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
+  - Name the exact operator persona, job-to-be-done, tool stack, and tradeoff.
+  - Start the Hook with the operator outcome or decision, not a product announcement.
