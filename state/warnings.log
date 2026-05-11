@@ -229,3 +229,8 @@
 ---
 
 [2026-05-11 15:46:07 UTC] editor exhausted duplicate-topic retries; preserving valid Author draft and passing it to improvement loop
+
+
+---
+
+[2026-05-11 20:18:21 UTC] editor draft is short but recoverable (620 words); passing to improvement loop

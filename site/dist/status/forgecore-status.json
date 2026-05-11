@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-05-11T17:35:28Z",
-  "generated_at_central": "2026-05-11T12:35:28-05:00",
+  "generated_at": "2026-05-11T20:18:48Z",
+  "generated_at_central": "2026-05-11T15:18:48-05:00",
   "public_safe": true,
   "overall": {
     "status": "waiting",
     "repair_needed": false,
     "risks": [],
     "waiting": [
-      "PM status is pending_prepare."
+      "PM status is pending_send."
     ],
     "current_required_action": "No repair needed yet. Waiting for scheduled newsletter window."
   },
@@ -37,17 +37,17 @@
   "pm": {
     "slot": "pm",
     "slug": "2026-05-11-pm",
-    "title": "",
+    "title": "How Solo Founders Can Use OpusClip to Transform Long-Form Videos into Engaging Short Clips",
     "issue_path": "content/issues/2026-05-11-pm.md",
     "email_path": "content/email/2026-05-11-pm.md",
-    "issue_exists": false,
-    "email_snapshot_exists": false,
+    "issue_exists": true,
+    "email_snapshot_exists": true,
     "kit_sent_record_exists": false,
     "broadcast_id_present": false,
     "web_url": "https://news.forgecore.co/2026-05-11-pm/",
-    "status": "pending_prepare",
+    "status": "pending_send",
     "recommended_repair_action": "no_action",
-    "next_expected_action": "Prepare window opens at 1:45 PM CT.",
+    "next_expected_action": "Send is expected around 4:07 PM CT; repair check begins at 4:50 PM CT.",
     "schedule": {
       "prepare_due": "1:45 PM CT",
       "send_due": "4:07 PM CT",
@@ -58,15 +58,15 @@
     "rob_approval_required": false
   },
   "latest_issue": {
-    "slug": "2026-05-11-am",
-    "title": "Transform Long-Form Content into Engaging Short Videos with OpusClip",
-    "path": "content/issues/2026-05-11-am.md",
+    "slug": "2026-05-11-pm",
+    "title": "How Solo Founders Can Use OpusClip to Transform Long-Form Videos into Engaging Short Clips",
+    "path": "content/issues/2026-05-11-pm.md",
     "exists": true,
-    "web_url": "https://news.forgecore.co/2026-05-11-am/"
+    "web_url": "https://news.forgecore.co/2026-05-11-pm/"
   },
   "site": {
     "site_dist_exists": true,
-    "latest_slug": "2026-05-11-am",
+    "latest_slug": "2026-05-11-pm",
     "homepage_has_latest": true,
     "rss_has_latest": true,
     "sitemap_has_latest": true,

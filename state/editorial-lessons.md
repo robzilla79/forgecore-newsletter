@@ -1034,3 +1034,21 @@
 - Rules for future issues:
   - Start the Hook with the operator outcome or decision, not a product announcement.
   - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
+
+
+---
+
+## 2026-05-11 20:18:42 UTC — /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-11-pm.md
+- Improvement result: changed (rewritten issue saved)
+- Critic score: 8.0 | verdict: publishable
+- Weaknesses found:
+  - Enhance the hook to better capture attention.
+  - Reposition the disclosure for better visibility.
+  - Revise the hook to make it more engaging.
+  - Move the disclosure to a more prominent location in the text.
+  - The hook could be more compelling to draw in readers.
+  - The disclosure about commission could be more prominently placed.
+- Rules for future issues:
+  - Start the Hook with the operator outcome or decision, not a product announcement.
+  - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
+  - Any affiliate or partner-link language must include a clear commission disclosure.
