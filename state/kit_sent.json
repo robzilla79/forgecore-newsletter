@@ -138,5 +138,18 @@
     "email_source_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/email/2026-05-10-am.md",
     "issue_slot": "am",
     "web_url": "https://news.forgecore.co/2026-05-10-am/"
+  },
+  "2026-05-11-am": {
+    "broadcast_id": 24079236,
+    "subject": "Transform Long-Form Content into Engaging Short Videos with OpusClip",
+    "sent_at": "2026-05-11T17:30:26.327763+00:00",
+    "mode": "public",
+    "requested_mode": "public",
+    "email_delivery": "scheduled_or_sent",
+    "send_at": "2026-05-11T17:30:25Z",
+    "issue_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-11-am.md",
+    "email_source_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/email/2026-05-11-am.md",
+    "issue_slot": "am",
+    "web_url": "https://news.forgecore.co/2026-05-11-am/"
   }
 }
