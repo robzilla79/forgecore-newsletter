@@ -214,3 +214,18 @@
 ---
 
 [2026-05-10 19:42:03 UTC] editor recovered from duplicate-topic rejection on attempt 2
+
+
+---
+
+[2026-05-11 15:45:53 UTC] editor duplicate-topic rejection on attempt 1/2: editor generated a topic too similar to recent issue 2026-05-09-am.md: 'How Solo Founders Can Use AI-Powered Content Repurposing to Maximize Reach and Revenue' vs 'How Solo Founders Can Use AI-Powered Content Repurposing to Maximize Reach and Revenue' (similarity=1.00)
+
+
+---
+
+[2026-05-11 15:46:07 UTC] editor duplicate-topic rejection on attempt 2/2: editor generated a topic too similar to recent issue 2026-05-09-pm.md: 'How Solo Founders Can Automate Client Follow-Up to Boost Revenue' vs 'How Solo Founders Can Automate Client Follow-Up to Boost Revenue' (similarity=1.00)
+
+
+---
+
+[2026-05-11 15:46:07 UTC] editor exhausted duplicate-topic retries; preserving valid Author draft and passing it to improvement loop
