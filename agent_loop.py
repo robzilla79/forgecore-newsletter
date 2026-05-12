@@ -62,6 +62,11 @@ BAD_CONTEXT_MARKERS = [
     "# Raw intel refresh",
 ]
 
+# Any existing slot file with fewer than this many words is treated as a
+# failed/incomplete draft and deleted before the author runs. Keeps a short
+# stale draft from poisoning the next run's topic selection.
+FAILED_DRAFT_WORD_FLOOR = 400
+
 STOPWORDS = {
     "a", "an", "and", "are", "as", "at", "be", "by", "can", "for", "from", "how", "in", "into", "is", "it",
     "of", "on", "or", "the", "this", "to", "use", "using", "with", "your", "you", "managers", "manager",
@@ -202,11 +207,33 @@ def enforce_not_duplicate_title(agent: str, markdown: str) -> None:
 
 
 def clean_old_slot_file_for_author(agent: str) -> None:
-    if agent == "author" and issue_file().exists():
-        existing = load_text(issue_file())
-        if any(marker.lower() in existing.lower() for marker in BAD_CONTEXT_MARKERS):
-            issue_file().unlink()
-            progress(f"Removed contaminated draft before author run: content/issues/{issue_id()}.md")
+    """Delete the current slot's issue file before the author runs if it looks
+    like a failed draft. Two conditions trigger deletion:
+
+    1. Contamination markers — placeholder/raw-intel text that must never be
+       used as source material for a new draft.
+    2. Below the failed-draft word floor — a short file left by a previous
+       failed run (e.g. the validator bailed at 610 words) would otherwise be
+       fed to the editor as CURRENT_SLOT_ISSUE_CONTEXT, causing it to re-anchor
+       on the same thin/boring topic instead of starting fresh.
+    """
+    if agent != "author" or not issue_file().exists():
+        return
+
+    existing = load_text(issue_file())
+
+    if any(marker.lower() in existing.lower() for marker in BAD_CONTEXT_MARKERS):
+        issue_file().unlink()
+        progress(f"Removed contaminated draft before author run: content/issues/{issue_id()}.md")
+        return
+
+    word_count = len(existing.split())
+    if word_count < FAILED_DRAFT_WORD_FLOOR:
+        issue_file().unlink()
+        progress(
+            f"Removed under-floor draft ({word_count} words < {FAILED_DRAFT_WORD_FLOOR}) "
+            f"before author run: content/issues/{issue_id()}.md"
+        )
 
 
 def today_research_files() -> list[Path]:
