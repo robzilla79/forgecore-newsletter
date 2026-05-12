@@ -1069,3 +1069,20 @@
   - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
   - Start the Hook with the operator outcome or decision, not a product announcement.
   - Turn vague advice into 3-6 named steps plus one prompt, checklist, config, or command block.
+
+
+---
+
+## 2026-05-12 17:58:06 UTC — /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-12-pm.md
+- Improvement result: changed (rewritten issue saved)
+- Critic score: 10.0 | verdict: needs_revision
+- Weaknesses found:
+  - Rewrite the hook to create a stronger emotional connection and urgency.
+  - Infuse the content with a more personal and direct tone to reflect Em's voice.
+  - Revise the hook to be more engaging and specific.
+  - Adjust the tone throughout to be warmer and more opinionated.
+  - Add a personal anecdote or insight to enhance originality.
+  - The hook lacks urgency and emotional engagement: 'This week, we’ll explore how AI tools can automate these processes.' This sounds generic and uninspired.
+- Rules for future issues:
+  - Start the Hook with the operator outcome or decision, not a product announcement.
+  - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
