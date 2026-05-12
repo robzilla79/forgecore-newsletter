@@ -83,6 +83,10 @@ jobs:
       MIN_OPERATOR_SIGNALS: '4'
       MAX_SINGLE_DOMAIN_SHARE: '0.65'
       MAX_AFFILIATE_LINKS_PER_ISSUE: '1'
+      MIN_EDITORIAL_SOURCES: '3'
+      MIN_RELEVANT_SOURCES: '2'
+      POST_DEPLOY_RETRIES: '6'
+      POST_DEPLOY_RETRY_DELAY_SECONDS: '15'
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       KIT_API_KEY: ${{ secrets.KIT_API_KEY }}
       KIT_FORM_ID: ${{ secrets.KIT_FORM_ID }}
@@ -131,8 +135,14 @@ jobs:
       - name: Improve issue until quality gate passes
         run: python improve_until_passes.py
 
+      - name: Verify critic consistency
+        run: python critic_consistency_gate.py
+
       - name: Run quality gate
         run: python quality_gate.py
+
+      - name: Run source relevance gate
+        run: python source_relevance_gate.py
 
       - name: Activate approved affiliate links
         run: python affiliate_linker.py
@@ -234,3 +244,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy site/dist --project-name=forgecore-newsletter --commit-dirty=true --branch=main
+
+      - name: Verify live Cloudflare publish
+        if: success() && env.ENABLE_CLOUDFLARE_DEPLOY == '1'
+        run: python post_deploy_smoke.py
