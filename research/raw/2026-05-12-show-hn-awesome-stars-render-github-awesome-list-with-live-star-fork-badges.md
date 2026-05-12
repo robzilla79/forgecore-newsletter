@@ -10,8 +10,8 @@
 
 Article URL: https://awesome-stars.github.io
 Comments URL: https://news.ycombinator.com/item?id=48112430
-Points: 1
-# Comments: 0
+Points: 2
+# Comments: 1
 
 ## Extracted article text
 

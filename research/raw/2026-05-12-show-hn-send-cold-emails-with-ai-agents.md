@@ -10,7 +10,7 @@
 
 Article URL: https://github.com/open-salesblink/skill
 Comments URL: https://news.ycombinator.com/item?id=48112826
-Points: 1
+Points: 3
 # Comments: 0
 
 ## Extracted article text

@@ -29,9 +29,6 @@ diff
 ▼
 ✦ the weave unraveled
 ×
-compile failed
-▼
-×
 game requires a desktop browser
 Chat
 Decrees

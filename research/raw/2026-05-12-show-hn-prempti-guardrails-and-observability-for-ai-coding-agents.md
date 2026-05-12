@@ -10,7 +10,7 @@
 
 Article URL: https://falco.org/blog/introducing-prempti/
 Comments URL: https://news.ycombinator.com/item?id=48112850
-Points: 1
+Points: 2
 # Comments: 0
 
 ## Extracted article text
