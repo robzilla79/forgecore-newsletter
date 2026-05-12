@@ -330,8 +330,7 @@ def duplicate_retry_context(rejections: list[str]) -> str:
 
 def context(agent: str, extra_context: str = "") -> str:
     # On duplicate retries, extra_context is non-empty. Reserve ~2000 chars of headroom
-    # by tightening the research budget so the total prompt stays well under MAX_CONTEXT_CHARS
-    # and the model never truncates the closing ## CTA / ## Sources sections.
+    # by tightening the research budget so the total prompt stays well under the context limit.
     research_budget = 10000 if extra_context.strip() else 14000
     research = gather_research(budget=research_budget)
     brief_required = agent in {"author", "editor"}
@@ -367,16 +366,35 @@ def openai_client() -> OpenAI:
     return OpenAI()
 
 
-def call_text_model(model: str, prompt: str, *, temperature: float) -> str:
+def call_text_model(
+    model: str,
+    user_prompt: str,
+    *,
+    temperature: float,
+    system_prompt: str | None = None,
+) -> str:
+    """Call the OpenAI chat completions API.
+
+    When system_prompt is provided it is sent as a separate system message
+    so it is not competing for space with the user context block. This is
+    critical for long AUTHOR_SYSTEM / EDITOR_SYSTEM prompts — without the
+    split the combined single-user-message prompt exceeds gpt-4o's practical
+    limit and the model returns near-empty responses.
+    """
+    messages: list[dict] = []
+    if system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+    messages.append({"role": "user", "content": user_prompt})
     result = openai_client().chat.completions.create(
         model=model,
-        messages=[{"role": "user", "content": prompt}],
+        messages=messages,
         temperature=temperature,
     )
     return (result.choices[0].message.content or "").strip()
 
 
-def build_memo_prompt(agent: str) -> str:
+def build_memo_prompt(agent: str) -> tuple[str, str]:
+    """Return (system_prompt, user_prompt) for memo agents (scout, analyst)."""
     if agent == "scout":
         task = (
             f"Write a fresh Markdown scout memo for {scout_file().relative_to(WORKSPACE).as_posix()}. "
@@ -398,10 +416,12 @@ def build_memo_prompt(agent: str) -> str:
     else:
         raise ValueError(f"Unsupported memo agent: {agent}")
 
-    return SYSTEMS[agent] + f"\n\nTask:\n{task}\n\nContext:\n{context(agent)}"
+    user_prompt = f"Task:\n{task}\n\nContext:\n{context(agent)}"
+    return SYSTEMS[agent], user_prompt
 
 
-def build_markdown_prompt(agent: str, extra_context: str = "") -> str:
+def build_markdown_prompt(agent: str, extra_context: str = "") -> tuple[str, str]:
+    """Return (system_prompt, user_prompt) for markdown agents (author, editor)."""
     target = f"content/issues/{issue_id()}.md"
     if agent == "author":
         task = (
@@ -424,7 +444,8 @@ def build_markdown_prompt(agent: str, extra_context: str = "") -> str:
             "Prefer preserving or expanding useful detail; do not shorten the issue unless removing junk.\n\n"
             + REQUIRED_SECTIONS_REMINDER
         )
-    return SYSTEMS[agent] + f"\n\nTask:\n{task}\n\nContext:\n{context(agent, extra_context=extra_context)}"
+    user_prompt = f"Task:\n{task}\n\nContext:\n{context(agent, extra_context=extra_context)}"
+    return SYSTEMS[agent], user_prompt
 
 
 def clean_markdown(text: str) -> str:
@@ -451,37 +472,24 @@ def section_present(text: str, section: str) -> bool:
 
 
 def ensure_markdown_title(agent: str, text: str) -> str:
-    """Guarantee the document starts with a valid # Title line.
-
-    Three cases handled deterministically so a missing or misplaced title
-    never kills the run:
-
-    1. Title exists somewhere in the body but is preceded by junk lines —
-       strip the preamble so the # line becomes the first line.
-    2. Title is completely absent — inject a dated fallback title and warn.
-    3. Title already on the first line — return unchanged.
-    """
+    """Guarantee the document starts with a valid # Title line."""
     lines = text.splitlines()
 
-    # Fast-path: already correct.
     if lines and lines[0].strip().startswith("# ") and len(lines[0].strip()) > 2:
         return text
 
-    # Search for a # Title anywhere in the document.
     title_index = next(
         (i for i, line in enumerate(lines) if line.strip().startswith("# ") and len(line.strip()) > 2),
         None,
     )
 
     if title_index is not None:
-        # Title found but not on the first line — strip the preamble.
         warn(
             f"{agent} response had {title_index} line(s) before the # title; "
             "stripping preamble so title is the first line"
         )
         return "\n".join(lines[title_index:]) + "\n"
 
-    # No title at all — inject a deterministic fallback.
     slot_label = f" ({ISSUE_SLOT.upper()})" if ISSUE_SLOT in {"am", "pm"} else ""
     fallback_title = f"# ForgeCore AI — {today_str()}{slot_label}"
     warn(
@@ -491,10 +499,7 @@ def ensure_markdown_title(agent: str, text: str) -> str:
 
 
 def inject_missing_boilerplate_sections(agent: str, text: str) -> str:
-    """Deterministically append any missing boilerplate sections that the model
-    dropped. ## CTA and ## Sources are formulaic — the pipeline owns them, not
-    the model. Injecting them here removes an entire class of transient failures
-    without masking real content problems."""
+    """Deterministically append any missing boilerplate sections the model dropped."""
     primary_cta_text = os.getenv("PRIMARY_CTA_TEXT", "Read ForgeCore AI — written by Em")
     primary_cta_url = os.getenv("PRIMARY_CTA_URL", "https://news.forgecore.co")
     sponsor_email = os.getenv("SPONSOR_EMAIL", "sponsors@forgecore.co")
@@ -536,10 +541,6 @@ def validate_markdown(agent: str, text: str) -> None:
     enforce_not_duplicate_title(agent, text)
 
     words = len(text.split())
-    # Hard floors: genuinely empty or near-empty drafts should still hard-fail.
-    # Marginally short drafts (author < 650, editor < 650) are warnings only —
-    # the editor step exists precisely to expand thin author drafts, and
-    # a 610-word draft is valid content, not a pipeline failure.
     hard_floor = 400
     soft_floor = 650
     if words < hard_floor:
@@ -593,13 +594,12 @@ def generate_markdown_with_duplicate_retries(agent: str, model: str) -> str:
     attempts = max(1, max_topic_retries(agent) + 1)
     for attempt in range(1, attempts + 1):
         extra = duplicate_retry_context(rejections)
-        raw = clean_markdown(call_text_model(model, build_markdown_prompt(agent, extra_context=extra), temperature=0.45 if agent == "editor" else (0.35 if rejections else 0.30)))
-        # Deterministically fix title placement / inject fallback title before
-        # anything else so the model's occasional preamble or missing title
-        # never causes a hard failure here.
+        system_prompt, user_prompt = build_markdown_prompt(agent, extra_context=extra)
+        temperature = 0.45 if agent == "editor" else (0.35 if rejections else 0.30)
+        raw = clean_markdown(
+            call_text_model(model, user_prompt, temperature=temperature, system_prompt=system_prompt)
+        )
         raw = ensure_markdown_title(agent, raw)
-        # Deterministically inject any missing boilerplate sections before validation
-        # so transient model truncation of ## CTA / ## Sources never kills the run.
         markdown = inject_missing_boilerplate_sections(agent, raw)
         try:
             validate_markdown(agent, markdown)
@@ -624,10 +624,11 @@ def run(agent: str) -> int:
     try:
         clean_old_slot_file_for_author(agent)
         if agent in MEMO_AGENTS:
-            # Scout: temp 0.25 (needs variety in angle selection)
-            # Analyst: temp 0.30 (opinionated but grounded)
             memo_temp = 0.25 if agent == "scout" else 0.30
-            memo = clean_markdown(call_text_model(model, build_memo_prompt(agent), temperature=memo_temp))
+            system_prompt, user_prompt = build_memo_prompt(agent)
+            memo = clean_markdown(
+                call_text_model(model, user_prompt, temperature=memo_temp, system_prompt=system_prompt)
+            )
             memo = ensure_memo_source_urls(agent, memo)
             validate_memo(agent, memo)
 
