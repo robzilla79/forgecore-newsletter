@@ -117,9 +117,16 @@ def choose_model(agent: str) -> str:
 
 
 def title_from_markdown(text: str, fallback: str = "") -> str:
+    """Return the first H1 title found anywhere in the document.
+
+    Searching the whole text (not just the first line) means a single blank
+    line or stray sentence before the title — a common LLM formatting hiccup —
+    no longer causes a false-negative title miss.
+    """
     for line in text.splitlines():
-        if line.startswith("# "):
-            return line[2:].strip()
+        stripped = line.strip()
+        if stripped.startswith("# ") and len(stripped) > 2:
+            return stripped[2:].strip()
     return fallback
 
 
@@ -416,6 +423,46 @@ def section_present(text: str, section: str) -> bool:
     return False
 
 
+def ensure_markdown_title(agent: str, text: str) -> str:
+    """Guarantee the document starts with a valid # Title line.
+
+    Three cases handled deterministically so a missing or misplaced title
+    never kills the run:
+
+    1. Title exists somewhere in the body but is preceded by junk lines —
+       strip the preamble so the # line becomes the first line.
+    2. Title is completely absent — inject a dated fallback title and warn.
+    3. Title already on the first line — return unchanged.
+    """
+    lines = text.splitlines()
+
+    # Fast-path: already correct.
+    if lines and lines[0].strip().startswith("# ") and len(lines[0].strip()) > 2:
+        return text
+
+    # Search for a # Title anywhere in the document.
+    title_index = next(
+        (i for i, line in enumerate(lines) if line.strip().startswith("# ") and len(line.strip()) > 2),
+        None,
+    )
+
+    if title_index is not None:
+        # Title found but not on the first line — strip the preamble.
+        warn(
+            f"{agent} response had {title_index} line(s) before the # title; "
+            "stripping preamble so title is the first line"
+        )
+        return "\n".join(lines[title_index:]) + "\n"
+
+    # No title at all — inject a deterministic fallback.
+    slot_label = f" ({ISSUE_SLOT.upper()})" if ISSUE_SLOT in {"am", "pm"} else ""
+    fallback_title = f"# ForgeCore AI — {today_str()}{slot_label}"
+    warn(
+        f"{agent} returned no # title — injecting deterministic fallback: {fallback_title}"
+    )
+    return fallback_title + "\n\n" + text
+
+
 def inject_missing_boilerplate_sections(agent: str, text: str) -> str:
     """Deterministically append any missing boilerplate sections that the model
     dropped. ## CTA and ## Sources are formulaic — the pipeline owns them, not
@@ -514,10 +561,14 @@ def generate_markdown_with_duplicate_retries(agent: str, model: str) -> str:
     attempts = max(1, max_topic_retries(agent) + 1)
     for attempt in range(1, attempts + 1):
         extra = duplicate_retry_context(rejections)
-        markdown = clean_markdown(call_text_model(model, build_markdown_prompt(agent, extra_context=extra), temperature=0.45 if agent == "editor" else (0.35 if rejections else 0.30)))
+        raw = clean_markdown(call_text_model(model, build_markdown_prompt(agent, extra_context=extra), temperature=0.45 if agent == "editor" else (0.35 if rejections else 0.30)))
+        # Deterministically fix title placement / inject fallback title before
+        # anything else so the model's occasional preamble or missing title
+        # never causes a hard failure here.
+        raw = ensure_markdown_title(agent, raw)
         # Deterministically inject any missing boilerplate sections before validation
         # so transient model truncation of ## CTA / ## Sources never kills the run.
-        markdown = inject_missing_boilerplate_sections(agent, markdown)
+        markdown = inject_missing_boilerplate_sections(agent, raw)
         try:
             validate_markdown(agent, markdown)
             if rejections:
