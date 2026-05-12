@@ -11,8 +11,10 @@
   <meta property="og:description" content="AI seen clearly. Written by Em.">
   <meta property="og:url" content="https://news.forgecore.co/">
   <meta property="og:site_name" content="ForgeCore">
+  <meta property="og:image" content="https://news.forgecore.co/images/visuals/default-workflow.svg">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="ForgeCore | ForgeCore AI">
+  <meta name="twitter:image" content="https://news.forgecore.co/images/visuals/default-workflow.svg">
   <meta name="twitter:description" content="AI seen clearly. Written by Em.">
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"ForgeCore","url":"https://news.forgecore.co/","description":"AI seen clearly. Written by Em."}</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -307,6 +309,145 @@
       .nav-links { gap: 0.75rem; }
       .btn, .button { min-height: 40px; }
     }
+  
+/* forgecore visual hardening */
+header {
+  position:sticky;
+  top:0;
+  z-index:30;
+  background:radial-gradient(circle at top left,#172554 0,#080b12 34%,#05070d 100%);
+}
+.story {
+  margin:30px 0;
+  padding:20px;
+  border:1px solid rgba(148,163,184,.18);
+  border-radius:16px;
+  background:rgba(15,23,42,.58);
+}
+.story h2 {
+  margin-top:0;
+  font-size:1.6rem;
+  color:#fff;
+  letter-spacing:-.02em;
+}
+.story p {
+  margin:0;
+  color:#cbd5e1;
+  font-size:1.05rem;
+}
+.card::before {
+  content:"";
+  display:block;
+  height:7px;
+  margin:0 0 18px;
+  border-radius:999px;
+  background:linear-gradient(90deg, rgba(56,189,248,.86), rgba(167,139,250,.62), rgba(45,212,191,.50));
+  box-shadow:0 0 22px rgba(56,189,248,.18);
+}
+.tool-card::before { display:none; }
+.fc-article-visual {
+  position:relative;
+  overflow:hidden;
+  margin:22px 0 24px;
+  min-height:260px;
+  border:1px solid rgba(56,189,248,.26);
+  border-radius:24px;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(56,189,248,.36), transparent 28%),
+    radial-gradient(circle at 84% 16%, rgba(167,139,250,.30), transparent 30%),
+    linear-gradient(135deg, #020617, #0f172a 54%, #082f49);
+  box-shadow:0 22px 70px rgba(0,0,0,.28);
+}
+.fc-article-visual::before {
+  content:"";
+  position:absolute;
+  inset:0;
+  opacity:.18;
+  background-image:
+    linear-gradient(rgba(148,163,184,.18) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148,163,184,.18) 1px, transparent 1px);
+  background-size:32px 32px;
+  mask-image:linear-gradient(to bottom, black, transparent 92%);
+}
+.fc-article-visual-inner {
+  position:relative;
+  display:flex;
+  min-height:260px;
+  flex-direction:column;
+  justify-content:flex-end;
+  padding:clamp(20px,4vw,36px);
+}
+.fc-visual-label {
+  margin:0 0 8px;
+  color:#67e8f9;
+  font-size:.74rem;
+  font-weight:900;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+}
+.fc-article-visual h2 {
+  max-width:760px;
+  margin:0;
+  color:#fff;
+  font-size:clamp(1.65rem,4vw,3.1rem);
+  line-height:1.04;
+  letter-spacing:-.05em;
+  border:0;
+  padding:0;
+}
+.fc-visual-pills { display:flex; flex-wrap:wrap; gap:8px; margin-top:18px; }
+.fc-visual-pills span {
+  border:1px solid rgba(125,211,252,.35);
+  border-radius:999px;
+  background:rgba(15,23,42,.62);
+  color:#e0f2fe;
+  font-size:.72rem;
+  font-weight:900;
+  letter-spacing:.08em;
+  padding:6px 10px;
+  text-transform:uppercase;
+}
+.fc-workflow-visual {
+  display:grid;
+  gap:16px;
+  margin:20px 0 28px;
+  padding:18px;
+  border:1px solid rgba(56,189,248,.22);
+  border-radius:20px;
+  background:linear-gradient(135deg, rgba(15,23,42,.94), rgba(8,47,73,.38));
+}
+.fc-workflow-visual h2 { margin:0; padding:0; border:0; color:#fff; letter-spacing:-.035em; }
+.fc-workflow-steps { display:grid; gap:10px; margin:0; padding:0; list-style:none; }
+.fc-workflow-steps li {
+  display:grid;
+  grid-template-columns:auto 1fr;
+  gap:10px;
+  align-items:center;
+  margin:0;
+  padding:12px;
+  border:1px solid rgba(148,163,184,.18);
+  border-radius:14px;
+  background:rgba(2,6,23,.42);
+}
+.fc-step-number {
+  display:inline-grid;
+  width:34px;
+  height:34px;
+  place-items:center;
+  border-radius:11px;
+  background:rgba(56,189,248,.16);
+  color:#bae6fd;
+  font-size:.72rem;
+  font-weight:900;
+}
+@media (min-width:760px) {
+  .fc-workflow-visual { grid-template-columns:.9fr 1.1fr; align-items:center; }
+}
+@media (max-width:640px) {
+  .card::before { height:6px; margin-bottom:16px; }
+  .fc-article-visual, .fc-article-visual-inner { min-height:210px; }
+}
+
   </style>
 </head>
 <body>
@@ -341,13 +482,19 @@
     <div class="value-card"><strong>Choose tools</strong>Use what fits, avoid bad-fit spend, know when simpler is enough.</div>
   </div>
 </section>
+
+<!-- forgecore-homepage-story -->
+<section class="story">
+  <h2>Stop drowning in scattered tools</h2>
+  <p>Running a business solo means juggling endless tasks and software. ForgeCore condenses the AI landscape into practical workflows so you can focus on what matters — making money, saving time and avoiding tool fatigue.</p>
+</section>
 <section class="lead-magnet">
   <div>
     <div class="eyebrow">Free operator resource</div>
     <h2>The Solo Operator AI Workflow Pack</h2>
     <p>Get practical AI workflow checklists for content, onboarding, automation, research, tool selection, and follow-up systems. Built for solo operators who want leverage, not hype.</p>
   </div>
-  <a class="btn btn-primary" href="https://forge-daily.kit.com/232bce5a31">Get the workflow pack</a>
+  <a class="btn btn-primary" href="/workflow-pack/">Get the workflow pack</a>
 </section>
 <h2 class="section-heading">Evergreen workflow guides</h2>
 <div class="grid"><section class="card">
@@ -382,8 +529,14 @@
   <a class="read-link" href="/ai-tools/ai-seo-aeo/">Open workflow &rarr;</a>
 </section></div>
 <h2 class="section-heading">Latest issues</h2>
-<div class="grid"><section class="card"><div class="date">May 12, 2026</div><h2><a href="/2026-05-12-pm/">How Solo Founders Can Leverage AI to Optimize Pricing Strategies</a></h2><p>Pricing can make or break your business. As a solo founder, fine-tuning your pricing strategy is crucial for maximizing revenue and staying competitive. This week, we dive into how AI tools can help you optimize...</p><a class="read-link" href="/2026-05-12-pm/">Read the issue &rarr;</a></section><section class="card"><div class="date">May 12, 2026</div><h2><a href="/2026-05-12-am/">How Solo Founders Can Use AI to Transform Client Feedback into Actionable Insights</a></h2><p>As a solo founder, you know that client feedback is a goldmine for improving your offerings. But sorting through endless emails, surveys, and messages can feel like a daunting task. What if you could streamline this...</p><a class="read-link" href="/2026-05-12-am/">Read the issue &rarr;</a></section><section class="card"><div class="date">May 11, 2026</div><h2><a href="/2026-05-11-pm/">How Solo Founders Can Use OpusClip to Transform Long-Form Videos into Engaging Short Clips</a></h2><p>As a solo founder, maximizing your content&#x27;s reach is crucial for growth. This week, discover how to leverage OpusClip to efficiently transform your long-form videos into engaging short clips that captivate your...</p><a class="read-link" href="/2026-05-11-pm/">Read the issue &rarr;</a></section><section class="card"><div class="date">May 11, 2026</div><h2><a href="/2026-05-11-am/">Transform Long-Form Content into Engaging Short Videos with OpusClip</a></h2><p>As a solo creator, maximizing your content&#x27;s reach is crucial for growth. This week, discover how to leverage OpusClip to efficiently transform your long-form videos into engaging short clips that captivate your...</p><a class="read-link" href="/2026-05-11-am/">Read the issue &rarr;</a></section><section class="card"><div class="date">May 10, 2026</div><h2><a href="/2026-05-10-pm/">How Solo Founders Can Automate Client Communication to Save Time and Enhance Satisfaction</a></h2><p>As a solo founder, managing client communication can be a time-consuming challenge. By leveraging AI-powered automation tools, you can save up to 10 hours each week, improve client satisfaction, and redirect your...</p><a class="read-link" href="/2026-05-10-pm/">Read the issue &rarr;</a></section><section class="card"><div class="date">May 10, 2026</div><h2><a href="/2026-05-10-am/">How Solo Founders Can Leverage Local AI for Efficient Client Data Management</a></h2><p>As a solo founder, managing client data can quickly spiral into chaos. Implementing local AI tools can streamline your workflow, saving you time and reducing costs associated with cloud services. This week, discover...</p><a class="read-link" href="/2026-05-10-am/">Read the issue &rarr;</a></section><section class="card"><div class="date">May 9, 2026</div><h2><a href="/2026-05-09-pm/">How Solo Founders Can Automate Client Follow-Up to Boost Revenue</a></h2><p>As a solo founder, effective client follow-up is crucial but often time-consuming. By automating this process with AI tools, you can reclaim hours each week, enhance client relationships, and significantly increase...</p><a class="read-link" href="/2026-05-09-pm/">Read the issue &rarr;</a></section><section class="card"><div class="date">May 9, 2026</div><h2><a href="/2026-05-09-am/">How Solo Founders Can Use AI-Powered Content Repurposing to Maximize Reach and Revenue</a></h2><p>As a solo founder, your time is limited, and maximizing the impact of your content is crucial. By leveraging AI-powered content repurposing tools, you can transform a single piece of content into multiple formats,...</p><a class="read-link" href="/2026-05-09-am/">Read the issue &rarr;</a></section><section class="card"><div class="date">May 8, 2026</div><h2><a href="/2026-05-08-pm/">How Solo Founders Can Automate Client Onboarding to Save Time and Boost Satisfaction</a></h2><p>As a solo founder, managing client onboarding can feel like a daunting task. By automating repetitive processes with AI tools, you can save up to 10 hours each week, allowing you to focus on building relationships...</p><a class="read-link" href="/2026-05-08-pm/">Read the issue &rarr;</a></section><section class="card"><div class="date">May 8, 2026</div><h2><a href="/2026-05-08-am/">How Solo Founders Can Automate Client Follow-Up to Boost Revenue</a></h2><p>As a solo founder, managing client follow-up can be a drain on your time and resources. Automating your client follow-up process with AI tools can save you hours each week and significantly enhance your revenue...</p><a class="read-link" href="/2026-05-08-am/">Read the issue &rarr;</a></section><section class="card"><div class="date">May 7, 2026</div><h2><a href="/2026-05-07-pm/">How Solo Founders Can Automate Content Distribution to Save Time and Boost Engagement</a></h2><p>As a solo founder, your time is invaluable. Imagine saving up to 10 hours a week by automating your content distribution process. This week, discover how to leverage AI tools to streamline your outreach efforts and...</p><a class="read-link" href="/2026-05-07-pm/">Read the issue &rarr;</a></section><section class="card"><div class="date">May 7, 2026</div><h2><a href="/2026-05-07-am/">How Solo Founders Can Leverage AI for Efficient Content Repurposing</a></h2><p>As a solo founder, your time is precious. By implementing AI-driven content repurposing strategies, you can transform existing materials into multiple formats, saving hours each week and enhancing your outreach.</p><a class="read-link" href="/2026-05-07-am/">Read the issue &rarr;</a></section><section class="card"><div class="date">May 6, 2026</div><h2><a href="/2026-05-06-pm/">How Solo Founders Can Automate Client Communication for Maximum Efficiency</a></h2><p>As a solo founder, managing client communication can be a daunting task. By leveraging AI tools, you can streamline interactions, save valuable time, and significantly enhance client satisfaction. This week, discover...</p><a class="read-link" href="/2026-05-06-pm/">Read the issue &rarr;</a></section><section class="card"><div class="date">May 6, 2026</div><h2><a href="/2026-05-06-am/">How Solo Founders Can Use Local AI for Cost-Effective Client Data Management</a></h2><p>As a solo founder, managing client data can quickly become overwhelming. Implementing local AI tools can streamline your workflow, saving you time and reducing costs associated with cloud services. This week,...</p><a class="read-link" href="/2026-05-06-am/">Read the issue &rarr;</a></section><section class="card"><div class="date">May 5, 2026</div><h2><a href="/2026-05-05-pm/">How Solo Founders Can Automate Client Onboarding with AI</a></h2><p>As a solo founder, automating your client onboarding process can save you hours each week and significantly enhance client satisfaction. By leveraging AI tools, you can streamline repetitive tasks, allowing you to...</p><a class="read-link" href="/2026-05-05-pm/">Read the issue &rarr;</a></section><section class="card"><div class="date">May 5, 2026</div><h2><a href="/2026-05-05-am/">Mastering AEO Prompt Tracking: A Solo Consultant&#x27;s Playbook for Client Acquisition</a></h2><p>As a solo consultant, optimizing your visibility in AI-generated search results can directly boost your client acquisition efforts. By implementing AEO (Answer Engine Optimization) prompt tracking, you can pinpoint...</p><a class="read-link" href="/2026-05-05-am/">Read the issue &rarr;</a></section><section class="card"><div class="date">May 4, 2026</div><h2><a href="/2026-05-04-pm/">ForgeCore PM Brief — Agents Are Becoming Business Infrastructure</a></h2><p>1. **Agents are moving from chat helpers to operating layers.** Zapier’s latest comparison of Zapier Agents and ChatGPT workspace agents makes the practical split clearer: some agents live close to conversation and...</p><a class="read-link" href="/2026-05-04-pm/">Read the issue &rarr;</a></section><section class="card"><div class="date">May 4, 2026</div><h2><a href="/2026-05-04-am/">Mastering AEO Competitor Analysis: A Solo Operator&#x27;s Guide to Boosting Visibility in AI-Driven Search</a></h2><p>As a solo founder or consultant, mastering AEO (Answer Engine Optimization) competitor analysis can significantly enhance your visibility in AI-driven search results. By identifying which competitors are cited in...</p><a class="read-link" href="/2026-05-04-am/">Read the issue &rarr;</a></section></div>
+<div class="grid"><section class="card"><div class="date">May 12, 2026</div><h2><a href="/2026-05-12-am/">How Solo Founders Can Use AI to Transform Client Feedback into Actionable Insights</a></h2><p>As a solo founder, you know that client feedback is a goldmine for improving your offerings. But sorting through endless emails, surveys, and messages can feel like a daunting task. What if you could streamline this...</p><a class="read-link" href="/2026-05-12-am/">Read the issue &rarr;</a></section><section class="card"><div class="date">May 11, 2026</div><h2><a href="/2026-05-11-pm/">How Solo Founders Can Use OpusClip to Transform Long-Form Videos into Engaging Short Clips</a></h2><p>As a solo founder, maximizing your content&#x27;s reach is crucial for growth. This week, discover how to leverage OpusClip to efficiently transform your long-form videos into engaging short clips that captivate your...</p><a class="read-link" href="/2026-05-11-pm/">Read the issue &rarr;</a></section><section class="card"><div class="date">May 11, 2026</div><h2><a href="/2026-05-11-am/">Transform Long-Form Content into Engaging Short Videos with OpusClip</a></h2><p>As a solo creator, maximizing your content&#x27;s reach is crucial for growth. This week, discover how to leverage OpusClip to efficiently transform your long-form videos into engaging short clips that captivate your...</p><a class="read-link" href="/2026-05-11-am/">Read the issue &rarr;</a></section><section class="card"><div class="date">May 10, 2026</div><h2><a href="/2026-05-10-pm/">How Solo Founders Can Automate Client Communication to Save Time and Enhance Satisfaction</a></h2><p>As a solo founder, managing client communication can be a time-consuming challenge. By leveraging AI-powered automation tools, you can save up to 10 hours each week, improve client satisfaction, and redirect your...</p><a class="read-link" href="/2026-05-10-pm/">Read the issue &rarr;</a></section><section class="card"><div class="date">May 10, 2026</div><h2><a href="/2026-05-10-am/">How Solo Founders Can Leverage Local AI for Efficient Client Data Management</a></h2><p>As a solo founder, managing client data can quickly spiral into chaos. Implementing local AI tools can streamline your workflow, saving you time and reducing costs associated with cloud services. This week, discover...</p><a class="read-link" href="/2026-05-10-am/">Read the issue &rarr;</a></section><section class="card"><div class="date">May 9, 2026</div><h2><a href="/2026-05-09-pm/">How Solo Founders Can Automate Client Follow-Up to Boost Revenue</a></h2><p>As a solo founder, effective client follow-up is crucial but often time-consuming. By automating this process with AI tools, you can reclaim hours each week, enhance client relationships, and significantly increase...</p><a class="read-link" href="/2026-05-09-pm/">Read the issue &rarr;</a></section><section class="card"><div class="date">May 9, 2026</div><h2><a href="/2026-05-09-am/">How Solo Founders Can Use AI-Powered Content Repurposing to Maximize Reach and Revenue</a></h2><p>As a solo founder, your time is limited, and maximizing the impact of your content is crucial. By leveraging AI-powered content repurposing tools, you can transform a single piece of content into multiple formats,...</p><a class="read-link" href="/2026-05-09-am/">Read the issue &rarr;</a></section><section class="card"><div class="date">May 8, 2026</div><h2><a href="/2026-05-08-pm/">How Solo Founders Can Automate Client Onboarding to Save Time and Boost Satisfaction</a></h2><p>As a solo founder, managing client onboarding can feel like a daunting task. By automating repetitive processes with AI tools, you can save up to 10 hours each week, allowing you to focus on building relationships...</p><a class="read-link" href="/2026-05-08-pm/">Read the issue &rarr;</a></section><section class="card"><div class="date">May 8, 2026</div><h2><a href="/2026-05-08-am/">How Solo Founders Can Automate Client Follow-Up to Boost Revenue</a></h2><p>As a solo founder, managing client follow-up can be a drain on your time and resources. Automating your client follow-up process with AI tools can save you hours each week and significantly enhance your revenue...</p><a class="read-link" href="/2026-05-08-am/">Read the issue &rarr;</a></section><section class="card"><div class="date">May 7, 2026</div><h2><a href="/2026-05-07-pm/">How Solo Founders Can Automate Content Distribution to Save Time and Boost Engagement</a></h2><p>As a solo founder, your time is invaluable. Imagine saving up to 10 hours a week by automating your content distribution process. This week, discover how to leverage AI tools to streamline your outreach efforts and...</p><a class="read-link" href="/2026-05-07-pm/">Read the issue &rarr;</a></section><section class="card"><div class="date">May 7, 2026</div><h2><a href="/2026-05-07-am/">How Solo Founders Can Leverage AI for Efficient Content Repurposing</a></h2><p>As a solo founder, your time is precious. By implementing AI-driven content repurposing strategies, you can transform existing materials into multiple formats, saving hours each week and enhancing your outreach.</p><a class="read-link" href="/2026-05-07-am/">Read the issue &rarr;</a></section><section class="card"><div class="date">May 6, 2026</div><h2><a href="/2026-05-06-pm/">How Solo Founders Can Automate Client Communication for Maximum Efficiency</a></h2><p>As a solo founder, managing client communication can be a daunting task. By leveraging AI tools, you can streamline interactions, save valuable time, and significantly enhance client satisfaction. This week, discover...</p><a class="read-link" href="/2026-05-06-pm/">Read the issue &rarr;</a></section><section class="card"><div class="date">May 6, 2026</div><h2><a href="/2026-05-06-am/">How Solo Founders Can Use Local AI for Cost-Effective Client Data Management</a></h2><p>As a solo founder, managing client data can quickly become overwhelming. Implementing local AI tools can streamline your workflow, saving you time and reducing costs associated with cloud services. This week,...</p><a class="read-link" href="/2026-05-06-am/">Read the issue &rarr;</a></section><section class="card"><div class="date">May 5, 2026</div><h2><a href="/2026-05-05-pm/">How Solo Founders Can Automate Client Onboarding with AI</a></h2><p>As a solo founder, automating your client onboarding process can save you hours each week and significantly enhance client satisfaction. By leveraging AI tools, you can streamline repetitive tasks, allowing you to...</p><a class="read-link" href="/2026-05-05-pm/">Read the issue &rarr;</a></section><section class="card"><div class="date">May 5, 2026</div><h2><a href="/2026-05-05-am/">Mastering AEO Prompt Tracking: A Solo Consultant&#x27;s Playbook for Client Acquisition</a></h2><p>As a solo consultant, optimizing your visibility in AI-generated search results can directly boost your client acquisition efforts. By implementing AEO (Answer Engine Optimization) prompt tracking, you can pinpoint...</p><a class="read-link" href="/2026-05-05-am/">Read the issue &rarr;</a></section><section class="card"><div class="date">May 4, 2026</div><h2><a href="/2026-05-04-pm/">ForgeCore PM Brief — Agents Are Becoming Business Infrastructure</a></h2><p>1. **Agents are moving from chat helpers to operating layers.** Zapier’s latest comparison of Zapier Agents and ChatGPT workspace agents makes the practical split clearer: some agents live close to conversation and...</p><a class="read-link" href="/2026-05-04-pm/">Read the issue &rarr;</a></section><section class="card"><div class="date">May 4, 2026</div><h2><a href="/2026-05-04-am/">Mastering AEO Competitor Analysis: A Solo Operator&#x27;s Guide to Boosting Visibility in AI-Driven Search</a></h2><p>As a solo founder or consultant, mastering AEO (Answer Engine Optimization) competitor analysis can significantly enhance your visibility in AI-driven search results. By identifying which competitors are cited in...</p><a class="read-link" href="/2026-05-04-am/">Read the issue &rarr;</a></section><section class="card"><div class="date">May 3, 2026</div><h2><a href="/2026-05-03-pm/">Local AI Client Data Workflow: A Safer Solo Operator Playbook</a></h2><p>Local AI is useful for solo founders when the job is narrow: summarize client notes, tag follow-ups, organize project context, and create draft checklists without sending every rough client file to another cloud...</p><a class="read-link" href="/2026-05-03-pm/">Read the issue &rarr;</a></section></div>
   </div>
+
+<section class="lead-magnet" id="forgecore-proof-positioning"><div><div class="eyebrow">Why ForgeCore is different</div><h2>Not generic AI news. Practical workflows for solo operators.</h2><p>Most AI newsletters tell you what happened. ForgeCore shows you what to do with AI: save time, choose better tools, automate repeatable work, and build income assets.</p><div class="proof"><div><strong>Built for operators</strong><br>Solo founders, creators, consultants, builders, and small business owners.</div><div><strong>Every issue has a job</strong><br>Make money, save time, automate work, or avoid bad tool spend.</div><div><strong>Workflow-first</strong><br>Tools are judged by use case, bad-fit warning, and simpler alternative.</div></div></div><a class="button" href="/subscribe/">Subscribe to the newsletter</a> <a class="button secondary" href="/archive/">Read the archive</a></section>
+
+<section id="forgecore-workflow-cards"><h2 class="section-heading">AI tools by workflow</h2><div class="grid"><section class="card"><h3><a href="/ai-tools/content-repurposing/">Content repurposing</a></h3><p>Turn one idea into useful posts, emails, clips, and lead magnets.</p></section><section class="card"><h3><a href="/ai-tools/client-onboarding/">Client onboarding</a></h3><p>Use AI to collect intake, summarize needs, and reduce kickoff friction.</p></section><section class="card"><h3><a href="/ai-tools/newsletter-growth/">Newsletter growth</a></h3><p>Build repeatable systems for ideas, issues, CTAs, and subscriber growth.</p></section><section class="card"><h3><a href="/ai-tools/automation/">Automation</a></h3><p>Choose when to automate, when to keep a checklist, and how to avoid fragile systems.</p></section></div></section>
+
+<section class="lead-magnet"><div><div class="eyebrow">Start here</div><h2>Subscribe, get the workflow pack, or browse the archive.</h2><p>Use ForgeCore to turn AI tools into practical systems.</p></div><a class="button" href="/subscribe/">Subscribe to the newsletter</a> <a class="button secondary" href="/workflow-pack/">Get the workflow pack</a> <a class="button secondary" href="/archive/">Read the archive</a> <a class="button secondary" href="/newsletter-advertising/">Advertise</a></section>
 </main>
 <footer class="site-footer">
   <div class="wrap footer-inner">
