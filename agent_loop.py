@@ -180,7 +180,6 @@ def enforce_not_duplicate_title(agent: str, markdown: str) -> None:
 
 
 def clean_old_slot_file_for_author(agent: str) -> None:
-    # A generation run must start clean. Do not let previous failed drafts become context.
     if agent == "author" and issue_file().exists():
         existing = load_text(issue_file())
         if any(marker.lower() in existing.lower() for marker in BAD_CONTEXT_MARKERS):
@@ -303,7 +302,7 @@ def context(agent: str, extra_context: str = "") -> str:
     if agent == "analyst":
         parts.append(f"# FRESH_SCOUT_MEMO\n{load_fresh_scout()[:7000]}")
     if agent in {"author", "editor"}:
-                parts.append(f"# EM'S EDITORIAL VOICE\n{load_text(WORKSPACE / 'em' / 'VOICE.md')}")
+        parts.append(f"# EM'S EDITORIAL VOICE\n{load_text(WORKSPACE / 'em' / 'VOICE.md')}")
         parts.append(f"# FRESH_BRIEF\n{load_fresh_brief(required=brief_required)[:7000]}")
     else:
         parts.append(f"# BRIEF_STATUS\n{load_fresh_brief(required=False)[:1200]}")
@@ -378,8 +377,6 @@ def validate_markdown(agent: str, text: str) -> None:
     enforce_not_duplicate_title(agent, text)
 
     words = len(text.split())
-    # Author should create a full draft. Editor may produce a recoverable short draft;
-    # the critic/improvement loop and quality gate own final publish enforcement.
     min_words = 650 if agent == "author" else 500
     if words < min_words:
         raise ValueError(f"{agent} Markdown too short: {words} words")
