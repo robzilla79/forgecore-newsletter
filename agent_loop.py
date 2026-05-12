@@ -19,9 +19,9 @@ WRITER_MODEL = os.getenv("WRITER_MODEL", "gpt-4o-mini")
 EDITOR_MODEL = os.getenv("EDITOR_MODEL", WRITER_MODEL)
 ISSUE_SLOT = os.getenv("ISSUE_SLOT", "").strip().lower()
 RECENT_TOPIC_LIMIT = int(os.getenv("RECENT_TOPIC_LIMIT", "8"))
-DUPLICATE_TITLE_THRESHOLD = float(os.getenv("DUPLICATE_TITLE_THRESHOLD", "0.72"))
+DUPLICATE_TITLE_THRESHOLD = float(os.getenv("DUPLICATE_TITLE_THRESHOLD", "0.60"))
 AUTHOR_TOPIC_RETRIES = int(os.getenv("AUTHOR_TOPIC_RETRIES", "2"))
-EDITOR_TOPIC_RETRIES = int(os.getenv("EDITOR_TOPIC_RETRIES", "1"))
+EDITOR_TOPIC_RETRIES = int(os.getenv("EDITOR_TOPIC_RETRIES", "3"))
 
 ALLOWED = {"scout", "analyst", "author", "editor"}
 MEMO_AGENTS = {"scout", "analyst"}
@@ -327,6 +327,7 @@ def build_memo_prompt(agent: str) -> str:
     if agent == "scout":
         task = (
             f"Write a fresh Markdown scout memo for {scout_file().relative_to(WORKSPACE).as_posix()}. "
+            "Your response MUST start with a # heading on the very first line. "
             "Return ONLY Markdown, never JSON. Rank 3-5 operator-first topic angles from today's research, "
             "name the strongest angle, identify one Tool of the Week candidate, list source URLs, and explain why the topic helps solo operators save time, automate work, make money, or avoid bad tools. "
             "Reject any angle that overlaps with the recent published issues listed in context. Use the monetization registry only to identify natural fit; do not force affiliate mentions."
@@ -334,8 +335,12 @@ def build_memo_prompt(agent: str) -> str:
     elif agent == "analyst":
         task = (
             f"Write a fresh Markdown editorial brief for {brief_file().relative_to(WORKSPACE).as_posix()}. "
-            "Return ONLY Markdown, never JSON. Use today's scout memo and research only. Include: thesis, audience/persona, job-to-be-done, why now, section plan, workflow outline, tool recommendation, tradeoffs, CTA direction, and source URLs. "
-            "Do not brief a topic already covered in recent published issues. Use approved monetization only when the registry says the tool fits the job-to-be-done."
+            "Your response MUST start with a # heading on the very first line — use the working headline as your # title. "
+            "Return ONLY Markdown, never JSON. Use today's scout memo and research only. "
+            "Include: working headline (as # title), target operator, job-to-be-done, thesis, why now, workflow outline (3-6 steps), tool stack, tradeoffs, monetization fit, CTA direction, and source URLs. "
+            "Do not brief a topic already covered in recent published issues. "
+            "Be opinionated — if the scout's top angle is weaker than a secondary one, say so and switch. "
+            "Use approved monetization only when the registry says the tool fits the job-to-be-done."
         )
     else:
         raise ValueError(f"Unsupported memo agent: {agent}")
@@ -429,7 +434,7 @@ def generate_markdown_with_duplicate_retries(agent: str, model: str) -> str:
     attempts = max(1, max_topic_retries(agent) + 1)
     for attempt in range(1, attempts + 1):
         extra = duplicate_retry_context(rejections)
-        markdown = clean_markdown(call_text_model(model, build_markdown_prompt(agent, extra_context=extra), temperature=0.35 if rejections else 0.25))
+        markdown = clean_markdown(call_text_model(model, build_markdown_prompt(agent, extra_context=extra), temperature=0.45 if agent == "editor" else (0.35 if rejections else 0.30)))
         try:
             validate_markdown(agent, markdown)
             if rejections:
@@ -453,7 +458,10 @@ def run(agent: str) -> int:
     try:
         clean_old_slot_file_for_author(agent)
         if agent in MEMO_AGENTS:
-            memo = clean_markdown(call_text_model(model, build_memo_prompt(agent), temperature=0.15))
+            # Scout: temp 0.25 (needs variety in angle selection)
+            # Analyst: temp 0.30 (opinionated but grounded)
+            memo_temp = 0.25 if agent == "scout" else 0.30
+            memo = clean_markdown(call_text_model(model, build_memo_prompt(agent), temperature=memo_temp))
             memo = ensure_memo_source_urls(agent, memo)
             validate_memo(agent, memo)
 
