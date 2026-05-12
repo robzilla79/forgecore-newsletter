@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-05-12T19:07:00Z",
-  "generated_at_central": "2026-05-12T14:07:00-05:00",
+  "generated_at": "2026-05-12T19:15:54Z",
+  "generated_at_central": "2026-05-12T14:15:54-05:00",
   "public_safe": true,
   "overall": {
     "status": "repair_needed",
@@ -39,7 +39,7 @@
   "pm": {
     "slot": "pm",
     "slug": "2026-05-12-pm",
-    "title": "How Solo Founders Can Use AI to Optimize Pricing Strategies and Increase Revenue",
+    "title": "How Solo Founders Can Use AI to Optimize Pricing Strategies and Boost Revenue",
     "issue_path": "content/issues/2026-05-12-pm.md",
     "email_path": "content/email/2026-05-12-pm.md",
     "issue_exists": true,
@@ -61,7 +61,7 @@
   },
   "latest_issue": {
     "slug": "2026-05-12-pm",
-    "title": "How Solo Founders Can Use AI to Optimize Pricing Strategies and Increase Revenue",
+    "title": "How Solo Founders Can Use AI to Optimize Pricing Strategies and Boost Revenue",
     "path": "content/issues/2026-05-12-pm.md",
     "exists": true,
     "web_url": "https://news.forgecore.co/2026-05-12-pm/"

@@ -15,29 +15,29 @@
     "readability": 7.0,
     "tone": 5.0,
     "utility": 8.0,
-    "non_repetition": 7.0
+    "non_repetition": 6.0
   },
   "weak_categories": [],
   "strengths": [
-    "The workflow is clear and actionable, with specific steps outlined for implementation.",
-    "The use of specific AI tools like PriceIntelligence and Segment adds credibility and utility."
+    "The workflow is clear and actionable with specific steps to implement pricing strategies.",
+    "The use of concrete tools like PriceIntelligence and Tableau adds specificity."
   ],
   "weaknesses": [
-    "The hook lacks a strong emotional pull; it reads more like a generic introduction than a captivating opener.",
-    "The tone feels overly formal and lacks Em's characteristic warmth and directness, particularly in sections like 'Why It Matters'."
+    "The hook lacks a compelling narrative; it reads like a generic introduction: 'Setting the right price for your product or service can feel like a high-stakes gamble.'",
+    "The tone is inconsistent; it occasionally feels overly formal and lacks Em's direct, warm style."
   ],
   "must_fix": [
     "Rewrite the hook to create a stronger emotional connection and urgency.",
-    "Adjust the tone throughout to be more direct and personable, reflecting Em's unique voice."
+    "Adjust the tone to be more direct and personal, reflecting Em's voice."
   ],
   "rewrite_plan": [
-    "Revise the hook to include a compelling question or scenario that resonates with solo founders.",
-    "Infuse the content with a more conversational tone, particularly in the 'Why It Matters' section.",
-    "Ensure each section maintains a consistent voice that feels personal and opinionated."
+    "Revise the hook to make it more engaging and relatable.",
+    "Enhance the tone throughout the issue to sound more like Em.",
+    "Eliminate repetitive phrases, especially in the CTA and highlights sections."
   ],
-  "summary": "The issue provides actionable insights for solo founders on optimizing pricing strategies using AI, but lacks a compelling voice and depth in some areas.",
+  "summary": "The issue provides actionable insights for solo founders on optimizing pricing strategies using AI, but lacks a strong, engaging tone and some sections feel repetitive.",
   "verdict": "needs_revision",
   "consistency_note": "Critic output was internally inconsistent: high overall score (10.00) with weak categories tone. Overall score takes precedence for publish gating.",
-  "run_token": "pass-2-1778612815179725815",
+  "run_token": "pass-2-1778613347979972128",
   "artifact_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/critic-review-2026-05-12-pm.json"
 }
