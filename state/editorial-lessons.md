@@ -1104,3 +1104,21 @@
   - Start the Hook with the operator outcome or decision, not a product announcement.
   - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
   - Name the exact operator persona, job-to-be-done, tool stack, and tradeoff.
+
+
+---
+
+## 2026-05-12 18:21:06 UTC — /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-12-pm.md
+- Improvement result: changed (rewritten issue saved)
+- Critic score: 10.0 | verdict: needs_revision
+- Weaknesses found:
+  - Rewrite the hook to create a stronger emotional connection and urgency.
+  - Adjust the tone throughout to sound more like Em, incorporating direct and warm language.
+  - Revise the hook to make it more engaging and urgent.
+  - Infuse the tone with more personality, making it sound less like a generic newsletter.
+  - Add a specific example or case study to enhance originality and relatability.
+  - The hook lacks urgency and excitement: 'This week, let’s explore how to leverage AI...' could be more compelling.
+- Rules for future issues:
+  - Start the Hook with the operator outcome or decision, not a product announcement.
+  - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
+  - Name the exact operator persona, job-to-be-done, tool stack, and tradeoff.
