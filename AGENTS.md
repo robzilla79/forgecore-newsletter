@@ -151,6 +151,12 @@ Before selecting a topic, answer yes to at least 4 of these:
 
 Reject topics that are only curiosity, entertainment, generic AI tips, raw product announcements, model leaderboard chatter, or mass-market consumer AI content.
 
+### Anti-sameness rule (enforce on every run)
+
+Before the analyst commits to a topic, look at the last 5 published issue titles and their primary persona/job-to-be-done. If the proposed topic matches the same persona AND the same job-to-be-done as any of those 5, reject it and find a different angle — even if it passes the topic filter above. The goal is that no two consecutive issues feel like they were written for the same person solving the same problem. Variety is not a nice-to-have. It is what keeps readers opening the next one.
+
+Additionally: at least one section per issue should surprise the reader. The 8-section structure is a container, not a straitjacket. The Workflow can be a contrarian take. The Tool of the Week can be a tool to avoid. The Hook can open with a failure instead of a win. Use the structure; don't be imprisoned by it.
+
 ### Banned phrases (remove on every pass):
 - "delve", "it's worth noting", "in conclusion", "as an AI", "I cannot"
 - "certainly", "absolutely", "of course", "definitely", "I'd be happy to"
