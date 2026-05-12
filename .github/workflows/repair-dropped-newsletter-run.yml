@@ -1,44 +1,13 @@
-name: Em Repair — Dropped Issue Run
-
+name: Repair Dropped Newsletter Run (DISABLED)
+# Disabled — replaced by clean 4-step pipeline in generate.yml
 on:
   workflow_dispatch:
     inputs:
-      issue_slot:
-        description: 'Slot to repair: am or pm'
-        required: true
-        type: choice
-        options:
-          - am
-          - pm
-        default: am
-      skip_send:
-        description: 'Skip email send (prepare only)'
+      disabled:
+        description: 'This workflow is disabled.'
         required: false
-        default: 'false'
-        type: choice
-        options:
-          - 'false'
-          - 'true'
-
-permissions:
-  contents: write
-  actions: read
-
-concurrency:
-  group: forgecore-repair-${{ github.event.inputs.issue_slot }}
-  cancel-in-progress: false
-
 jobs:
-  repair-prepare:
-    uses: ./.github/workflows/generate.yml
-    secrets: inherit
-    with:
-      issue_slot: ${{ github.event.inputs.issue_slot }}
-
-  repair-send:
-    needs: repair-prepare
-    if: github.event.inputs.skip_send != 'true'
-    uses: ./.github/workflows/send.yml
-    secrets: inherit
-    with:
-      issue_slot: ${{ github.event.inputs.issue_slot }}
+  noop:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "This workflow is disabled. Use generate-pm.yml or generate-am.yml."

@@ -2,14 +2,9 @@ name: Em Generates the PM Issue
 
 on:
   schedule:
-    # Prepare window: 1:30 PM Central during daylight time, 12:30 PM Central during standard time.
-    # Email delivery happens later in send-pm.yml.
+    # 1:30 PM Central (CDT = UTC-5, so 18:30 UTC)
     - cron: '30 18 * * *'
   workflow_dispatch:
-  push:
-    paths:
-      - 'state/manual-pm-run.txt'
-      - '.github/workflows/generate-pm.yml'
 
 permissions:
   contents: write

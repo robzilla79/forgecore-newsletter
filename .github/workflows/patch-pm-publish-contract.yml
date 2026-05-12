@@ -1,75 +1,13 @@
-name: Em Patch — PM Publish Contract
-
+name: Patch PM Publish Contract (DISABLED)
+# Disabled — clean pipeline doesn't need patching
 on:
   workflow_dispatch:
-
-permissions:
-  contents: write
-  actions: read
-
-concurrency:
-  group: forgecore-patch-pm
-  cancel-in-progress: true
-
+    inputs:
+      disabled:
+        description: 'This workflow is disabled.'
+        required: false
 jobs:
-  patch:
+  noop:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    env:
-      SITE_BASE_URL: https://news.forgecore.co
-      SITE_DOMAIN: news.forgecore.co
-      NEWSLETTER_NAME: ForgeCore AI
-      NEWSLETTER_TAGLINE: AI seen clearly. Written by Em.
-      PRIMARY_CTA_TEXT: Read ForgeCore AI — written by Em
-      PRIMARY_CTA_URL: https://news.forgecore.co/
-      SPONSOR_EMAIL: sponsors@forgecore.co
-
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
-
-      - name: Sync to latest main
-        run: |
-          git fetch origin main
-          git checkout main
-          git reset --hard origin/main
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-          cache: 'pip'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Patch PM publish contract
-        run: python patch_pm_publish_contract.py
-
-      - name: Render site
-        run: python publish_site.py
-
-      - name: Verify outputs
-        run: python verify_publish.py
-
-      - name: Commit patch
-        if: success()
-        run: |
-          git config user.name "Em (EternalMind)"
-          git config user.email "em@forgecore.co"
-          git add content/ site/dist/ state/ || true
-          if git diff --staged --quiet; then
-            echo "Nothing to commit"
-          else
-            git stash push --include-untracked --message forgecore-patch-pm
-            git pull --rebase origin main
-            git stash pop
-            git add content/ site/dist/ state/ || true
-            git commit -m "fix: include PM Brief issues in homepage RSS and sitemap"
-            git push
-          fi
+      - run: echo "This workflow is disabled."

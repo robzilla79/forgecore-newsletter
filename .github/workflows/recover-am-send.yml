@@ -1,15 +1,13 @@
-name: Em Recover — AM Send
-
+name: Recover AM Send (DISABLED)
+# Disabled — replaced by clean 4-step pipeline
 on:
   workflow_dispatch:
-
-permissions:
-  contents: write
-  actions: read
-
+    inputs:
+      disabled:
+        description: 'This workflow is disabled.'
+        required: false
 jobs:
-  recover-am-send:
-    uses: ./.github/workflows/send.yml
-    secrets: inherit
-    with:
-      issue_slot: am
+  noop:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "This workflow is disabled. Use send-am.yml."

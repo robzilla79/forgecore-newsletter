@@ -1,24 +1,13 @@
-name: Em Recover — PM Issue
-
+name: Recover PM Issue (DISABLED)
+# Disabled — replaced by clean 4-step pipeline in generate.yml
 on:
   workflow_dispatch:
     inputs:
-      force_run:
-        description: 'Force regenerate even if PM issue exists'
+      disabled:
+        description: 'This workflow is disabled.'
         required: false
-        default: 'false'
-
-permissions:
-  contents: write
-  actions: read
-
-concurrency:
-  group: forgecore-recover-pm-issue
-  cancel-in-progress: true
-
 jobs:
-  recover-pm-issue:
-    uses: ./.github/workflows/generate.yml
-    secrets: inherit
-    with:
-      issue_slot: pm
+  noop:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "This workflow is disabled. Use generate-pm.yml."

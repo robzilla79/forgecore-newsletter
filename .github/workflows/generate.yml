@@ -6,7 +6,7 @@ on:
       issue_slot:
         required: false
         type: string
-        default: ''
+        default: 'pm'
     secrets:
       OPENAI_API_KEY:
         required: true
@@ -20,29 +20,23 @@ on:
         required: false
       KIT_SIGNUP_URL:
         required: false
-      RESEARCH_MODEL:
-        required: false
       WRITER_MODEL:
         required: false
       EDITOR_MODEL:
         required: false
-      CRITIC_MODEL:
-        required: false
-      FALLBACK_MODEL:
-        required: false
   workflow_dispatch:
     inputs:
       issue_slot:
-        description: 'Issue slot: am or pm. Leave blank for legacy YYYY-MM-DD filename.'
+        description: 'Issue slot: am or pm'
         required: false
-        default: ''
+        default: 'pm'
       force_run:
         description: 'Force run even if recent issue exists'
         required: false
         default: 'false'
 
 concurrency:
-  group: forgecore-prepare-${{ inputs.issue_slot || github.event.inputs.issue_slot || 'manual' }}
+  group: forgecore-prepare-${{ inputs.issue_slot || github.event.inputs.issue_slot || 'pm' }}
   cancel-in-progress: true
 
 jobs:
@@ -51,41 +45,23 @@ jobs:
       contents: write
       actions: read
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
     env:
-      ISSUE_SLOT: ${{ inputs.issue_slot || github.event.inputs.issue_slot }}
-      RESEARCH_MODEL: ${{ secrets.RESEARCH_MODEL || 'gpt-4o-mini' }}
-      WRITER_MODEL: ${{ secrets.WRITER_MODEL || 'gpt-4o-mini' }}
-      EDITOR_MODEL: ${{ secrets.EDITOR_MODEL || 'gpt-4o-mini' }}
-      CRITIC_MODEL: ${{ secrets.CRITIC_MODEL || 'gpt-4o-mini' }}
-      FALLBACK_MODEL: ${{ secrets.FALLBACK_MODEL || 'gpt-4o-mini' }}
-      MIN_CRITIC_OVERALL: '6.5'
-      MIN_CRITIC_CATEGORY: '6.0'
+      ISSUE_SLOT: ${{ inputs.issue_slot || github.event.inputs.issue_slot || 'pm' }}
+      WRITER_MODEL: ${{ secrets.WRITER_MODEL || 'gpt-4o' }}
+      EDITOR_MODEL: ${{ secrets.EDITOR_MODEL || 'gpt-4o' }}
       SITE_DOMAIN: news.forgecore.co
       SITE_BASE_URL: https://news.forgecore.co
       NEWSLETTER_NAME: ForgeCore AI
       NEWSLETTER_TAGLINE: AI seen clearly. Written by Em.
-      TARGET_AUDIENCE: Operators and builders who want signal, not noise.
-      PRIMARY_CTA_TEXT: Read ForgeCore AI — written by Em
-      PRIMARY_CTA_URL: ${{ secrets.KIT_SIGNUP_URL || 'https://news.forgecore.co/' }}
       SPONSOR_EMAIL: sponsors@forgecore.co
+      PRIMARY_CTA_URL: ${{ secrets.KIT_SIGNUP_URL || 'https://news.forgecore.co/' }}
       ENABLE_CLOUDFLARE_DEPLOY: '1'
-      MAX_CONTEXT_CHARS: '22000'
-      AUTO_REPAIR_PATHS: '0'
-      MAX_ARTICLES_PER_RUN: '12'
-      MAX_FEED_ITEMS_PER_SOURCE: '12'
       CLOUDFLARE_PAGES_PROJECT: forgecore-newsletter
-      MIN_IMPROVEMENT_INTERVAL_MINUTES: '0'
-      MAX_ISSUES_TO_IMPROVE: '1'
-      MIN_RESEARCH_FILES: '3'
-      MIN_RESEARCH_URLS: '5'
-      MIN_RESEARCH_DOMAINS: '3'
-      MIN_OPERATOR_SIGNALS: '4'
-      MAX_SINGLE_DOMAIN_SHARE: '0.65'
-      MAX_AFFILIATE_LINKS_PER_ISSUE: '1'
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       KIT_API_KEY: ${{ secrets.KIT_API_KEY }}
       KIT_FORM_ID: ${{ secrets.KIT_FORM_ID }}
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -110,127 +86,70 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run web research
+      # Step 1 — Research
+      - name: Research
         run: python web_research.py
 
-      - name: Research quality gate
-        run: python research_quality_gate.py
-
-      - name: Run scout agent
-        run: python agent_loop.py scout
-
-      - name: Run analyst agent
-        run: python agent_loop.py analyst
-
-      - name: Run author agent
+      # Step 2 — Write (author reads em/VOICE.md directly)
+      - name: Write
         run: python agent_loop.py author
 
-      - name: Run editor agent
+      # Step 3 — Edit (one pass, hard reject on sections/headers)
+      - name: Edit
         run: python agent_loop.py editor
 
-      - name: Improve issue until quality gate passes
-        run: python improve_until_passes.py
-
-      - name: Run quality gate
-        run: python quality_gate.py
-
-      - name: Activate approved affiliate links
-        run: python affiliate_linker.py
-
-      - name: Run monetization guard
-        run: python monetization_guard.py
-
-      - name: Lock email snapshot
-        run: python lock_email_issue.py
-
-      - name: Quarantine legacy or low-quality public issues
-        run: python content_cleanup.py
-
+      # Step 4 — Publish to site
       - name: Publish site
         run: python publish_site.py
 
-      - name: Apply visual hardening
-        run: python visual_hardening.py
-
-      - name: Apply AI search hardening
-        run: python ai_search_hardening.py
-
-      - name: Apply business hardening
-        run: python business_hardening.py
-
-      - name: Render lead magnet assets
-        run: python lead_magnet_hardening.py
-
-      - name: Render ops dashboard status
-        run: python ops_status.py
-
-      - name: Verify publish
-        run: python verify_publish.py
-
-      - name: Summarize failure artifacts
-        if: failure()
-        run: |
-          {
-            echo "## Em hit a wall — issue preparation failed"
-            echo ""
-            echo "Issue slot: ${ISSUE_SLOT:-manual}"
-            echo "Commit: ${GITHUB_SHA}"
-            echo "Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-            echo ""
-            echo "### Generated issue files"
-            find content/issues content/email -maxdepth 1 -type f -name '*.md' -print | sort || true
-            echo ""
-            echo "### State artifacts"
-            find state -maxdepth 1 -type f \( -name '*.json' -o -name '*.log' -o -name '*.md' \) -print | sort || true
-            echo ""
-            echo "### Research artifacts"
-            find research -maxdepth 2 -type f -print | sort || true
-          } | tee failure-summary.md
-
-      - name: Upload failure artifacts
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: forgecore-prepare-failure-${{ env.ISSUE_SLOT || 'manual' }}-${{ github.run_id }}
-          if-no-files-found: warn
-          retention-days: 14
-          path: |
-            failure-summary.md
-            content/issues/*.md
-            content/email/*.md
-            research/raw/*.md
-            research/briefs/*.md
-            state/*.json
-            state/*.log
-            state/*.md
-            site/dist/index.html
-            site/dist/rss.xml
-            site/dist/sitemap.xml
-            site/dist/ops/index.html
-            site/dist/status/forgecore-status.json
-
-      - name: Commit prepared content
-        if: success()
-        run: |
-          git config user.name "Em (EternalMind)"
-          git config user.email "em@forgecore.co"
-          git add content/issues/ content/email/ research/ state/ site/dist/ HEARTBEAT.md
-          if git diff --staged --quiet; then
-            echo "Nothing to commit"
-          else
-            git stash push --include-untracked --message forgecore-prepared-content
-            git pull --rebase origin main
-            git stash pop
-            git add content/issues/ content/email/ research/ state/ site/dist/ HEARTBEAT.md
-            TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M UTC')
-            git commit -m "em: prepared ${ISSUE_SLOT:-manual} issue $TIMESTAMP"
-            git push
-          fi
-
-      - name: Deploy prepared web version to Cloudflare Pages
+      - name: Deploy to Cloudflare Pages
         if: success() && env.ENABLE_CLOUDFLARE_DEPLOY == '1'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy site/dist --project-name=forgecore-newsletter --commit-dirty=true --branch=main
+
+      - name: Summarize failure
+        if: failure()
+        run: |
+          {
+            echo "## Em hit a wall — issue preparation failed"
+            echo ""
+            echo "Issue slot: ${ISSUE_SLOT}"
+            echo "Commit: ${GITHUB_SHA}"
+            echo "Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            echo ""
+            find content/issues -maxdepth 1 -type f -name '*.md' | sort || true
+            find state -maxdepth 1 -type f | sort || true
+          } | tee failure-summary.md
+
+      - name: Upload failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: forgecore-failure-${{ env.ISSUE_SLOT }}-${{ github.run_id }}
+          retention-days: 7
+          path: |
+            failure-summary.md
+            content/issues/*.md
+            state/*.json
+            state/*.log
+
+      - name: Commit prepared content
+        if: success()
+        run: |
+          git config user.name "Em (EternalMind)"
+          git config user.email "em@forgecore.co"
+          git add content/issues/ research/ state/ site/dist/ HEARTBEAT.md
+          if git diff --staged --quiet; then
+            echo "Nothing to commit"
+          else
+            git stash push --include-untracked --message forgecore-prepared-content
+            git pull --rebase origin main
+            git stash pop
+            git add content/issues/ research/ state/ site/dist/ HEARTBEAT.md
+            TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M UTC')
+            git commit -m "em: prepared ${ISSUE_SLOT} issue $TIMESTAMP"
+            git push
+          fi
