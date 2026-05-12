@@ -303,6 +303,7 @@ def context(agent: str, extra_context: str = "") -> str:
     if agent == "analyst":
         parts.append(f"# FRESH_SCOUT_MEMO\n{load_fresh_scout()[:7000]}")
     if agent in {"author", "editor"}:
+                parts.append(f"# EM'S EDITORIAL VOICE\n{load_text(WORKSPACE / 'em' / 'VOICE.md')}")
         parts.append(f"# FRESH_BRIEF\n{load_fresh_brief(required=brief_required)[:7000]}")
     else:
         parts.append(f"# BRIEF_STATUS\n{load_fresh_brief(required=False)[:1200]}")
