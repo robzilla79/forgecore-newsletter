@@ -1,16 +1,15 @@
 {
-  "generated_at": "2026-05-12T20:00:53Z",
-  "generated_at_central": "2026-05-12T15:00:53-05:00",
+  "generated_at": "2026-05-12T22:16:51Z",
+  "generated_at_central": "2026-05-12T17:16:51-05:00",
   "public_safe": true,
   "overall": {
     "status": "repair_needed",
     "repair_needed": true,
     "risks": [
-      "AM status is needs_send_repair."
+      "AM status is needs_send_repair.",
+      "PM status is needs_prepare_repair."
     ],
-    "waiting": [
-      "PM status is pending_send."
-    ],
+    "waiting": [],
     "current_required_action": "Autonomous recovery should act on the next scheduled check; use manual repair only if urgent."
   },
   "am": {
@@ -39,17 +38,17 @@
   "pm": {
     "slot": "pm",
     "slug": "2026-05-12-pm",
-    "title": "How Solo Founders Can Use AI to Optimize Pricing Strategies and Boost Revenue",
+    "title": "",
     "issue_path": "content/issues/2026-05-12-pm.md",
     "email_path": "content/email/2026-05-12-pm.md",
-    "issue_exists": true,
+    "issue_exists": false,
     "email_snapshot_exists": true,
     "kit_sent_record_exists": false,
     "broadcast_id_present": false,
     "web_url": "https://news.forgecore.co/2026-05-12-pm/",
-    "status": "pending_send",
-    "recommended_repair_action": "no_action",
-    "next_expected_action": "Send is expected around 4:07 PM CT; repair check begins at 4:50 PM CT.",
+    "status": "needs_prepare_repair",
+    "recommended_repair_action": "prepare_and_send",
+    "next_expected_action": "Issue is missing after send-repair window. Autonomous recovery may prepare and send through guarded workflow.",
     "schedule": {
       "prepare_due": "1:45 PM CT",
       "send_due": "4:07 PM CT",
@@ -60,15 +59,15 @@
     "rob_approval_required": false
   },
   "latest_issue": {
-    "slug": "2026-05-12-pm",
-    "title": "How Solo Founders Can Use AI to Optimize Pricing Strategies and Boost Revenue",
-    "path": "content/issues/2026-05-12-pm.md",
+    "slug": "2026-05-12-am",
+    "title": "How Solo Founders Can Use AI to Transform Client Feedback into Actionable Insights",
+    "path": "content/issues/2026-05-12-am.md",
     "exists": true,
-    "web_url": "https://news.forgecore.co/2026-05-12-pm/"
+    "web_url": "https://news.forgecore.co/2026-05-12-am/"
   },
   "site": {
     "site_dist_exists": true,
-    "latest_slug": "2026-05-12-pm",
+    "latest_slug": "2026-05-12-am",
     "homepage_has_latest": true,
     "rss_has_latest": true,
     "sitemap_has_latest": true,
