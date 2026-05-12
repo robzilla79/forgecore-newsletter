@@ -1122,3 +1122,22 @@
   - Start the Hook with the operator outcome or decision, not a product announcement.
   - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
   - Name the exact operator persona, job-to-be-done, tool stack, and tradeoff.
+
+
+---
+
+## 2026-05-12 18:24:39 UTC — /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-12-pm.md
+- Improvement result: changed (rewritten issue saved)
+- Critic score: 10.0 | verdict: needs_revision
+- Weaknesses found:
+  - Rewrite the headline to make it more engaging and less template-like.
+  - Revise the tone throughout the piece to sound more like Em, incorporating a warmer and more direct style.
+  - Add unique insights or personal anecdotes to enhance originality and differentiate from existing content.
+  - 1. Rewrite the headline for stronger engagement.
+  - 2. Revise the introduction to create a more compelling hook.
+  - 3. Infuse the content with a more personal tone and specific examples.
+- Rules for future issues:
+  - Make the headline name the workflow, operator, tool choice, or measurable outcome.
+  - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
+  - Start the Hook with the operator outcome or decision, not a product announcement.
+  - Name the exact operator persona, job-to-be-done, tool stack, and tradeoff.

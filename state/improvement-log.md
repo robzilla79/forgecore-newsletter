@@ -1314,3 +1314,18 @@
 ---
 
 [2026-05-12 18:21:06 UTC] Improved /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-12-pm.md: rewritten issue saved
+
+
+---
+
+[2026-05-12 18:24:24 UTC] Improving /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-12-pm.md using targeted critic/gate guidance ...
+
+
+---
+
+[2026-05-12 18:24:39 UTC] Applied deterministic guardrails: trust warning, workflow code block, source URLs, CTA, duplicate sections
+
+
+---
+
+[2026-05-12 18:24:39 UTC] Improved /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-12-pm.md: rewritten issue saved
