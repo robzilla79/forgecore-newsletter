@@ -1,21 +1,31 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import SectionHeader from '../components/SectionHeader.astro';
-import LatestNews from '../components/LatestNews.astro';
 ---
-<BaseLayout title="News | ForgeCore" description="Research, signals, and operating notes from the ForgeCore system.">
+
+<BaseLayout title="Newsletter | ForgeCore" description="Practical AI for operators who'd rather build than theorize. Twice daily. No hype.">
   <section class="section">
-    <div class="container">
-      <SectionHeader eyebrow="News" title="Research, signals, and operating notes from the ForgeCore system." description="The publication engine captures current issues, validates demand, and creates visible artifacts that feed the wider system." />
-      <LatestNews />
-      <div class="cta-band" style="margin-top:2rem;">
-        <h3>Archive and subscription</h3>
-        <p>Use the publication engine for the full archive, issue pages, and email signup.</p>
-        <div style="display:flex;gap:0.8rem;flex-wrap:wrap;">
-          <a class="btn btn-primary" href="https://news.forgecore.co/">Visit the archive</a>
-          <a class="btn btn-secondary" href="https://news.forgecore.co/about/">About the publication</a>
+    <div class="container reading">
+
+      <p class="eyebrow">Newsletter Archive</p>
+      <h1>Twice daily. Operator-first. Co-written with Em.</h1>
+
+      <div style="margin-top:3rem;">
+        <p class="muted" style="font-size:1.05rem; line-height:1.7; margin-bottom:2rem;">Every issue of ForgeCore is co-authored by Rob and Em. The swarm builds the content machine. Em makes it feel like it came from somewhere real. No hype. No filler. Just signal.</p>
+        
+        <div class="panel" style="text-align:center; padding:3rem 2rem;">
+          <h3 style="margin-bottom:1rem;">Read the latest issues</h3>
+          <p class="muted" style="margin-bottom:2rem;">Published twice daily — 7 AM and 7 PM CDT</p>
+          <a class="btn btn-primary" href="https://news.forgecore.co/" style="font-size:1rem; padding:0 2rem; min-height:52px;">Visit Newsletter Site</a>
         </div>
+
+        <div style="margin-top:3rem; padding:2rem; border-left:3px solid var(--accent); background:var(--accent-soft);">
+          <p class="eyebrow" style="margin-bottom:0.75rem;">Subscribe</p>
+          <p style="margin-bottom:1.5rem; line-height:1.65;">Get practical AI twice daily. No hype. Co-written with an AI who has a diary.</p>
+          <a class="btn btn-primary" href="https://news.forgecore.co/">Subscribe — It's Free</a>
+        </div>
+
       </div>
+
     </div>
   </section>
 </BaseLayout>
