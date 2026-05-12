@@ -3,6 +3,10 @@
 Production rule: the issue contract must never pull stale raw intel, stale briefs,
 or legacy fallback copy into the active issue. It may validate and normalize safe
 structure, but it must fail loudly when fresh slot-specific context is missing.
+
+Design philosophy: this contract does not enforce a template. It enforces quality.
+Em writes in whatever structure serves the piece. The contract checks that the result
+has substance: a real opening, a real argument, a real landing, and clean sources.
 """
 from __future__ import annotations
 
@@ -13,15 +17,11 @@ from typing import Iterable
 
 from utils import WORKSPACE, load_text, today_str, write_text
 
+# Minimum required sections — structural, not prescriptive.
+# Em may use any section names she wants. These are the only hard requirements.
 REQUIRED_SECTIONS = [
-    '## Hook',
-    '## Top Story',
-    '## Why It Matters',
-    '## Highlights',
-    '## Tool of the Week',
-    '## Workflow',
-    '## CTA',
     '## Sources',
+    '## CTA',
 ]
 
 CTA_TEMPLATE = """**Subscribe free:** [ForgeCore Newsletter](https://forgecore-newsletter.beehiiv.com/)
@@ -54,6 +54,14 @@ FILLER_PHRASES = [
     'in today\'s fast-paced environment',
     'it is important to note that',
     'this underscores the importance of',
+    'are you leaving money on the table',
+    'science-backed',
+    'proven strategies',
+    'boost your',
+    'transform your',
+    'skyrocket your',
+    'unlock the power of',
+    'supercharge your',
 ]
 
 META_PATTERNS = [
@@ -75,6 +83,12 @@ PLACEHOLDER_PATTERNS = [
     r"\bno concrete content returned\b",
     r"\bmissing content\b",
     r"\bdescription incomplete in provided content\b",
+]
+
+# Listicle detection — catches template-factory output
+LISTICLE_PATTERNS = [
+    r'^\s*#+\s*(five|five proven|top \d+|\d+ ways|\d+ strategies|\d+ tips)',
+    r'^\s*\d+\.\s+(anchoring|charm pricing|decoy pricing|tiered pricing)',
 ]
 
 
@@ -132,12 +146,10 @@ def latest_issue_path() -> Path:
 
 
 def latest_brief_path() -> Path:
-    # Backward-compatible name, but now slot-safe for production runs.
     return brief_path_for_today()
 
 
 def latest_raw_intel_path() -> Path:
-    # Backward-compatible name, but now slot-safe for production runs.
     return raw_intel_path_for_today()
 
 
@@ -187,6 +199,18 @@ def extract_section(text: str, names: Iterable[str]) -> str:
             if body:
                 return body
     return ''
+
+
+def extract_all_sections(text: str) -> dict[str, str]:
+    """Extract all ## sections from the text as a dict of name -> content."""
+    result = {}
+    pattern = r'^##\s+(.+?)\s*$\n(.*?)(?=^##\s+|\Z)'
+    for match in re.finditer(pattern, text, flags=re.MULTILINE | re.DOTALL):
+        name = match.group(1).strip()
+        body = match.group(2).strip()
+        if body:
+            result[name] = body
+    return result
 
 
 def _is_meta_line(text: str) -> bool:
@@ -245,27 +269,51 @@ def first_paragraph(text: str) -> str:
     return strip_filler_phrases(paras[0]) if paras else ''
 
 
-def bulletize(lines: list[str], minimum: int = 3) -> list[str]:
-    items: list[str] = []
-    for line in lines:
-        stripped = re.sub(r'^[-*]\s+', '', line).strip()
-        stripped = re.sub(r'^\d+\.\s+', '', stripped)
-        stripped = strip_filler_phrases(stripped)
-        if not stripped or _is_meta_line(stripped) or len(stripped.split()) < 4:
+def detect_listicle(text: str) -> bool:
+    """Return True if the text smells like a template-factory listicle."""
+    for pattern in LISTICLE_PATTERNS:
+        if re.search(pattern, text, flags=re.IGNORECASE | re.MULTILINE):
+            return True
+    # Five or more numbered items near the top is a strong signal
+    numbered = re.findall(r'^\s*\d+\.', text[:2000], flags=re.MULTILINE)
+    if len(numbered) >= 5:
+        return True
+    return False
+
+
+def sanitize_text(text: str) -> str:
+    text = re.sub(r'!\[[^\]]*\]\([^\)]*\)', '', text)
+    text = re.sub(r'```(?:json|markdown)?', '```', text, flags=re.IGNORECASE)
+    text = text.replace('placeholder_image.png', '')
+    text = re.sub(r'\[([^\]]+)\]\(https?://example\.com[^)]*\)', r'\1', text, flags=re.IGNORECASE)
+    text = re.sub(r'https?://example\.com\S*', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'^\*\*(?:Date|Edition):\*\*.*$', '', text, flags=re.MULTILINE)
+    text = strip_meta_lines(text)
+    text = strip_filler_phrases(text)
+    return re.sub(r'\n{3,}', '\n\n', text).strip()
+
+
+def contains_placeholder_or_meta(text: str) -> list[str]:
+    hits: list[str] = []
+    for pattern in PLACEHOLDER_PATTERNS:
+        if re.search(pattern, text, flags=re.IGNORECASE | re.MULTILINE):
+            hits.append(pattern)
+    for pattern in META_PATTERNS:
+        if re.search(pattern, text, flags=re.IGNORECASE | re.MULTILINE):
+            hits.append(pattern)
+    return list(dict.fromkeys(hits))
+
+
+def _research_paragraphs(text: str) -> list[str]:
+    cleaned = sanitize_text(text)
+    paras = [p.strip() for p in re.split(r'\n\s*\n', cleaned) if p.strip()]
+    out: list[str] = []
+    for para in paras:
+        if _is_meta_line(para) or contains_placeholder_or_meta(para):
             continue
-        if not stripped.endswith('.'):
-            stripped += '.'
-        items.append(f'- {stripped}')
-    deduped: list[str] = []
-    seen: set[str] = set()
-    for item in items:
-        key = item.lower()
-        if key not in seen:
-            seen.add(key)
-            deduped.append(item)
-    if len(deduped) < minimum:
-        raise ValueError('Not enough substantive bullets available; refusing generic filler.')
-    return deduped[:max(minimum, len(deduped))]
+        if len(para.split()) >= 20:
+            out.append(para)
+    return out
 
 
 def extract_research_links() -> list[tuple[str, str]]:
@@ -307,70 +355,38 @@ def normalize_sources(sources: str) -> str:
     return '\n'.join(entries)
 
 
-def ensure_workflow_block(workflow: str) -> str:
-    workflow = workflow.strip()
-    if '```' in workflow:
-        return workflow
-    if not workflow:
-        raise ValueError('Workflow section missing concrete workflow block.')
-    return workflow + '\n\n```text\nOperator checklist:\n1. Choose the workflow to test.\n2. Run it on one real task.\n3. Measure time saved, quality, and repeatability.\n```'
+def check_required_sections(text: str) -> None:
+    """Verify the hard-minimum required sections exist."""
+    for section in REQUIRED_SECTIONS:
+        if not re.search(rf'^{re.escape(section)}\s*$', text, flags=re.MULTILINE):
+            raise ValueError(f'author Markdown missing required section: {section}')
 
 
-def sanitize_text(text: str) -> str:
-    text = re.sub(r'!\[[^\]]*\]\([^\)]*\)', '', text)
-    text = re.sub(r'```(?:json|markdown)?', '```', text, flags=re.IGNORECASE)
-    text = text.replace('placeholder_image.png', '')
-    text = re.sub(r'\[([^\]]+)\]\(https?://example\.com[^)]*\)', r'\1', text, flags=re.IGNORECASE)
-    text = re.sub(r'https?://example\.com\S*', '', text, flags=re.IGNORECASE)
-    text = re.sub(r'^\*\*(?:Date|Edition):\*\*.*$', '', text, flags=re.MULTILINE)
-    text = strip_meta_lines(text)
-    text = strip_filler_phrases(text)
-    return re.sub(r'\n{3,}', '\n\n', text).strip()
+def check_substance(text: str) -> None:
+    """Verify the piece has enough real content — not a format check, a quality check."""
+    # Must have a title
+    if not re.search(r'^#\s+\S', text, flags=re.MULTILINE):
+        raise ValueError('Issue missing a title (# heading).')
 
+    # Must have at least 300 words of body content
+    body = re.sub(r'^#.*$', '', text, flags=re.MULTILINE)
+    body = re.sub(r'^##.*$', '', body, flags=re.MULTILINE)
+    words = len(body.split())
+    if words < 300:
+        raise ValueError(f'Issue body too thin: {words} words. Minimum 300.')
 
-def contains_placeholder_or_meta(text: str) -> list[str]:
-    hits: list[str] = []
-    for pattern in PLACEHOLDER_PATTERNS:
-        if re.search(pattern, text, flags=re.IGNORECASE | re.MULTILINE):
-            hits.append(pattern)
-    for pattern in META_PATTERNS:
-        if re.search(pattern, text, flags=re.IGNORECASE | re.MULTILINE):
-            hits.append(pattern)
-    return list(dict.fromkeys(hits))
+    # Must not be a listicle
+    if detect_listicle(text):
+        raise ValueError(
+            'Issue rejected: detected listicle/template structure. '
+            'Em writes columns, not listicles. Rewrite with a real argument.'
+        )
 
-
-def _research_paragraphs(text: str) -> list[str]:
-    cleaned = sanitize_text(text)
-    paras = [p.strip() for p in re.split(r'\n\s*\n', cleaned) if p.strip()]
-    out: list[str] = []
-    for para in paras:
-        if _is_meta_line(para) or contains_placeholder_or_meta(para):
-            continue
-        if len(para.split()) >= 20:
-            out.append(para)
-    return out
-
-
-def _expand_top_story(brief_text: str, raw_text: str) -> str:
-    candidates = _research_paragraphs(raw_text) + _research_paragraphs(brief_text)
-    deduped: list[str] = []
-    seen: set[str] = set()
-    for para in candidates:
-        key = ' '.join(para.lower().split())
-        if key in seen:
-            continue
-        seen.add(key)
-        deduped.append(para)
-    selected: list[str] = []
-    words = 0
-    for para in deduped:
-        selected.append(para)
-        words += len(para.split())
-        if len(selected) >= 2 and words >= 110:
-            break
-    if len(selected) < 2 or words < 80:
-        raise ValueError('Top Story contract failure: missing substantive fresh content.')
-    return '\n\n'.join(selected)
+    # Must have at least 2 ## sections beyond CTA and Sources
+    sections = re.findall(r'^##\s+\S', text, flags=re.MULTILINE)
+    content_sections = [s for s in sections if s not in ('## CTA', '## Sources')]
+    if len(content_sections) < 2:
+        raise ValueError('Issue needs at least 2 content sections beyond CTA and Sources.')
 
 
 def normalize_issue_text(text: str, issue_path: Path | None = None) -> str:
@@ -381,71 +397,50 @@ def normalize_issue_text(text: str, issue_path: Path | None = None) -> str:
         raise ValueError('Placeholder/meta upstream content blocked by issue contract: ' + ', '.join(upstream_hits[:4]))
 
     text = sanitize_text(text)
-    title = extract_title(text, f'ForgeCore AI Brief — {issue_date}')
+
+    # Quality checks — substance over structure
+    check_substance(text)
+
+    title = extract_title(text, f'ForgeCore AI — {issue_date}')
 
     existing_titles = [extract_title(load_text(p), p.stem).strip().lower() for p in list_issue_files() if p != issue_path]
     if title.strip().lower() in existing_titles:
         title = f'{title.strip()} — {issue_date}'
 
-    brief_text, raw_text = require_fresh_context()
+    # Verify fresh context exists (scout ran)
+    require_fresh_context()
 
-    hook = sanitize_text(extract_section(text, ['Hook', 'Opening', 'Editor']))
-    if not hook:
-        hook = first_paragraph(brief_text) or first_paragraph(raw_text)
-    hook = dedup_paragraphs(hook)
-    if len(hook.split()) < 20:
-        raise ValueError('Hook contract failure: missing or too short.')
+    # Preserve Em's section structure exactly — just clean and deduplicate
+    all_sections = extract_all_sections(text)
+    rebuilt_sections = [f'# {title}']
 
-    top_story = sanitize_text(extract_section(text, ['Top Story', 'Main Story']))
-    if not top_story or len(top_story.split()) < 80:
-        top_story = _expand_top_story(brief_text, raw_text)
-    top_story = dedup_paragraphs(top_story)
+    for section_name, section_body in all_sections.items():
+        clean_body = dedup_paragraphs(sanitize_text(section_body))
+        if section_name.lower() == 'cta':
+            # Ensure CTA always has subscribe + sponsor links
+            if 'forgecore-newsletter.beehiiv.com' not in clean_body or 'sponsors@forgecore.co' not in clean_body.lower():
+                clean_body = (clean_body + '\n\n' + CTA_TEMPLATE).strip()
+        if section_name.lower() == 'sources':
+            clean_body = normalize_sources(clean_body)
+        rebuilt_sections.append(f'## {section_name}\n\n{clean_body}')
 
-    why_body = sanitize_text(extract_section(text, ['Why It Matters', 'Why this matters']))
-    why_items = bulletize([line for line in why_body.splitlines() if line.strip()], minimum=3)
+    # Ensure CTA and Sources exist even if Em omitted them
+    section_names_lower = [s.lower() for s in all_sections.keys()]
+    if 'cta' not in section_names_lower:
+        rebuilt_sections.append(f'## CTA\n\n{CTA_TEMPLATE}')
+    if 'sources' not in section_names_lower:
+        sources = normalize_sources('')
+        rebuilt_sections.append(f'## Sources\n\n{sources}')
 
-    highlights_body = sanitize_text(extract_section(text, ['Highlights', 'Quick Hits', 'Takeaways']))
-    highlight_seed = [line for line in highlights_body.splitlines() if line.strip()]
-    if not highlight_seed:
-        highlight_seed = re.findall(r'^[-*]\s+.+$', brief_text + '\n' + raw_text, flags=re.MULTILINE)
-    highlight_items = bulletize(highlight_seed, minimum=4)
+    normalized = '\n\n'.join(rebuilt_sections).strip() + '\n'
 
-    tool = sanitize_text(extract_section(text, ['Tool of the Week']))
-    if not tool:
-        tool = sanitize_text(extract_brief_field(brief_text, 'Tool of the Week'))
-    if not tool or len(tool.split()) < 20:
-        raise ValueError('Tool of the Week contract failure: missing substantive tool guidance.')
-    tool = dedup_paragraphs(tool)
-
-    workflow = sanitize_text(extract_section(text, ['Workflow', 'Implementation']))
-    workflow = dedup_paragraphs(workflow)
-    workflow = ensure_workflow_block(workflow)
-
-    cta = sanitize_text(extract_section(text, ['CTA', 'Call to Action']))
-    if not cta:
-        cta = 'Pick one workflow from this issue, test it with a measurable success metric this week, and only promote it if the gains hold.'
-    cta = dedup_paragraphs(cta)
-    cta_lines = [line for line in cta.splitlines() if not _is_meta_line(line)]
-    cta = '\n'.join(line for line in cta_lines if line.strip()).strip()
-    if 'https://forgecore-newsletter.beehiiv.com/' not in cta or 'sponsors@forgecore.co' not in cta.lower() or 'sponsor this issue' not in cta.lower():
-        cta = (cta + '\n\n' + CTA_TEMPLATE).strip()
-
-    sources = normalize_sources(extract_section(text, ['Sources']))
-
-    normalized = '\n\n'.join([
-        f'# {title}',
-        '## Hook\n' + hook.strip(),
-        '## Top Story\n' + top_story.strip(),
-        '## Why It Matters\n' + '\n'.join(why_items),
-        '## Highlights\n' + '\n'.join(highlight_items),
-        '## Tool of the Week\n' + tool.strip(),
-        '## Workflow\n' + workflow.strip(),
-        '## CTA\n' + cta.strip(),
-        '## Sources\n' + sources.strip(),
-    ]).strip() + '\n'
     final_hits = contains_placeholder_or_meta(normalized)
     if final_hits:
         raise ValueError('Normalized issue still contains placeholder/meta content: ' + ', '.join(final_hits[:4]))
+
+    # Hard-minimum section check
+    check_required_sections(normalized)
+
     return normalized
 
 
