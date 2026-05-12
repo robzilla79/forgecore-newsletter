@@ -1141,3 +1141,21 @@
   - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
   - Start the Hook with the operator outcome or decision, not a product announcement.
   - Name the exact operator persona, job-to-be-done, tool stack, and tradeoff.
+
+
+---
+
+## 2026-05-12 19:06:55 UTC — /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-12-pm.md
+- Improvement result: changed (rewritten issue saved)
+- Critic score: 10.0 | verdict: needs_revision
+- Weaknesses found:
+  - Rewrite the hook to be more engaging and specific to solo founders.
+  - Enhance the tone to sound more like Em by incorporating a direct and warm voice.
+  - 1. Revise the hook to create a stronger emotional connection.
+  - 2. Adjust the tone throughout the issue to be more direct and personable.
+  - 3. Ensure that the introduction of each pricing strategy includes a specific operator persona.
+  - The hook is weak: 'Pricing your product or service can feel like navigating a minefield.' This is a cliché and does not engage the reader effectively.
+- Rules for future issues:
+  - Start the Hook with the operator outcome or decision, not a product announcement.
+  - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
+  - Name the exact operator persona, job-to-be-done, tool stack, and tradeoff.

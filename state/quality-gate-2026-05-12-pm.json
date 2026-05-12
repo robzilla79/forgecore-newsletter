@@ -4,16 +4,10 @@
   "checks": {
     "exists": true,
     "issue_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-12-pm.md",
-    "word_count": 850,
+    "word_count": 891,
     "required_sections_present": [
-      "## Hook",
-      "## Top Story",
-      "## Why It Matters",
-      "## Highlights",
-      "## Tool of the Week",
-      "## Workflow",
-      "## CTA",
-      "## Sources"
+      "## Sources",
+      "## CTA"
     ],
     "url_count": 6,
     "source_links": [
@@ -43,37 +37,37 @@
       "min_category_required": 6.0,
       "consistent_pass_overall": 9.0,
       "scores": {
-        "headline_strength": 6.0,
-        "hook_strength": 5.0,
-        "specificity": 7.0,
-        "originality": 4.0,
-        "readability": 6.0,
+        "headline_strength": 7.0,
+        "hook_strength": 6.0,
+        "specificity": 8.0,
+        "originality": 6.0,
+        "readability": 7.0,
         "tone": 5.0,
-        "utility": 7.0,
-        "non_repetition": 6.0
+        "utility": 8.0,
+        "non_repetition": 7.0
       },
       "weak_categories": [],
       "strengths": [
-        "The workflow is clear and actionable, with specific steps for implementation.",
-        "Concrete examples of pricing strategies provide clarity."
+        "The workflow is clear and actionable, with specific steps outlined for implementation.",
+        "The use of specific AI tools like PriceIntelligence and Segment adds credibility and utility."
       ],
       "weaknesses": [
-        "The hook lacks urgency: 'Are you leaving money on the table?' feels clichéd.",
-        "The tone is occasionally too formal and lacks Em's directness, e.g., 'Adopting these pricing strategies can lead to substantial revenue increases' is generic."
+        "The hook lacks a strong emotional pull; it reads more like a generic introduction than a captivating opener.",
+        "The tone feels overly formal and lacks Em's characteristic warmth and directness, particularly in sections like 'Why It Matters'."
       ],
       "must_fix": [
-        "Rewrite the hook to create a stronger emotional connection.",
-        "Infuse more of Em's direct, warm tone throughout the piece."
+        "Rewrite the hook to create a stronger emotional connection and urgency.",
+        "Adjust the tone throughout to be more direct and personable, reflecting Em's unique voice."
       ],
       "rewrite_plan": [
-        "Revise the hook to be more engaging and specific.",
-        "Adjust the tone in the 'Why It Matters' section to reflect Em's voice.",
-        "Add a specific operator persona to enhance relatability."
+        "Revise the hook to include a compelling question or scenario that resonates with solo founders.",
+        "Infuse the content with a more conversational tone, particularly in the 'Why It Matters' section.",
+        "Ensure each section maintains a consistent voice that feels personal and opinionated."
       ],
-      "summary": "The issue provides useful pricing strategies but lacks a strong, original voice and specific operator outcomes.",
+      "summary": "The issue provides actionable insights for solo founders on optimizing pricing strategies using AI, but lacks a compelling voice and depth in some areas.",
       "verdict": "needs_revision",
-      "consistency_note": "Critic output was internally inconsistent: high overall score (10.00) with weak categories hook_strength, originality, tone. Overall score takes precedence for publish gating.",
-      "run_token": "pass-2-1778610279490477967",
+      "consistency_note": "Critic output was internally inconsistent: high overall score (10.00) with weak categories tone. Overall score takes precedence for publish gating.",
+      "run_token": "pass-2-1778612815179725815",
       "artifact_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/critic-review-2026-05-12-pm.json"
     },
     "errors": [],
