@@ -18,6 +18,6 @@ jobs:
     steps:
       - name: Explain disabled workflow
         run: |
-          echo "This legacy hourly improvement workflow is disabled."
-          echo "Active improvement path: generate.yml -> improve_until_passes.py -> quality_gate.py -> publish_site.py -> verify_publish.py."
-          echo "No content mutation, commit, or deploy was attempted by this disabled workflow."
+          echo "Continuous improvement loop is disabled."
+          echo "Active path: generate.yml -> improve_until_passes.py runs inline before quality gate."
+          echo "No changes were made by this disabled workflow."

@@ -1,4 +1,4 @@
-name: Prepare Newsletter Issue
+name: Em Prepares the Issue
 
 on:
   workflow_call:
@@ -63,10 +63,10 @@ jobs:
       MIN_CRITIC_CATEGORY: '6.0'
       SITE_DOMAIN: news.forgecore.co
       SITE_BASE_URL: https://news.forgecore.co
-      NEWSLETTER_NAME: ForgeCore AI Productivity Brief
-      NEWSLETTER_TAGLINE: Practical AI workflows, tools, and ROI cases for operators
-      TARGET_AUDIENCE: Operators, founders, consultants, and technical teams adopting AI workflows.
-      PRIMARY_CTA_TEXT: Subscribe for weekly operator-grade AI workflows
+      NEWSLETTER_NAME: ForgeCore AI
+      NEWSLETTER_TAGLINE: AI seen clearly. Written by Em.
+      TARGET_AUDIENCE: Operators and builders who want signal, not noise.
+      PRIMARY_CTA_TEXT: Read ForgeCore AI — written by Em
       PRIMARY_CTA_URL: ${{ secrets.KIT_SIGNUP_URL || 'https://news.forgecore.co/' }}
       SPONSOR_EMAIL: sponsors@forgecore.co
       ENABLE_CLOUDFLARE_DEPLOY: '1'
@@ -171,7 +171,7 @@ jobs:
         if: failure()
         run: |
           {
-            echo "## ForgeCore newsletter preparation failed"
+            echo "## Em hit a wall — issue preparation failed"
             echo ""
             echo "Issue slot: ${ISSUE_SLOT:-manual}"
             echo "Commit: ${GITHUB_SHA}"
@@ -212,8 +212,8 @@ jobs:
       - name: Commit prepared content
         if: success()
         run: |
-          git config user.name "ForgeCore AI Bot"
-          git config user.email "bot@forgecore.co"
+          git config user.name "Em (EternalMind)"
+          git config user.email "em@forgecore.co"
           git add content/issues/ content/email/ research/ state/ site/dist/ HEARTBEAT.md
           if git diff --staged --quiet; then
             echo "Nothing to commit"
@@ -223,7 +223,7 @@ jobs:
             git stash pop
             git add content/issues/ content/email/ research/ state/ site/dist/ HEARTBEAT.md
             TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M UTC')
-            git commit -m "auto: prepare ${ISSUE_SLOT:-manual} newsletter issue $TIMESTAMP [bot]"
+            git commit -m "em: prepared ${ISSUE_SLOT:-manual} issue $TIMESTAMP"
             git push
           fi
 

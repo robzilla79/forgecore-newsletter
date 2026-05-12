@@ -1,4 +1,4 @@
-name: Prepare PM Newsletter Issue
+name: Em Generates the PM Issue
 
 on:
   schedule:

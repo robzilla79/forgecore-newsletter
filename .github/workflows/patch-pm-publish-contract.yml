@@ -1,30 +1,29 @@
-name: Patch PM Publish Contract
+name: Em Patch — PM Publish Contract
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - 'patch_publish_site_pm_contract.py'
-      - '.github/workflows/patch-pm-publish-contract.yml'
-      - 'state/manual-pm-publish-patch.txt'
 
 permissions:
   contents: write
   actions: read
 
+concurrency:
+  group: forgecore-patch-pm
+  cancel-in-progress: true
+
 jobs:
-  patch-render-verify:
+  patch:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      ISSUE_SLOT: pm
-      SITE_DOMAIN: news.forgecore.co
       SITE_BASE_URL: https://news.forgecore.co
-      NEWSLETTER_NAME: ForgeCore AI Productivity Brief
-      NEWSLETTER_TAGLINE: Practical AI workflows, tools, and ROI cases for operators
-      PRIMARY_CTA_TEXT: Subscribe for weekly operator-grade AI workflows
+      SITE_DOMAIN: news.forgecore.co
+      NEWSLETTER_NAME: ForgeCore AI
+      NEWSLETTER_TAGLINE: AI seen clearly. Written by Em.
+      PRIMARY_CTA_TEXT: Read ForgeCore AI — written by Em
       PRIMARY_CTA_URL: https://news.forgecore.co/
       SPONSOR_EMAIL: sponsors@forgecore.co
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -49,36 +48,28 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Patch PM Brief contract into renderer
-        run: python patch_publish_site_pm_contract.py
+      - name: Patch PM publish contract
+        run: python patch_pm_publish_contract.py
 
-      - name: Render static site
+      - name: Render site
         run: python publish_site.py
 
-      - name: Apply AI search hardening
-        run: python ai_search_hardening.py
+      - name: Verify outputs
+        run: python verify_publish.py
 
-      - name: Apply business hardening
-        run: python business_hardening.py
-
-      - name: Render lead magnet assets
-        run: python lead_magnet_hardening.py
-
-      - name: Verify PM Brief publish output
-        run: python pm_verify_publish.py
-
-      - name: Commit PM publish contract and rendered output
+      - name: Commit patch
+        if: success()
         run: |
-          git config user.name "ForgeCore AI Bot"
-          git config user.email "bot@forgecore.co"
-          git add publish_site.py site/dist/ patch_publish_site_pm_contract.py
+          git config user.name "Em (EternalMind)"
+          git config user.email "em@forgecore.co"
+          git add content/ site/dist/ state/ || true
           if git diff --staged --quiet; then
-            echo "No PM publish contract changes to commit"
+            echo "Nothing to commit"
           else
-            git stash push --include-untracked --message forgecore-pm-publish-contract
+            git stash push --include-untracked --message forgecore-patch-pm
             git pull --rebase origin main
             git stash pop
-            git add publish_site.py site/dist/ patch_publish_site_pm_contract.py
+            git add content/ site/dist/ state/ || true
             git commit -m "fix: include PM Brief issues in homepage RSS and sitemap"
             git push
           fi

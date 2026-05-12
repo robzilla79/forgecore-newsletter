@@ -1,4 +1,4 @@
-name: Prepare AM Newsletter Issue
+name: Em Generates the AM Issue
 
 on:
   schedule:
