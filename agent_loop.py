@@ -32,6 +32,8 @@ SYSTEMS = {"scout": SCOUT_SYSTEM, "analyst": ANALYST_SYSTEM, "author": AUTHOR_SY
 # Em writes in whatever structure serves the piece.
 # issue_contract.py enforces quality and substance; we only enforce
 # the two hard-minimum structural anchors here to stay in sync.
+# Matching is case-insensitive and ignores trailing punctuation so minor
+# LLM formatting variations (e.g. "## CTA:" or "## cta") still pass.
 REQUIRED_SECTIONS = [
     "## CTA",
     "## Sources",
@@ -366,6 +368,18 @@ def clean_markdown(text: str) -> str:
     return cleaned + "\n"
 
 
+def section_present(text: str, section: str) -> bool:
+    """Check for a required section header, tolerating trailing punctuation and
+    case differences that LLMs occasionally introduce (e.g. '## CTA:' or '## cta')."""
+    needle = section.rstrip(":").lower()
+    for line in text.splitlines():
+        if line.startswith("##"):
+            candidate = line.rstrip(":").lower()
+            if candidate == needle:
+                return True
+    return False
+
+
 def validate_markdown(agent: str, text: str) -> None:
     lower = text.lower()
     for marker in BAD_CONTEXT_MARKERS:
@@ -373,7 +387,7 @@ def validate_markdown(agent: str, text: str) -> None:
             raise ValueError(f"{agent} returned contaminated placeholder/raw-intel marker: {marker}")
     if not text.strip().startswith("# "):
         raise ValueError(f"{agent} did not return a Markdown issue title")
-    missing = [section for section in REQUIRED_SECTIONS if section not in text]
+    missing = [section for section in REQUIRED_SECTIONS if not section_present(text, section)]
     if missing:
         raise ValueError(f"{agent} Markdown missing required sections: {', '.join(missing)}")
 
