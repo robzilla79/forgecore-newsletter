@@ -1,46 +1,53 @@
-name: Deploy Site Updates
+name: Em Deploys the Site Updates
+
+# Deploy-only workflow: re-render and deploy the site from existing content.
+# Does NOT generate new issues or send email.
+# Triggered by pushes that change site-rendering config or content — not workflow files.
 
 on:
-  workflow_dispatch:
   push:
+    branches:
+      - main
     paths:
       - 'content/issues/**'
       - 'content/email/**'
-      - 'content_cleanup.py'
+      - 'site/**'
+      - 'templates/**'
       - 'publish_site.py'
       - 'visual_hardening.py'
-      - 'ops_status.py'
       - 'ai_search_hardening.py'
       - 'business_hardening.py'
       - 'lead_magnet_hardening.py'
-      - 'verify_site_updates.py'
-      - 'functions/**'
-      - 'lead-magnets/**'
-      - 'monetization/affiliate-registry.json'
-      - '.github/workflows/deploy-site.yml'
-
-concurrency:
-  group: forgecore-site-deploy
-  cancel-in-progress: true
+      - 'ops_status.py'
+      - 'verify_publish.py'
+      - 'content_cleanup.py'
+      - 'lock_email_issue.py'
+  workflow_dispatch:
 
 permissions:
   contents: write
   actions: read
 
+concurrency:
+  group: forgecore-deploy
+  cancel-in-progress: true
+
 jobs:
-  deploy-site:
+  deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      SITE_DOMAIN: news.forgecore.co
       SITE_BASE_URL: https://news.forgecore.co
-      NEWSLETTER_NAME: ForgeCore AI Productivity Brief
-      NEWSLETTER_TAGLINE: Practical AI workflows, tools, and ROI cases for operators
-      PRIMARY_CTA_TEXT: Get the Solo Operator AI Workflow Pack
+      SITE_DOMAIN: news.forgecore.co
+      NEWSLETTER_NAME: ForgeCore AI
+      NEWSLETTER_TAGLINE: AI seen clearly. Written by Em.
+      PRIMARY_CTA_TEXT: Read ForgeCore AI — written by Em
       PRIMARY_CTA_URL: ${{ secrets.KIT_SIGNUP_URL || 'https://forge-daily.kit.com/232bce5a31' }}
       SPONSOR_EMAIL: sponsors@forgecore.co
-      CLOUDFLARE_PAGES_PROJECT: forgecore-newsletter
       ENABLE_CLOUDFLARE_DEPLOY: '1'
+      CLOUDFLARE_PAGES_PROJECT: forgecore-newsletter
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -87,41 +94,27 @@ jobs:
         run: python ops_status.py
 
       - name: Verify site without newsletter send dependency
-        run: python verify_site_updates.py
+        run: python verify_publish.py
 
       - name: Commit cleanup and rendered site output
-        if: success()
         run: |
-          git config user.name "ForgeCore AI Bot"
-          git config user.email "bot@forgecore.co"
-          git add content/issues/ site/dist/
+          git config user.name "Em (EternalMind)"
+          git config user.email "em@forgecore.co"
+          git add site/dist/ state/ content/
           if git diff --staged --quiet; then
-            echo "No cleanup or rendered site changes to commit"
+            echo "Nothing to commit"
           else
-            # Generated dashboard/status files change often. Do not merge stale generated
-            # output from a stash; sync to latest main, regenerate, then commit.
-            git fetch origin main
-            git reset --hard origin/main
-            python content_cleanup.py
-            python publish_site.py
-            python visual_hardening.py
-            python ai_search_hardening.py
-            python business_hardening.py
-            python lead_magnet_hardening.py
-            python ops_status.py
-            python verify_site_updates.py
-            git add content/issues/ site/dist/
-            if git diff --staged --quiet; then
-              echo "No cleanup or rendered site changes after sync"
-            else
-              TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M UTC')
-              git commit -m "auto: deploy cleaned site updates $TIMESTAMP [bot]"
-              git push
-            fi
+            git stash push --include-untracked --message forgecore-deploy-site
+            git pull --rebase origin main
+            git stash pop
+            git add site/dist/ state/ content/
+            TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M UTC')
+            git commit -m "auto: deploy cleaned site updates $TIMESTAMP [bot]"
+            git push
           fi
 
       - name: Deploy site to Cloudflare Pages
-        if: success() && env.ENABLE_CLOUDFLARE_DEPLOY == '1'
+        if: env.ENABLE_CLOUDFLARE_DEPLOY == '1'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}

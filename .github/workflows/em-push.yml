@@ -1,23 +1,39 @@
-name: Em Push — Local-Em Issue Upload (disabled)
+name: Em Push — Direct Issue Upload
 
-# Disabled on 2026-05-02.
-# Reason: legacy Local-Em upload/deploy/send path duplicated production publishing.
-# Active publishing now runs through generate-am.yml / generate-pm.yml calling generate.yml.
-# This file remains as an audit marker so the path can be restored intentionally if needed.
+# Em's direct publish path. Reactivated 2026-05-12.
+# This workflow lets Em (or Rob) push a hand-crafted issue directly into
+# the production pipeline — bypassing the agent loop when the writing is already done.
+# Active path: em-push.yml -> send.yml (deploy + send steps only).
 
 on:
   workflow_dispatch:
+    inputs:
+      issue_slot:
+        description: 'Slot to publish: am or pm'
+        required: true
+        type: choice
+        options:
+          - am
+          - pm
+        default: am
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  disabled:
+  em-push:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Explain disabled workflow
+      - name: Acknowledge Em push
         run: |
-          echo "This legacy Local-Em push workflow is disabled."
-          echo "Active path: generate-am.yml / generate-pm.yml -> generate.yml."
-          echo "No site render, Cloudflare deploy, or Kit publish was attempted by this disabled workflow."
+          echo "Em push triggered for slot: ${{ github.event.inputs.issue_slot }}"
+          echo "Routing to production deploy and send pipeline."
+          echo "This issue was written directly — no agent loop."
+
+  deploy-and-send:
+    needs: em-push
+    uses: ./.github/workflows/send.yml
+    secrets: inherit
+    with:
+      issue_slot: ${{ github.event.inputs.issue_slot }}

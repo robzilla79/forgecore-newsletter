@@ -1,4 +1,4 @@
-name: Autonomous Newsletter Recovery
+name: Em Recovery — Autonomous Issue Guard
 
 on:
   workflow_dispatch:
@@ -14,30 +14,23 @@ on:
         default: all
       allow_send:
         description: 'Allow safe send recovery through the existing idempotent Kit send workflow'
-        required: true
+        required: false
+        default: 'false'
         type: choice
         options:
-          - 'true'
           - 'false'
-        default: 'true'
-      reason:
-        description: 'Audit reason for manual autonomous recovery run'
-        required: false
-        default: 'Manual autonomous recovery check'
+          - 'true'
   schedule:
-    # Post-AM window, post-PM window, and evening final safety net.
-    # UTC schedules intentionally follow the existing repo pattern; the detector uses America/Chicago gates.
-    - cron: '45 15 * * *'
-    - cron: '0 22 * * *'
-    - cron: '20 0 * * *'
-
-permissions:
-  contents: write
-  actions: read
+    # 11:05 AM CDT (16:05 UTC) daily — after both send windows
+    - cron: '5 16 * * *'
 
 concurrency:
-  group: forgecore-autonomous-newsletter-recovery
+  group: forgecore-recovery
   cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: write
 
 jobs:
   detect:
@@ -45,10 +38,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
-      am_action: ${{ steps.detect.outputs.am_action }}
-      am_reason: ${{ steps.detect.outputs.am_reason }}
-      pm_action: ${{ steps.detect.outputs.pm_action }}
-      pm_reason: ${{ steps.detect.outputs.pm_reason }}
+      am_prepare_needed: ${{ steps.detect.outputs.am_prepare_needed }}
+      am_send_needed: ${{ steps.detect.outputs.am_send_needed }}
+      am_prepare_then_send: ${{ steps.detect.outputs.am_prepare_then_send }}
+      pm_prepare_needed: ${{ steps.detect.outputs.pm_prepare_needed }}
+      pm_send_needed: ${{ steps.detect.outputs.pm_send_needed }}
+      pm_prepare_then_send: ${{ steps.detect.outputs.pm_prepare_then_send }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -64,112 +59,112 @@ jobs:
 
       - name: Detect missing slots
         id: detect
-        env:
-          INPUT_SLOT: ${{ github.event.inputs.issue_slot || 'all' }}
-          ALLOW_SEND: ${{ github.event.inputs.allow_send || 'true' }}
         run: |
-          python - <<'PY'
-          import json
-          import os
-          from datetime import datetime
+          python3 - << 'PYEOF'
+          import json, os, sys
           from pathlib import Path
-          from zoneinfo import ZoneInfo
+          from datetime import datetime, timezone, timedelta
 
-          central = ZoneInfo('America/Chicago')
-          now = datetime.now(central)
-          today = now.date().isoformat()
-          mode = (os.environ.get('INPUT_SLOT') or 'all').strip().lower()
-          allow_send = (os.environ.get('ALLOW_SEND') or 'true').strip().lower() == 'true'
+          LOCAL_TZ_OFFSET = -5  # CDT
+          now_utc = datetime.now(timezone.utc)
+          now_local = now_utc + timedelta(hours=LOCAL_TZ_OFFSET)
+          today = now_local.strftime('%Y-%m-%d')
+          allow_send = os.environ.get('ALLOW_SEND', 'false').lower() == 'true'
+
+          input_slot = os.environ.get('INPUT_SLOT', 'all')
+          print(f'Local date: {today}')
+          print(f'Allow send recovery: {allow_send}')
+          print(f'Slot filter: {input_slot}')
 
           sent_log_path = Path('state/kit_sent.json')
-          try:
-              sent_log = json.loads(sent_log_path.read_text(encoding='utf-8')) if sent_log_path.exists() else {}
-              if not isinstance(sent_log, dict):
-                  sent_log = {}
-          except Exception:
-              sent_log = {}
-
-          # Gate recovery so PM is not auto-flagged during the morning.
-          windows = {
-              'am': {'prepare_after': (7, 45), 'send_after': (10, 35)},
-              'pm': {'prepare_after': (13, 45), 'send_after': (16, 50)},
-          }
-
-          def minutes(pair):
-              return pair[0] * 60 + pair[1]
+          sent_log = {}
+          if sent_log_path.exists():
+              try:
+                  sent_log = json.loads(sent_log_path.read_text())
+              except Exception:
+                  pass
 
           def blocks_email(record):
               return isinstance(record, dict) and (
                   record.get('email_delivery') == 'scheduled_or_sent' or record.get('mode') == 'public'
               )
 
-          def decide(slot):
-              if mode not in {'all', slot}:
-                  return 'no_action', f'{slot.upper()} not selected for this run.'
+          results = {}
+          for slot in ('am', 'pm'):
+              if input_slot != 'all' and input_slot != slot:
+                  results[f'{slot}_prepare_needed'] = 'false'
+                  results[f'{slot}_send_needed'] = 'false'
+                  results[f'{slot}_prepare_then_send'] = 'false'
+                  continue
+
               slug = f'{today}-{slot}'
               issue = Path('content/issues') / f'{slug}.md'
               email = Path('content/email') / f'{slug}.md'
-              record = sent_log.get(slug)
-              sent = blocks_email(record)
-              current_minutes = now.hour * 60 + now.minute
-              prepare_due = current_minutes >= minutes(windows[slot]['prepare_after'])
-              send_due = current_minutes >= minutes(windows[slot]['send_after'])
+              sent = blocks_email(sent_log.get(issue.stem))
 
               if issue.exists() and email.exists() and sent:
-                  return 'no_action', f'{slug} issue, email snapshot, and Kit send record already exist.'
-              if not prepare_due:
-                  return 'no_action', f'{slug} prepare window has not passed yet.'
-              if not issue.exists():
-                  if allow_send and send_due:
-                      return 'prepare_and_send', f'{slug} issue is missing after send window; auto-recover by preparing and sending through guarded workflow.'
-                  return 'prepare_only', f'{slug} issue is missing after prepare window; prepare without email send.'
-              if issue.exists() and not email.exists():
-                  return 'prepare_only', f'{slug} locked email snapshot is missing; rerun prepare flow.'
-              if issue.exists() and email.exists() and not sent:
-                  if allow_send and send_due:
-                      return 'send_only', f'{slug} issue and email snapshot exist, but Kit sent record is missing after send window.'
-                  return 'no_action', f'{slug} issue and email snapshot exist, but send recovery is not allowed or send window has not passed.'
-              return 'investigate', f'{slug} is in an unexpected state. Human review required.'
+                  action = 'no_action'
+                  reason = f'{slug} issue, email snapshot, and Kit send record already exist.'
+              elif now_local.hour < (10 if slot == 'am' else 13):
+                  action = 'no_action'
+                  reason = f'Too early for {slug} recovery. Skipping.'
+              elif not issue.exists():
+                  if now_local.hour >= (11 if slot == 'am' else 14):
+                      action = 'prepare_only'
+                      reason = f'{slug} issue is missing after prepare window; prepare without email send.'
+                  else:
+                      action = 'no_action'
+                      reason = f'{slug} issue is missing but still within prepare window.'
+              elif issue.exists() and not email.exists():
+                  action = 'prepare_only'
+                  reason = f'{slug} locked email snapshot is missing; rerun prepare flow.'
+              elif issue.exists() and email.exists() and not sent:
+                  if allow_send:
+                      action = 'send_only'
+                      reason = f'{slug} issue and email snapshot exist, but Kit sent record is missing after send window.'
+                  else:
+                      action = 'no_action'
+                      reason = f'{slug} issue and email snapshot exist, but send recovery is not allowed or send window has not passed.'
+              else:
+                  action = 'no_action'
+                  reason = f'{slug} state unclear; defaulting to no action.'
 
-          results = {}
-          for slot in ('am', 'pm'):
-              action, reason = decide(slot)
-              results[f'{slot}_action'] = action
-              results[f'{slot}_reason'] = reason
+              print(f'{slug}: {action} — {reason}')
+              results[f'{slot}_prepare_needed'] = 'true' if action == 'prepare_only' else 'false'
+              results[f'{slot}_send_needed'] = 'true' if action == 'send_only' else 'false'
+              results[f'{slot}_prepare_then_send'] = 'false'
 
-          print(f'Local time: {now.isoformat()}')
-          print(json.dumps(results, indent=2))
-
-          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as out:
-              for key, value in results.items():
-                  safe = str(value).replace('\n', ' ')
-                  out.write(f'{key}={safe}\n')
-          PY
+          for key, value in results.items():
+              print(f'{key}={value}', flush=True)
+              with open(os.environ['GITHUB_OUTPUT'], 'a') as fh:
+                  fh.write(f'{key}={value}\n')
+          PYEOF
+        env:
+          INPUT_SLOT: ${{ github.event.inputs.issue_slot || 'all' }}
+          ALLOW_SEND: ${{ github.event.inputs.allow_send || 'false' }}
 
   repair-am-prepare:
     name: Repair AM prepare
-    if: ${{ needs.detect.outputs.am_action == 'prepare_only' || needs.detect.outputs.am_action == 'prepare_and_send' }}
     needs: detect
+    if: needs.detect.outputs.am_prepare_needed == 'true'
     uses: ./.github/workflows/generate.yml
     secrets: inherit
     with:
       issue_slot: am
 
-  repair-am-send-only:
+  repair-am-send:
     name: Repair AM send only
-    if: ${{ needs.detect.outputs.am_action == 'send_only' }}
     needs: detect
+    if: needs.detect.outputs.am_send_needed == 'true'
     uses: ./.github/workflows/send.yml
     secrets: inherit
     with:
       issue_slot: am
 
-  repair-am-send-after-prepare:
+  repair-am-prepare-then-send:
     name: Repair AM send after prepare
-    if: ${{ needs.detect.outputs.am_action == 'prepare_and_send' }}
-    needs:
-      - detect
-      - repair-am-prepare
+    needs: repair-am-prepare
+    if: needs.detect.outputs.am_prepare_then_send == 'true'
     uses: ./.github/workflows/send.yml
     secrets: inherit
     with:
@@ -177,28 +172,26 @@ jobs:
 
   repair-pm-prepare:
     name: Repair PM prepare
-    if: ${{ needs.detect.outputs.pm_action == 'prepare_only' || needs.detect.outputs.pm_action == 'prepare_and_send' }}
     needs: detect
+    if: needs.detect.outputs.pm_prepare_needed == 'true'
     uses: ./.github/workflows/generate.yml
     secrets: inherit
     with:
       issue_slot: pm
 
-  repair-pm-send-only:
+  repair-pm-send:
     name: Repair PM send only
-    if: ${{ needs.detect.outputs.pm_action == 'send_only' }}
     needs: detect
+    if: needs.detect.outputs.pm_send_needed == 'true'
     uses: ./.github/workflows/send.yml
     secrets: inherit
     with:
       issue_slot: pm
 
-  repair-pm-send-after-prepare:
+  repair-pm-prepare-then-send:
     name: Repair PM send after prepare
-    if: ${{ needs.detect.outputs.pm_action == 'prepare_and_send' }}
-    needs:
-      - detect
-      - repair-pm-prepare
+    needs: repair-pm-prepare
+    if: needs.detect.outputs.pm_prepare_then_send == 'true'
     uses: ./.github/workflows/send.yml
     secrets: inherit
     with:
@@ -206,28 +199,30 @@ jobs:
 
   summary:
     name: Recovery decision summary
-    runs-on: ubuntu-latest
     needs:
       - detect
       - repair-am-prepare
-      - repair-am-send-only
-      - repair-am-send-after-prepare
+      - repair-am-send
+      - repair-am-prepare-then-send
       - repair-pm-prepare
-      - repair-pm-send-only
-      - repair-pm-send-after-prepare
+      - repair-pm-send
+      - repair-pm-prepare-then-send
     if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Summarize autonomous recovery
         run: |
           {
-            echo "## ForgeCore autonomous newsletter recovery"
+            echo "## Em autonomous issue recovery — here is what I found"
             echo ""
-            echo "AM action: ${{ needs.detect.outputs.am_action }}"
-            echo "AM reason: ${{ needs.detect.outputs.am_reason }}"
+            echo "AM prepare needed: ${{ needs.detect.outputs.am_prepare_needed }}"
+            echo "AM send needed:    ${{ needs.detect.outputs.am_send_needed }}"
+            echo "AM prepare→send:   ${{ needs.detect.outputs.am_prepare_then_send }}"
+            echo "PM prepare needed: ${{ needs.detect.outputs.pm_prepare_needed }}"
+            echo "PM send needed:    ${{ needs.detect.outputs.pm_send_needed }}"
+            echo "PM prepare→send:   ${{ needs.detect.outputs.pm_prepare_then_send }}"
             echo ""
-            echo "PM action: ${{ needs.detect.outputs.pm_action }}"
-            echo "PM reason: ${{ needs.detect.outputs.pm_reason }}"
-            echo ""
-            echo "Repair prepare/send jobs use the existing generate.yml and send.yml workflows."
-            echo "Kit duplicate-send protection remains enforced by kit_publish.py and state/kit_sent.json."
+            echo "Repair jobs delegated to generate.yml and send.yml — Em handled the routing."
+            echo "Duplicate-send guard is still in place via kit_publish.py and state/kit_sent.json."
           } >> "$GITHUB_STEP_SUMMARY"

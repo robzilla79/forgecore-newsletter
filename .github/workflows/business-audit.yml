@@ -1,48 +1,44 @@
-name: Daily Business Audit
+name: Em Daily Business Audit
+
+# Runs the lean business audit only.
+# This does not generate newsletters or send email.
+# Triggered daily at 6 PM CDT (23:00 UTC), or manually.
 
 on:
   schedule:
-    # Runs daily at 8:45 AM Central during daylight time, 7:45 AM Central during standard time.
-    # This does not generate newsletters or send email.
-    - cron: '45 13 * * *'
+    - cron: '0 23 * * *'
   workflow_dispatch:
-  push:
-    paths:
-      - 'content_cleanup.py'
-      - 'business_audit.py'
-      - 'business_hardening.py'
-      - 'lead_magnet_hardening.py'
-      - 'verify_site_updates.py'
-      - 'lead-magnets/**'
-      - 'kit_publish.py'
-      - 'lock_email_issue.py'
-      - '.github/workflows/business-audit.yml'
-      - '.github/workflows/deploy-site.yml'
-      - '.github/workflows/generate.yml'
-      - '.github/workflows/send.yml'
-      - 'business/sponsorship-rate-card.md'
-      - 'monetization/affiliate-registry.json'
-
-concurrency:
-  group: forgecore-business-audit
-  cancel-in-progress: true
+    inputs:
+      paths:
+        description: 'Changed paths (space-separated, optional)'
+        required: false
+        default: ''
+      triggering_files:
+        description: 'Triggering files for audit (optional)'
+        required: false
+        default: ''
 
 permissions:
   contents: write
   actions: read
 
+concurrency:
+  group: forgecore-business-audit
+  cancel-in-progress: true
+
 jobs:
-  business-audit:
+  audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     env:
-      SITE_DOMAIN: news.forgecore.co
       SITE_BASE_URL: https://news.forgecore.co
-      NEWSLETTER_NAME: ForgeCore AI Productivity Brief
-      NEWSLETTER_TAGLINE: Practical AI workflows, tools, and ROI cases for operators
-      PRIMARY_CTA_TEXT: Get the Solo Operator AI Workflow Pack
+      SITE_DOMAIN: news.forgecore.co
+      NEWSLETTER_NAME: ForgeCore AI
+      NEWSLETTER_TAGLINE: AI seen clearly. Written by Em.
+      PRIMARY_CTA_TEXT: Read ForgeCore AI — written by Em
       PRIMARY_CTA_URL: ${{ secrets.KIT_SIGNUP_URL || 'https://forge-daily.kit.com/232bce5a31' }}
       SPONSOR_EMAIL: sponsors@forgecore.co
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -83,24 +79,23 @@ jobs:
         run: python lead_magnet_hardening.py
 
       - name: Verify site update surface
-        run: python verify_site_updates.py
+        run: python verify_publish.py
 
       - name: Run lean business audit
-        run: python business_audit.py
+        run: python lean_business_audit.py
 
       - name: Commit audit report, cleanup, and rendered site output
-        if: always()
         run: |
-          git config user.name "ForgeCore AI Bot"
-          git config user.email "bot@forgecore.co"
-          git add state/business-audit.json content/issues/ site/dist/
+          git config user.name "Em (EternalMind)"
+          git config user.email "em@forgecore.co"
+          git add site/dist/ state/ content/
           if git diff --staged --quiet; then
-            echo "No business audit changes to commit"
+            echo "Nothing to commit"
           else
             git stash push --include-untracked --message forgecore-business-audit
             git pull --rebase origin main
             git stash pop
-            git add state/business-audit.json content/issues/ site/dist/
+            git add site/dist/ state/ content/
             TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M UTC')
             git commit -m "auto: daily business audit $TIMESTAMP [bot]"
             git push
