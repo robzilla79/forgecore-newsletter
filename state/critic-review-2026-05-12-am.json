@@ -8,35 +8,36 @@
   "min_category_required": 6.0,
   "consistent_pass_overall": 9.0,
   "scores": {
-    "headline_strength": 6.0,
-    "hook_strength": 5.0,
+    "headline_strength": 7.0,
+    "hook_strength": 6.0,
     "specificity": 7.0,
     "originality": 5.0,
-    "readability": 6.0,
-    "tone": 4.0,
-    "utility": 7.0,
-    "non_repetition": 6.0
+    "readability": 8.0,
+    "tone": 5.0,
+    "utility": 6.0,
+    "non_repetition": 7.0
   },
   "weak_categories": [],
   "strengths": [
-    "Specific tools and examples are provided, such as Intercom and Zapier, which enhance the utility."
+    "The action steps are clear and actionable.",
+    "Specific tools like MonkeyLearn and HubSpot are mentioned."
   ],
   "weaknesses": [
-    "The hook lacks urgency: 'Imagine spending less time on client communication...' feels generic and uninspired.",
-    "The tone is inconsistent; phrases like 'Thankfully, AI tools can automate...' sound overly formal and lack Em's directness."
+    "The hook lacks urgency and emotional appeal: 'What if you could streamline this process...' feels generic.",
+    "The tone is occasionally flat and lacks Em's characteristic warmth and directness."
   ],
   "must_fix": [
-    "Revise the hook to create a stronger emotional connection.",
-    "Adjust the tone to be more direct and personal, reflecting Em's voice."
+    "Rewrite the hook to create a stronger emotional connection.",
+    "Infuse more personality into the writing to reflect Em's voice."
   ],
   "rewrite_plan": [
-    "1. Rewrite the hook to be more compelling and urgent.",
-    "2. Revise sections for a more conversational tone, especially in the Top Story.",
-    "3. Ensure each section clearly ties back to the operator's outcomes."
+    "Revise the hook to make it more engaging and urgent.",
+    "Enhance the tone throughout the piece to sound more like Em.",
+    "Add a specific example of how a solo founder successfully implemented the workflow."
   ],
-  "summary": "The issue needs revision due to a lack of engaging tone and some vague claims.",
+  "summary": "The issue provides useful insights for solo founders but lacks a strong voice and specific actionable outcomes.",
   "verdict": "needs_revision",
-  "consistency_note": "Critic output was internally inconsistent: high overall score (10.00) with weak categories hook_strength, originality, tone. Overall score takes precedence for publish gating.",
-  "run_token": "pass-2-1778609689009867158",
+  "consistency_note": "Critic output was internally inconsistent: high overall score (10.00) with weak categories originality, tone. Overall score takes precedence for publish gating.",
+  "run_token": "pass-2-1778614261370992842",
   "artifact_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/critic-review-2026-05-12-am.json"
 }

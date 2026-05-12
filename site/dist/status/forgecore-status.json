@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-05-12T19:15:54Z",
-  "generated_at_central": "2026-05-12T14:15:54-05:00",
+  "generated_at": "2026-05-12T19:31:06Z",
+  "generated_at_central": "2026-05-12T14:31:06-05:00",
   "public_safe": true,
   "overall": {
     "status": "repair_needed",
@@ -16,7 +16,7 @@
   "am": {
     "slot": "am",
     "slug": "2026-05-12-am",
-    "title": "How Solo Founders Can Use AI to Optimize Client Communication and Save Time",
+    "title": "How Solo Founders Can Use AI to Transform Client Feedback into Actionable Insights",
     "issue_path": "content/issues/2026-05-12-am.md",
     "email_path": "content/email/2026-05-12-am.md",
     "issue_exists": true,
