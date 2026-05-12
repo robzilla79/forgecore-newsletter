@@ -39,6 +39,21 @@ REQUIRED_SECTIONS = [
     "## Sources",
 ]
 
+# Hard reminder injected into every author/editor task prompt so the model
+# cannot truncate or omit the closing sections even under retry pressure.
+REQUIRED_SECTIONS_REMINDER = """
+# REQUIRED OUTPUT STRUCTURE (non-negotiable)
+Your response MUST end with these two sections, in this order, no matter how long the issue is:
+
+## CTA
+<1-2 paragraphs: what to try this week, subscribe URL, sponsor email>
+
+## Sources
+<bullet list of real URLs used>
+
+Do NOT truncate the issue before reaching ## CTA and ## Sources.
+""".strip()
+
 BAD_CONTEXT_MARKERS = [
     "No concrete content returned",
     "Missing Content",
@@ -221,7 +236,7 @@ def ensure_memo_source_urls(agent: str, memo: str) -> str:
     return memo.rstrip() + appended
 
 
-def gather_research() -> str:
+def gather_research(budget: int = 14000) -> str:
     blocks: list[str] = []
     for path in today_research_files()[:10]:
         text = load_text(path)
@@ -229,7 +244,7 @@ def gather_research() -> str:
             blocks.append(f"## {path.name}\n{text[:2400]}")
     if not blocks:
         raise RuntimeError("No fresh research files found for today. Run web_research.py successfully before agents.")
-    return "\n\n".join(blocks)
+    return "\n\n".join(blocks)[:budget]
 
 
 def load_fresh_scout() -> str:
@@ -280,7 +295,11 @@ def duplicate_retry_context(rejections: list[str]) -> str:
 
 
 def context(agent: str, extra_context: str = "") -> str:
-    research = gather_research()
+    # On duplicate retries, extra_context is non-empty. Reserve ~2000 chars of headroom
+    # by tightening the research budget so the total prompt stays well under MAX_CONTEXT_CHARS
+    # and the model never truncates the closing ## CTA / ## Sources sections.
+    research_budget = 10000 if extra_context.strip() else 14000
+    research = gather_research(budget=research_budget)
     brief_required = agent in {"author", "editor"}
     parts = [
         f"# TIMESTAMP\n{now_str()}",
@@ -297,7 +316,7 @@ def context(agent: str, extra_context: str = "") -> str:
         f"# RULES\n{load_text(WORKSPACE / 'AGENTS.md')}",
         f"# SOUL\n{load_text(WORKSPACE / 'agents' / agent / 'SOUL.md')}",
         f"# MEMORY\n{load_text(WORKSPACE / 'agents' / agent / 'MEMORY.md')}",
-        f"# FRESH_RESEARCH_ITEMS\n{research[:14000]}",
+        f"# FRESH_RESEARCH_ITEMS\n{research}",
     ]
     if agent == "analyst":
         parts.append(f"# FRESH_SCOUT_MEMO\n{load_fresh_scout()[:7000]}")
@@ -351,9 +370,26 @@ def build_memo_prompt(agent: str) -> str:
 def build_markdown_prompt(agent: str, extra_context: str = "") -> str:
     target = f"content/issues/{issue_id()}.md"
     if agent == "author":
-        task = f"Write a clean, original, complete newsletter issue as Markdown for {target}. Return ONLY Markdown. Use today's research and the fresh slot-specific brief only. Do not reuse old issue text. Do not choose a topic that overlaps with recent published issues. If an approved affiliate candidate genuinely fits, you may mention it with disclosure, bad-fit warning, and a simpler alternative, but do not publish placeholder affiliate labels as live links. Do not include placeholder phrases like 'No concrete content returned', 'Missing Content', or 'description incomplete'. Do not wrap it in JSON or code fences."
+        task = (
+            f"Write a clean, original, complete newsletter issue as Markdown for {target}. "
+            "Return ONLY Markdown. Use today's research and the fresh slot-specific brief only. "
+            "Do not reuse old issue text. Do not choose a topic that overlaps with recent published issues. "
+            "If an approved affiliate candidate genuinely fits, you may mention it with disclosure, bad-fit warning, and a simpler alternative, "
+            "but do not publish placeholder affiliate labels as live links. "
+            "Do not include placeholder phrases like 'No concrete content returned', 'Missing Content', or 'description incomplete'. "
+            "Do not wrap it in JSON or code fences.\n\n"
+            + REQUIRED_SECTIONS_REMINDER
+        )
     else:
-        task = f"Edit the existing draft for {target}. Do not change the title or core topic unless the current draft is contaminated. If the draft already passed Author validation, preserve its selected topic and only improve clarity, structure, specificity, and usefulness. Return ONLY the complete final Markdown issue. Keep monetization transparent and registry-approved; remove forced or placeholder affiliate language. Prefer preserving or expanding useful detail; do not shorten the issue unless removing junk."
+        task = (
+            f"Edit the existing draft for {target}. "
+            "Do not change the title or core topic unless the current draft is contaminated. "
+            "If the draft already passed Author validation, preserve its selected topic and only improve clarity, structure, specificity, and usefulness. "
+            "Return ONLY the complete final Markdown issue. "
+            "Keep monetization transparent and registry-approved; remove forced or placeholder affiliate language. "
+            "Prefer preserving or expanding useful detail; do not shorten the issue unless removing junk.\n\n"
+            + REQUIRED_SECTIONS_REMINDER
+        )
     return SYSTEMS[agent] + f"\n\nTask:\n{task}\n\nContext:\n{context(agent, extra_context=extra_context)}"
 
 
