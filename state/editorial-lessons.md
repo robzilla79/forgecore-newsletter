@@ -1052,3 +1052,20 @@
   - Start the Hook with the operator outcome or decision, not a product announcement.
   - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
   - Any affiliate or partner-link language must include a clear commission disclosure.
+
+
+---
+
+## 2026-05-12 17:39:46 UTC — /home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-12-pm.md
+- Improvement result: changed (rewritten issue saved)
+- Critic score: 8.0 | verdict: publishable
+- Weaknesses found:
+  - Enhance originality by including unique use cases or advanced automation strategies.
+  - Strengthen the hook to better capture attention with a compelling statistic or quote.
+  - The originality could be improved by offering unique insights or advanced tips beyond basic automation.
+  - Workflow code block is missing
+  - Tool of the Week must include a concrete tool recommendation
+- Rules for future issues:
+  - Convert weak prose into a concrete operator decision, workflow, or tool tradeoff.
+  - Start the Hook with the operator outcome or decision, not a product announcement.
+  - Turn vague advice into 3-6 named steps plus one prompt, checklist, config, or command block.

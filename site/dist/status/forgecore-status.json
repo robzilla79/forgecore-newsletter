@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-05-12T17:34:43Z",
-  "generated_at_central": "2026-05-12T12:34:43-05:00",
+  "generated_at": "2026-05-12T17:39:50Z",
+  "generated_at_central": "2026-05-12T12:39:50-05:00",
   "public_safe": true,
   "overall": {
     "status": "repair_needed",
@@ -9,7 +9,7 @@
       "AM status is needs_prepare_repair."
     ],
     "waiting": [
-      "PM status is pending_prepare."
+      "PM status is pending_send."
     ],
     "current_required_action": "Autonomous recovery should act on the next scheduled check; use manual repair only if urgent."
   },
@@ -39,17 +39,17 @@
   "pm": {
     "slot": "pm",
     "slug": "2026-05-12-pm",
-    "title": "",
+    "title": "How Solo Founders Can Use Zapier Agents to Automate Repetitive Tasks and Save Time",
     "issue_path": "content/issues/2026-05-12-pm.md",
     "email_path": "content/email/2026-05-12-pm.md",
-    "issue_exists": false,
-    "email_snapshot_exists": false,
+    "issue_exists": true,
+    "email_snapshot_exists": true,
     "kit_sent_record_exists": false,
     "broadcast_id_present": false,
     "web_url": "https://news.forgecore.co/2026-05-12-pm/",
-    "status": "pending_prepare",
+    "status": "pending_send",
     "recommended_repair_action": "no_action",
-    "next_expected_action": "Prepare window opens at 1:45 PM CT.",
+    "next_expected_action": "Send is expected around 4:07 PM CT; repair check begins at 4:50 PM CT.",
     "schedule": {
       "prepare_due": "1:45 PM CT",
       "send_due": "4:07 PM CT",
@@ -60,15 +60,15 @@
     "rob_approval_required": false
   },
   "latest_issue": {
-    "slug": "2026-05-11-pm",
-    "title": "How Solo Founders Can Use OpusClip to Transform Long-Form Videos into Engaging Short Clips",
-    "path": "content/issues/2026-05-11-pm.md",
+    "slug": "2026-05-12-pm",
+    "title": "How Solo Founders Can Use Zapier Agents to Automate Repetitive Tasks and Save Time",
+    "path": "content/issues/2026-05-12-pm.md",
     "exists": true,
-    "web_url": "https://news.forgecore.co/2026-05-11-pm/"
+    "web_url": "https://news.forgecore.co/2026-05-12-pm/"
   },
   "site": {
     "site_dist_exists": true,
-    "latest_slug": "2026-05-11-pm",
+    "latest_slug": "2026-05-12-pm",
     "homepage_has_latest": true,
     "rss_has_latest": true,
     "sitemap_has_latest": true,

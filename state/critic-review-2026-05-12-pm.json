@@ -1,0 +1,38 @@
+{
+  "passed": true,
+  "issue": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-12-pm.md",
+  "model": "gpt-4o-mini",
+  "fallback_model": "gpt-4o-mini",
+  "overall_score": 8.0,
+  "min_overall_required": 6.5,
+  "min_category_required": 6.0,
+  "consistent_pass_overall": 9.0,
+  "scores": {
+    "headline_strength": 8.0,
+    "hook_strength": 8.0,
+    "specificity": 9.0,
+    "originality": 7.0,
+    "readability": 8.0,
+    "tone": 8.0,
+    "utility": 9.0,
+    "non_repetition": 8.0
+  },
+  "weak_categories": [],
+  "strengths": [
+    "Clear implementation steps for using Zapier Agents.",
+    "Specific focus on solo founders and their needs.",
+    "Measurable time savings and efficiency improvements."
+  ],
+  "weaknesses": [
+    "Could enhance originality by providing unique case studies or examples."
+  ],
+  "must_fix": [],
+  "rewrite_plan": [
+    "Add unique case studies or examples to enhance originality.",
+    "Consider tightening the prose in some sections for improved readability."
+  ],
+  "summary": "The issue is publishable as it provides actionable insights for solo founders to automate tasks using Zapier Agents, with clear implementation steps and measurable outcomes.",
+  "verdict": "publishable",
+  "run_token": "pass-2-1778607586436029475",
+  "artifact_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/critic-review-2026-05-12-pm.json"
+}
