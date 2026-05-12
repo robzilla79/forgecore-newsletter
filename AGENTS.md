@@ -216,6 +216,8 @@ The CTA block template:
 **Subscribe free:** [ForgeCore Newsletter](https://forgecore-newsletter.beehiiv.com/)
 
 **Sponsor this issue:** Want your tool, product, or service in front of AI-forward operators and founders? Email [sponsors@forgecore.co](mailto:sponsors@forgecore.co).
+
+*Written with Em · ForgeCore AI*
 ---
 ```
 
