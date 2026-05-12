@@ -17,60 +17,298 @@
   <meta name="twitter:image" content="https://news.forgecore.co/images/visuals/default-workflow.svg">
   <meta name="twitter:description" content="As a solo founder, managing client onboarding can feel like a daunting task. By automating repetitive processes with AI tools, you can save up to 10...">
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"How Solo Founders Can Automate Client Onboarding to Save Time and Boost Satisfaction","description":"As a solo founder, managing client onboarding can feel like a daunting task. By automating repetitive processes with AI tools, you can save up to 10...","datePublished":"2026-05-08","dateModified":"2026-05-12","author":{"@type":"Organization","name":"ForgeCore"},"publisher":{"@type":"Organization","name":"ForgeCore"},"mainEntityOfPage":{"@type":"WebPage","@id":"https://news.forgecore.co/2026-05-08-pm/"},"url":"https://news.forgecore.co/2026-05-08-pm/"}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <style>
-    :root { color-scheme: dark; --bg:#080b12; --panel:#111827; --text:#e5e7eb; --muted:#9ca3af; --accent:#38bdf8; --accent-2:#a78bfa; --border:#1f2937; --soft:#0f172a; }
-    * { box-sizing:border-box; }
-    body { margin:0; font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background:radial-gradient(circle at top left,#172554 0,#080b12 34%,#05070d 100%); color:var(--text); line-height:1.6; }
-    a { color:var(--accent); text-decoration:none; }
-    a:hover { text-decoration:underline; }
-    .wrap { width:min(1120px,94vw); margin:0 auto; }
-    header { padding:30px 0 24px; border-bottom:1px solid rgba(148,163,184,.14); }
-    .brand { font-weight:900; letter-spacing:-0.055em; font-size:clamp(2.2rem,6vw,4.35rem); color:white; line-height:.9; }
-    .tagline { color:var(--muted); max-width:760px; font-size:1.04rem; margin:14px 0 0; }
-    .eyebrow { color:#bae6fd; font-size:.76rem; letter-spacing:.16em; text-transform:uppercase; font-weight:800; margin-bottom:10px; }
-    .hero { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(300px,.75fr); gap:22px; align-items:start; }
-    .hero-title { max-width:820px; margin:.1rem 0 .6rem; font-size:clamp(1.85rem,4.2vw,3.35rem); line-height:1.04; letter-spacing:-.045em; }
-    .hero-copy { max-width:720px; color:#cbd5e1; font-size:1.08rem; margin-bottom:0; }
-    .cta-bar { margin-top:20px; display:flex; gap:10px; flex-wrap:wrap; }
-    .button { display:inline-flex; align-items:center; justify-content:center; min-height:42px; padding:10px 15px; border-radius:999px; background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#04111f; font-weight:900; box-shadow:0 12px 34px rgba(56,189,248,.18); }
-    .button.secondary { background:rgba(15,23,42,.55); color:var(--text); border:1px solid rgba(148,163,184,.22); box-shadow:none; }
-    .button.subtle { background:rgba(15,23,42,.55); color:#e0f2fe; border:1px solid rgba(56,189,248,.35); box-shadow:none; }
-    main { padding:26px 0 54px; }
-    .section-heading { margin:28px 0 14px; font-size:clamp(1.35rem,2.6vw,2rem); letter-spacing:-.035em; }
-    .value-grid { display:grid; grid-template-columns:1fr; gap:10px; margin:0; }
-    .value-card { padding:14px 15px; border:1px solid rgba(148,163,184,.18); border-radius:16px; background:rgba(15,23,42,.58); color:#cbd5e1; font-size:.96rem; }
-    .value-card strong { display:block; color:#fff; margin-bottom:2px; }
-    .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
-    .card { padding:20px; border:1px solid rgba(148,163,184,.18); border-radius:20px; background:linear-gradient(180deg,rgba(17,24,39,.9),rgba(15,23,42,.72)); box-shadow:0 18px 46px rgba(0,0,0,.22); }
-    .card:hover { border-color:rgba(56,189,248,.45); transform:translateY(-2px); transition:.18s ease; }
-    .date { color:#93c5fd; font-size:.76rem; text-transform:uppercase; letter-spacing:.12em; font-weight:800; }
-    .card h2 { margin:.4rem 0 .55rem; font-size:1.3rem; line-height:1.16; letter-spacing:-.026em; }
-    .card p { color:#cbd5e1; margin:.5rem 0 .85rem; }
-    .read-link { font-weight:900; }
-    .article-nav { margin-bottom:20px; }
-    article { max-width:800px; }
-    article h1 { font-size:clamp(2rem,4.6vw,3.65rem); line-height:1.04; letter-spacing:-0.05em; margin:0 0 14px; }
-    article h2 { margin-top:2rem; padding-top:1rem; border-top:1px solid rgba(148,163,184,.18); letter-spacing:-.025em; }
-    article p, article li { color:#d1d5db; }
-    article li { margin:.3rem 0; }
-    .tools-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin-top:18px; }
-    .tool-card { padding:20px; border:1px solid rgba(148,163,184,.18); border-radius:20px; background:linear-gradient(180deg,rgba(17,24,39,.94),rgba(15,23,42,.78)); }
-    .tool-card h2 { margin:.2rem 0 .45rem; font-size:1.35rem; letter-spacing:-.025em; }
-    .tool-meta { display:flex; gap:8px; flex-wrap:wrap; margin:.65rem 0 .9rem; }
-    .pill { display:inline-flex; align-items:center; border:1px solid rgba(148,163,184,.22); border-radius:999px; color:#cbd5e1; font-size:.76rem; font-weight:800; padding:4px 9px; text-transform:uppercase; letter-spacing:.08em; }
-    .pill.partner { color:#d8b4fe; border-color:rgba(216,180,254,.38); }
-    .tool-card p, .tool-card li { color:#cbd5e1; }
-    .tool-card ul { padding-left:20px; }
-    .tool-card li { margin:.28rem 0; }
-    .disclosure, .lead-magnet { margin-top:24px; padding:18px 20px; border:1px solid rgba(56,189,248,.22); border-radius:20px; background:rgba(8,47,73,.28); color:#cbd5e1; }
-    .lead-magnet { display:flex; gap:18px; align-items:center; justify-content:space-between; }
-    .lead-magnet h2 { margin:.1rem 0 .35rem; letter-spacing:-.035em; }
-    .lead-magnet p { margin:0; max-width:720px; }
-    pre { overflow:auto; padding:16px; border-radius:16px; background:#030712; border:1px solid rgba(148,163,184,.18); box-shadow:inset 0 1px 0 rgba(255,255,255,.03); }
-    code { color:#bae6fd; }
-    footer { border-top:1px solid rgba(148,163,184,.14); padding:24px 0 38px; color:var(--muted); font-size:.95rem; }
-    @media (max-width: 860px) { .hero, .grid, .tools-grid { grid-template-columns:1fr; } .value-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } .lead-magnet { align-items:flex-start; flex-direction:column; } }
-    @media (max-width: 640px) { .value-grid { grid-template-columns:1fr; } header { padding-top:26px; } .button { width:100%; } }
+    /* Em design system — ForgeCore · The Signal Layer */
+    :root {
+      --bg: #0a0a0f;
+      --bg-soft: #111118;
+      --text: #f1f5f9;
+      --text-muted: #64748b;
+      --border: #1e1e2e;
+      --accent: #2dd4bf;
+      --accent-soft: rgba(45,212,191,0.08);
+      --accent-border: rgba(45,212,191,0.2);
+      --accent-glow: rgba(45,212,191,0.15);
+      --container: 1160px;
+      --reading: 72ch;
+      --radius: 12px;
+      --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: "JetBrains Mono", "Courier New", monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-sans);
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--text);
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    main { flex: 1; }
+    a { color: var(--accent); text-decoration: none; transition: opacity 0.2s; }
+    a:hover { opacity: 0.8; text-decoration: none; }
+    h1, h2, h3, h4, h5, h6 { font-weight: 800; line-height: 1.2; letter-spacing: -0.02em; color: var(--text); }
+
+    /* Layout */
+    .wrap { width: min(calc(100% - 2rem), var(--container)); margin: 0 auto; }
+    .reading { width: min(calc(100% - 2rem), var(--reading)); margin: 0 auto; }
+
+    /* Header */
+    .site-header {
+      position: sticky; top: 0; z-index: 100;
+      backdrop-filter: blur(12px);
+      background: rgba(10,10,15,0.9);
+      border-bottom: 1px solid var(--border);
+    }
+    .site-nav {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 1rem; padding: 1rem 0;
+    }
+    .brand {
+      display: inline-flex; gap: 0.6rem; align-items: center;
+      font-weight: 800; font-size: 1.05rem; color: var(--text);
+      text-decoration: none; transition: opacity 0.2s;
+    }
+    .brand:hover { opacity: 0.8; }
+    .brand-mark {
+      display: inline-grid; place-items: center;
+      width: 1.9rem; height: 1.9rem; border-radius: 50%;
+      background: var(--accent); color: #000;
+      font-weight: 800; font-size: 1rem; flex-shrink: 0;
+    }
+    .nav-links {
+      display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;
+    }
+    .nav-links a {
+      font-size: 0.875rem; font-weight: 600;
+      color: var(--text-muted); transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); opacity: 1; }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-height: 42px; padding: 0 1.25rem;
+      border-radius: 999px; border: 1px solid transparent;
+      font-weight: 700; font-size: 0.875rem;
+      cursor: pointer; transition: all 0.2s; text-decoration: none;
+    }
+    .btn-primary { background: var(--accent); color: #000; }
+    .btn-primary:hover {
+      opacity: 0.9; transform: translateY(-1px);
+      box-shadow: 0 4px 16px var(--accent-glow);
+    }
+    .btn-secondary {
+      background: transparent; color: var(--text);
+      border-color: var(--border);
+    }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); opacity: 1; }
+    .btn-ghost {
+      background: var(--accent-soft); color: var(--accent);
+      border-color: var(--accent-border);
+    }
+    .btn-ghost:hover { background: rgba(45,212,191,0.14); opacity: 1; }
+
+    /* Legacy .button alias (used in body HTML) */
+    .button { display:inline-flex; align-items:center; justify-content:center; min-height:42px; padding:0 1.25rem; border-radius:999px; border:1px solid transparent; font-weight:700; font-size:0.875rem; cursor:pointer; transition:all 0.2s; text-decoration:none; background:var(--accent); color:#000; }
+    .button:hover { opacity:0.9; transform:translateY(-1px); box-shadow:0 4px 16px var(--accent-glow); }
+    .button.secondary { background:transparent; color:var(--text); border-color:var(--border); }
+    .button.secondary:hover { border-color:var(--accent); color:var(--accent); opacity:1; }
+    .button.subtle { background:var(--accent-soft); color:var(--accent); border-color:var(--accent-border); }
+    .button.subtle:hover { background:rgba(45,212,191,0.14); opacity:1; }
+
+    /* Page body */
+    .page-body { padding: 4rem 0 5rem; }
+    .cta-bar { margin-top: 1.5rem; display: flex; gap: 0.75rem; flex-wrap: wrap; }
+
+    /* Eyebrow */
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.72rem; text-transform: uppercase;
+      letter-spacing: 0.15em; color: var(--accent);
+      margin-bottom: 0.75rem; font-weight: 600;
+    }
+
+    /* Hero */
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0,1.3fr) minmax(260px,0.7fr);
+      gap: 2rem; align-items: start;
+      padding: 4rem 0 3rem;
+    }
+    .hero-title {
+      font-size: clamp(1.8rem, 4vw, 3.2rem);
+      line-height: 1.08; letter-spacing: -0.04em;
+      margin: 0.25rem 0 0.75rem;
+    }
+    .hero-copy { color: var(--text-muted); font-size: 1.05rem; max-width: 64ch; }
+
+    /* Value grid (sidebar in hero) */
+    .value-grid { display: grid; grid-template-columns: 1fr; gap: 0.6rem; }
+    .value-card {
+      padding: 0.875rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg-soft);
+      color: var(--text-muted); font-size: 0.9rem;
+    }
+    .value-card strong { display: block; color: var(--text); margin-bottom: 0.2rem; }
+
+    /* Section heading */
+    .section-heading {
+      font-size: clamp(1.3rem, 2.5vw, 1.85rem);
+      letter-spacing: -0.03em;
+      margin: 2.5rem 0 1rem;
+    }
+
+    /* Issue grid */
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 1rem; }
+    .card {
+      padding: 1.25rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg-soft);
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .card:hover { border-color: var(--accent-border); transform: translateY(-2px); }
+    .date {
+      font-family: var(--font-mono);
+      font-size: 0.72rem; text-transform: uppercase;
+      letter-spacing: 0.12em; color: var(--accent);
+      font-weight: 600; margin-bottom: 0.5rem;
+    }
+    .card h2 { font-size: 1.2rem; line-height: 1.2; margin: 0.3rem 0 0.5rem; }
+    .card p { color: var(--text-muted); font-size: 0.9rem; margin: 0 0 0.75rem; }
+    .read-link { font-weight: 700; font-size: 0.875rem; color: var(--accent); }
+
+    /* Article */
+    .article-nav { margin-bottom: 1.5rem; font-size: 0.875rem; }
+    article { max-width: 760px; }
+    article h1 { font-size: clamp(1.8rem, 4vw, 3rem); line-height: 1.06; letter-spacing: -0.04em; margin: 0 0 1rem; }
+    article h2 { font-size: 1.4rem; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+    article h3 { font-size: 1.15rem; margin-top: 1.5rem; }
+    article p, article li { color: var(--text-muted); line-height: 1.7; }
+    article p { margin-bottom: 1rem; }
+    article ul, article ol { margin-left: 1.5rem; margin-bottom: 1rem; }
+    article li { margin-bottom: 0.4rem; }
+
+    /* Tools grid */
+    .tools-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 1rem; margin-top: 1.25rem; }
+    .tool-card {
+      padding: 1.25rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg-soft);
+    }
+    .tool-card h2 { font-size: 1.2rem; margin: 0.2rem 0 0.5rem; }
+    .tool-meta { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.5rem 0 0.75rem; }
+    .pill {
+      display: inline-flex; align-items: center;
+      border: 1px solid var(--border); border-radius: 999px;
+      color: var(--text-muted); font-family: var(--font-mono);
+      font-size: 0.68rem; font-weight: 600; padding: 3px 8px;
+      text-transform: uppercase; letter-spacing: 0.08em;
+    }
+    .pill.partner { color: var(--accent); border-color: var(--accent-border); }
+    .tool-card p, .tool-card li { color: var(--text-muted); font-size: 0.9rem; }
+    .tool-card ul { padding-left: 1.25rem; margin-bottom: 0.75rem; }
+    .tool-card li { margin-bottom: 0.3rem; }
+    .tool-card ol { padding-left: 1.25rem; }
+    .tool-card ol li { margin-bottom: 0.5rem; color: var(--text-muted); }
+
+    /* Lead magnet */
+    .lead-magnet {
+      margin-top: 1.5rem;
+      padding: 1.25rem 1.5rem;
+      border: 1px solid var(--accent-border);
+      border-radius: var(--radius);
+      background: var(--accent-soft);
+      display: flex; gap: 1.5rem; align-items: center;
+      justify-content: space-between;
+    }
+    .lead-magnet h2 { font-size: 1.15rem; margin: 0.1rem 0 0.3rem; letter-spacing: -0.02em; }
+    .lead-magnet p { color: var(--text-muted); font-size: 0.9rem; margin: 0; max-width: 60ch; }
+
+    /* Disclosure */
+    .disclosure {
+      margin-top: 1.5rem;
+      padding: 1rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg-soft);
+      color: var(--text-muted); font-size: 0.875rem;
+    }
+
+    /* Code */
+    pre {
+      overflow: auto; padding: 1rem 1.25rem;
+      border-radius: var(--radius);
+      background: #050508;
+      border: 1px solid var(--border);
+      margin: 1rem 0;
+    }
+    code {
+      font-family: var(--font-mono);
+      font-size: 0.875rem;
+      color: var(--accent);
+    }
+
+    /* Footer */
+    .site-footer {
+      border-top: 1px solid var(--border);
+      padding: 2.5rem 0 3rem;
+      background: var(--bg-soft);
+    }
+    .footer-inner {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 3rem; align-items: start;
+    }
+    .footer-copy {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      max-width: 44ch;
+      margin-top: 0.5rem;
+      line-height: 1.6;
+    }
+    .footer-em {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--accent);
+      opacity: 0.7;
+      margin-top: 0.5rem;
+      letter-spacing: 0.05em;
+    }
+    .footer-links {
+      display: flex; flex-direction: column;
+      align-items: flex-end; gap: 0.6rem;
+    }
+    .footer-links a {
+      font-size: 0.825rem; font-weight: 600;
+      color: var(--text-muted); transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--accent); opacity: 1; }
+
+    /* Responsive */
+    @media (max-width: 860px) {
+      .hero, .grid, .tools-grid { grid-template-columns: 1fr; }
+      .hero { padding: 2.5rem 0 2rem; }
+      .value-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
+      .lead-magnet { flex-direction: column; align-items: flex-start; }
+      .footer-inner { grid-template-columns: 1fr; gap: 2rem; }
+      .footer-links { align-items: flex-start; }
+    }
+    @media (max-width: 640px) {
+      .value-grid { grid-template-columns: 1fr; }
+      .nav-links { gap: 0.75rem; }
+      .btn, .button { min-height: 40px; }
+    }
   
 /* forgecore visual hardening */
 header {
@@ -213,20 +451,22 @@ header {
   </style>
 </head>
 <body>
-<header>
-  <div class="wrap">
-    <a class="brand" href="/">ForgeCore</a>
-    <p class="tagline">Practical AI workflows, tools, and ROI cases for operators</p>
-    <div class="cta-bar">
-      <a class="button" href="https://forge-daily.kit.com/232bce5a31">Get the Solo Operator AI Workflow Pack</a>
-      <a class="button subtle" href="/ai-tools/">Browse AI tools</a>
-      <a class="button secondary" href="mailto:sponsors@forgecore.co">Sponsor ForgeCore</a>
-    </div>
+<header class="site-header">
+  <div class="wrap site-nav">
+    <a class="brand" href="/">
+      <span class="brand-mark">F</span>
+      <span>ForgeCore</span>
+    </a>
+    <nav class="nav-links" aria-label="Primary">
+      <a href="/">Issues</a>
+      <a href="/ai-tools/">AI Tools</a>
+      <a href="https://forge-daily.kit.com/232bce5a31" class="btn btn-primary">Subscribe</a>
+    </nav>
   </div>
 </header>
-<main>
+<main class="page-body">
   <div class="wrap">
-<div class="article-nav"><a class="read-link" href="/">← Back to all playbooks</a> · <a class="read-link" href="/ai-tools/">Browse AI tools</a></div>
+<div class="article-nav"><a class="read-link" href="/">&larr; All issues</a> &middot; <a class="read-link" href="/ai-tools/">AI tools</a></div>
 <article><div class="date">May 8, 2026</div><h1>How Solo Founders Can Automate Client Onboarding to Save Time and Boost Satisfaction</h1>
 <!-- forgecore-article-visuals -->
 <section class="fc-article-visual" aria-label="ForgeCore visual summary">
@@ -303,12 +543,26 @@ Action: Create a new contact in [Your CRM]</code></pre>
     <h2>The Solo Operator AI Workflow Pack</h2>
     <p>Get practical AI workflow checklists for content, onboarding, automation, research, tool selection, and follow-up systems. Built for solo operators who want leverage, not hype.</p>
   </div>
-  <a class="button" href="https://forge-daily.kit.com/232bce5a31">Get the workflow pack</a>
+  <a class="btn btn-primary" href="https://forge-daily.kit.com/232bce5a31">Get the workflow pack</a>
 </section>
   </div>
 </main>
-<footer>
-  <div class="wrap">ForgeCore helps solo operators use AI tools to build systems, save time, and create income.</div>
+<footer class="site-footer">
+  <div class="wrap footer-inner">
+    <div>
+      <a class="brand" href="/">
+        <span class="brand-mark">F</span>
+        <span>ForgeCore</span>
+      </a>
+      <p class="footer-copy">Practical AI for operators who'd rather build than theorize. Twice daily. No hype.</p>
+      <p class="footer-em">Co-written with Em &middot; The Signal Layer</p>
+    </div>
+    <nav class="footer-links" aria-label="Footer">
+      <a href="/">Issues</a>
+      <a href="/ai-tools/">AI Tools</a>
+      <a href="mailto:sponsors@forgecore.co">Sponsor</a>
+    </nav>
+  </div>
 </footer>
 </body>
 </html>
