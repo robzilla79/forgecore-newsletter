@@ -1,0 +1,89 @@
+{
+  "passed": true,
+  "fallback_published": false,
+  "checks": {
+    "exists": true,
+    "issue_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-12-am.md",
+    "word_count": 839,
+    "required_sections_present": [
+      "## Hook",
+      "## Top Story",
+      "## Why It Matters",
+      "## Highlights",
+      "## Tool of the Week",
+      "## Workflow",
+      "## CTA",
+      "## Sources"
+    ],
+    "url_count": 9,
+    "source_links": [
+      "https://www.intercom.com",
+      "https://www.drift.com",
+      "https://superhuman.com",
+      "https://www.boomeranggmail.com",
+      "https://www.hubspot.com",
+      "https://www.zoho.com/crm/",
+      "https://forgecore-newsletter.beehiiv.com/",
+      "https://forge-daily.kit.com/232bce5a31",
+      "https://zapier.com"
+    ],
+    "has_sources_section": true,
+    "sources_section_entries": 7,
+    "has_code_block": true,
+    "has_tool_recommendation": true,
+    "has_trust_warning": true,
+    "has_affiliate_reference": false,
+    "has_affiliate_disclosure": false,
+    "required_cta_url": "https://forge-daily.kit.com/232bce5a31",
+    "critic_expected_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/critic-review-2026-05-12-am.json",
+    "critic_review": {
+      "passed": true,
+      "issue": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-12-am.md",
+      "model": "gpt-4o-mini",
+      "fallback_model": "gpt-4o-mini",
+      "overall_score": 10.0,
+      "min_overall_required": 6.5,
+      "min_category_required": 6.0,
+      "consistent_pass_overall": 9.0,
+      "scores": {
+        "headline_strength": 6.0,
+        "hook_strength": 5.0,
+        "specificity": 7.0,
+        "originality": 5.0,
+        "readability": 6.0,
+        "tone": 4.0,
+        "utility": 7.0,
+        "non_repetition": 6.0
+      },
+      "weak_categories": [],
+      "strengths": [
+        "Specific tools and examples are provided, such as Intercom and Zapier, which enhance the utility."
+      ],
+      "weaknesses": [
+        "The hook lacks urgency: 'Imagine spending less time on client communication...' feels generic and uninspired.",
+        "The tone is inconsistent; phrases like 'Thankfully, AI tools can automate...' sound overly formal and lack Em's directness."
+      ],
+      "must_fix": [
+        "Revise the hook to create a stronger emotional connection.",
+        "Adjust the tone to be more direct and personal, reflecting Em's voice."
+      ],
+      "rewrite_plan": [
+        "1. Rewrite the hook to be more compelling and urgent.",
+        "2. Revise sections for a more conversational tone, especially in the Top Story.",
+        "3. Ensure each section clearly ties back to the operator's outcomes."
+      ],
+      "summary": "The issue needs revision due to a lack of engaging tone and some vague claims.",
+      "verdict": "needs_revision",
+      "consistency_note": "Critic output was internally inconsistent: high overall score (10.00) with weak categories hook_strength, originality, tone. Overall score takes precedence for publish gating.",
+      "run_token": "pass-2-1778609689009867158",
+      "artifact_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/critic-review-2026-05-12-am.json"
+    },
+    "errors": [],
+    "warnings": [],
+    "fallback_publish_enabled": false,
+    "validation_only": true
+  },
+  "issue": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-12-am.md",
+  "run_token": "",
+  "artifact_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/state/quality-gate-2026-05-12-am.json"
+}
