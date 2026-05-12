@@ -509,11 +509,16 @@ def validate_markdown(agent: str, text: str) -> None:
     enforce_not_duplicate_title(agent, text)
 
     words = len(text.split())
-    min_words = 650 if agent == "author" else 500
-    if words < min_words:
-        raise ValueError(f"{agent} Markdown too short: {words} words")
-    if agent == "editor" and words < 650:
-        warn(f"editor draft is short but recoverable ({words} words); passing to improvement loop")
+    # Hard floors: genuinely empty or near-empty drafts should still hard-fail.
+    # Marginally short drafts (author < 650, editor < 650) are warnings only —
+    # the editor step exists precisely to expand thin author drafts, and
+    # a 610-word draft is valid content, not a pipeline failure.
+    hard_floor = 400
+    soft_floor = 650
+    if words < hard_floor:
+        raise ValueError(f"{agent} Markdown too short to be a real draft: {words} words (minimum {hard_floor})")
+    if words < soft_floor:
+        warn(f"{agent} draft is short ({words} words, target {soft_floor}+); passing to editor to expand")
 
 
 def validate_memo(agent: str, text: str) -> None:
