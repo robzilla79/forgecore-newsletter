@@ -1,15 +1,15 @@
-# Raw intel refresh (2026-05-12 20:18:30 UTC)
+# Raw intel refresh (2026-05-12 22:18:42 UTC)
 
 - Issue slot: pm
 - Selected items: 8
 - Unique domains: 8
 
 ## Items
-- Show HN: Game evolves itself with your wishes (Hacker News Show HN) — aion.quest — https://aion.quest/
-- Show HN: Awesome Stars- render github awesome list with live star/fork badges (Hacker News Show HN) — awesome-stars.github.io — https://awesome-stars.github.io
 - 6 generative engine optimization benefits every marketer should know (HubSpot Marketing Blog) — blog.hubspot.com — https://blog.hubspot.com/marketing/6-generative-engine-optimization-benefits-every-marketer-should-know
+- Show HN: Fast, reliable MCP for LinkedIn, Uber, Venmo (r/w) (Hacker News Show HN) — candle.fi — https://candle.fi
 - Show HN: Ralph Workflow - Simple Agent-Agnostic AI Orchestrator based on Ralph. (Hacker News Show HN) — codeberg.org — https://codeberg.org/RalphWorkflow/Ralph-Workflow
-- Show HN: Prempti – Guardrails and observability for AI coding agents (Hacker News Show HN) — falco.org — https://falco.org/blog/introducing-prempti/
 - Why Applying Machine Learning to Biology is Hard – But Worth It (a16z Future) — future.com — https://future.com/why-applying-machine-learning-to-biology-is-hard-but-worth-it/
-- Show HN: Send Cold Emails with AI Agents (Hacker News Show HN) — github.com — https://github.com/open-salesblink/skill
-- 🎙️ How I AI: Quests, token leaderboards, and the elite AI adoption playbook & Notion’s spec-driven development (Lenny's Newsletter) — lennysnewsletter.com — https://www.lennysnewsletter.com/p/how-i-ai-quests-token-leaderboards
+- Show HN: GIF Pile. a site to make piles of GIFs (Hacker News Show HN) — gifpile.com — https://gifpile.com/
+- Show HN: GitGlimpse – CLI for understanding AI-generated Git diffs (Hacker News Show HN) — gitglimpse.com — https://gitglimpse.com
+- Show HN: Duckflix, an open-source self-hosted media streaming platform (Hacker News Show HN) — github.com — https://github.com/duckflixapp/duckflix
+- Show HN: Ranking every disease (the unmet needs index) (Hacker News Show HN) — insights.convoke.bio — https://insights.convoke.bio/unmet-needs
