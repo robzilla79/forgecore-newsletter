@@ -28,13 +28,11 @@ MEMO_AGENTS = {"scout", "analyst"}
 MARKDOWN_AGENTS = {"author", "editor"}
 SYSTEMS = {"scout": SCOUT_SYSTEM, "analyst": ANALYST_SYSTEM, "author": AUTHOR_SYSTEM, "editor": EDITOR_SYSTEM}
 
+# Minimum required sections — structural, not prescriptive.
+# Em writes in whatever structure serves the piece.
+# issue_contract.py enforces quality and substance; we only enforce
+# the two hard-minimum structural anchors here to stay in sync.
 REQUIRED_SECTIONS = [
-    "## Hook",
-    "## Top Story",
-    "## Why It Matters",
-    "## Highlights",
-    "## Tool of the Week",
-    "## Workflow",
     "## CTA",
     "## Sources",
 ]
