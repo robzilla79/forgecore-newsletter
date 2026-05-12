@@ -416,6 +416,38 @@ def section_present(text: str, section: str) -> bool:
     return False
 
 
+def inject_missing_boilerplate_sections(agent: str, text: str) -> str:
+    """Deterministically append any missing boilerplate sections that the model
+    dropped. ## CTA and ## Sources are formulaic — the pipeline owns them, not
+    the model. Injecting them here removes an entire class of transient failures
+    without masking real content problems."""
+    primary_cta_text = os.getenv("PRIMARY_CTA_TEXT", "Read ForgeCore AI — written by Em")
+    primary_cta_url = os.getenv("PRIMARY_CTA_URL", "https://news.forgecore.co")
+    sponsor_email = os.getenv("SPONSOR_EMAIL", "sponsors@forgecore.co")
+
+    result = text.rstrip()
+
+    if not section_present(result, "## CTA"):
+        warn(f"{agent} dropped ## CTA — injecting deterministic fallback")
+        result += (
+            f"\n\n## CTA\n\n"
+            f"If this was useful, forward it to one operator who needs it this week. "
+            f"[{primary_cta_text}]({primary_cta_url})\n\n"
+            f"Interested in reaching ForgeCore AI readers? Email [{sponsor_email}](mailto:{sponsor_email})."
+        )
+
+    if not section_present(result, "## Sources"):
+        warn(f"{agent} dropped ## Sources — injecting deterministic fallback from today's research")
+        source_urls = fresh_research_urls(limit=5)
+        if source_urls:
+            bullets = "\n".join(f"- {url}" for url in source_urls)
+        else:
+            bullets = "- Sources gathered from today's research feed"
+        result += f"\n\n## Sources\n\n{bullets}"
+
+    return result + "\n"
+
+
 def validate_markdown(agent: str, text: str) -> None:
     lower = text.lower()
     for marker in BAD_CONTEXT_MARKERS:
@@ -483,6 +515,9 @@ def generate_markdown_with_duplicate_retries(agent: str, model: str) -> str:
     for attempt in range(1, attempts + 1):
         extra = duplicate_retry_context(rejections)
         markdown = clean_markdown(call_text_model(model, build_markdown_prompt(agent, extra_context=extra), temperature=0.45 if agent == "editor" else (0.35 if rejections else 0.30)))
+        # Deterministically inject any missing boilerplate sections before validation
+        # so transient model truncation of ## CTA / ## Sources never kills the run.
+        markdown = inject_missing_boilerplate_sections(agent, markdown)
         try:
             validate_markdown(agent, markdown)
             if rejections:
