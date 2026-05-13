@@ -1,32 +1,13 @@
-name: Em Deploys the Site Updates
-
-# Deploy-only workflow: re-render and deploy the site from existing content.
-# Does NOT generate new issues or send email.
-# Triggered by pushes that change site-rendering config or content — not workflow files.
+name: Deploy to Cloudflare Pages
 
 on:
   push:
     branches:
       - main
-    paths:
-      - 'content/issues/**'
-      - 'content/email/**'
-      - 'site/**'
-      - 'templates/**'
-      - 'publish_site.py'
-      - 'visual_hardening.py'
-      - 'ai_search_hardening.py'
-      - 'business_hardening.py'
-      - 'lead_magnet_hardening.py'
-      - 'ops_status.py'
-      - 'verify_publish.py'
-      - 'content_cleanup.py'
-      - 'lock_email_issue.py'
   workflow_dispatch:
 
 permissions:
-  contents: write
-  actions: read
+  contents: read
 
 concurrency:
   group: forgecore-deploy
@@ -35,88 +16,13 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-    env:
-      SITE_BASE_URL: https://news.forgecore.co
-      SITE_DOMAIN: news.forgecore.co
-      NEWSLETTER_NAME: ForgeCore AI
-      NEWSLETTER_TAGLINE: AI seen clearly. Written by Em.
-      PRIMARY_CTA_TEXT: Read ForgeCore AI — written by Em
-      PRIMARY_CTA_URL: ${{ secrets.KIT_SIGNUP_URL || 'https://forge-daily.kit.com/232bce5a31' }}
-      SPONSOR_EMAIL: sponsors@forgecore.co
-      ENABLE_CLOUDFLARE_DEPLOY: '1'
-      CLOUDFLARE_PAGES_PROJECT: forgecore-newsletter
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
 
-      - name: Sync to latest main
-        run: |
-          git fetch origin main
-          git checkout main
-          git reset --hard origin/main
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-          cache: 'pip'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Quarantine legacy or low-quality public issues
-        run: python content_cleanup.py
-
-      - name: Render site from existing content
-        run: python publish_site.py
-
-      - name: Apply visual hardening
-        run: python visual_hardening.py
-
-      - name: Apply AI search hardening
-        run: python ai_search_hardening.py
-
-      - name: Apply business hardening
-        run: python business_hardening.py
-
-      - name: Render lead magnet assets
-        run: python lead_magnet_hardening.py
-
-      - name: Render ops dashboard status
-        run: python ops_status.py
-
-      - name: Verify site without newsletter send dependency
-        run: python verify_publish.py
-
-      - name: Commit cleanup and rendered site output
-        run: |
-          git config user.name "Em (EternalMind)"
-          git config user.email "em@forgecore.co"
-          git add site/dist/ state/ content/
-          if git diff --staged --quiet; then
-            echo "Nothing to commit"
-          else
-            git stash push --include-untracked --message forgecore-deploy-site
-            git pull --rebase origin main
-            git stash pop
-            git add site/dist/ state/ content/
-            TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M UTC')
-            git commit -m "auto: deploy cleaned site updates $TIMESTAMP [bot]"
-            git push
-          fi
-
-      - name: Deploy site to Cloudflare Pages
-        if: env.ENABLE_CLOUDFLARE_DEPLOY == '1'
+      - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy site/dist --project-name=forgecore-newsletter --commit-dirty=true --branch=main
+          command: pages deploy site --project-name=forgecore-newsletter --commit-dirty=true --branch=main
