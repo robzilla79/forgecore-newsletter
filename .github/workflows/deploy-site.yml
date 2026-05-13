@@ -25,4 +25,4 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy site --project-name=forgecore-newsletter --commit-dirty=true --branch=main
+          command: pages deploy site/dist --project-name=forgecore-newsletter --commit-dirty=true --branch=main
