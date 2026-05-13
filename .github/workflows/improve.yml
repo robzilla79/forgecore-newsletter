@@ -1,23 +1,11 @@
-name: Continuous Improvement Loop (disabled)
-
-# Disabled on 2026-05-02.
-# Reason: hourly autonomous improvement is no longer needed as a separate scheduled workflow.
-# The active generator already runs improve_until_passes.py before quality gate, render, verification, commit, and deploy.
-# Keeping a separate hourly mutating loop risks extra commits, duplicate deploys, and unexpected production drift.
-
+# DELETED 2026-05-13 — hourly improvement loop disabled since 2026-05-02.
+# Improvement now runs inline inside generate.yml via improve_until_passes.py.
+name: Continuous Improvement Loop (REMOVED)
 on:
   workflow_dispatch:
-
-permissions:
-  contents: read
-
 jobs:
-  disabled:
+  noop:
+    if: false
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     steps:
-      - name: Explain disabled workflow
-        run: |
-          echo "Continuous improvement loop is disabled."
-          echo "Active path: generate.yml -> improve_until_passes.py runs inline before quality gate."
-          echo "No changes were made by this disabled workflow."
+      - run: echo "removed"

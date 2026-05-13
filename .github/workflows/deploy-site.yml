@@ -1,9 +1,11 @@
-name: Deploy to Cloudflare Pages
+name: Deploy to Cloudflare Pages (Manual)
+
+# Changed 2026-05-13: removed 'push: branches: main' trigger.
+# Reason: generate.yml and rebuild-site.yml both deploy directly after publish.
+# Auto-firing on every push caused race conditions with those deploys.
+# This workflow is now a manual backup button only.
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 permissions:

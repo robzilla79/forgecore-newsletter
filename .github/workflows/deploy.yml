@@ -1,23 +1,11 @@
-name: Deploy FORGE/DAILY Site (disabled)
-
-# Disabled on 2026-05-02.
-# Reason: legacy standalone deploy duplicated the active AM/PM generator path.
-# Active deployment now happens inside .github/workflows/generate.yml after publish verification.
-# Keep this file as an audit marker so the workflow can be restored intentionally if needed.
-
+# DELETED 2026-05-13 — legacy standalone deploy, already disabled since 2026-05-02.
+# Active deploy path: generate.yml / rebuild-site.yml -> Cloudflare Pages.
+name: Deploy FORGE/DAILY Site (REMOVED)
 on:
   workflow_dispatch:
-
-permissions:
-  contents: read
-
 jobs:
-  disabled:
+  noop:
+    if: false
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     steps:
-      - name: Explain disabled workflow
-        run: |
-          echo "This legacy standalone deploy workflow is disabled."
-          echo "Active path: generate-am.yml / generate-pm.yml -> generate.yml -> publish_site.py -> verify_publish.py -> Cloudflare Pages deploy."
-          echo "No deploy was attempted by this disabled workflow."
+      - run: echo "removed"

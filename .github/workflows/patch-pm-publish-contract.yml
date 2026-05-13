@@ -1,13 +1,14 @@
-name: Patch PM Publish Contract (DISABLED)
-# Disabled — clean pipeline doesn't need patching
+# DELETED 2026-05-13 — disabled noop, no longer needed.
+name: Patch PM Publish Contract (REMOVED)
 on:
   workflow_dispatch:
     inputs:
       disabled:
-        description: 'This workflow is disabled.'
+        description: 'This workflow is permanently removed.'
         required: false
 jobs:
   noop:
+    if: false
     runs-on: ubuntu-latest
     steps:
-      - run: echo "This workflow is disabled."
+      - run: echo "removed"

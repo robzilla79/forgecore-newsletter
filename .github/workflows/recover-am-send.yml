@@ -1,13 +1,14 @@
-name: Recover AM Send (DISABLED)
-# Disabled — replaced by clean 4-step pipeline
+# DELETED 2026-05-13 — disabled noop, replaced by send-am.yml.
+name: Recover AM Send (REMOVED)
 on:
   workflow_dispatch:
     inputs:
       disabled:
-        description: 'This workflow is disabled.'
+        description: 'This workflow is permanently removed. Use send-am.yml.'
         required: false
 jobs:
   noop:
+    if: false
     runs-on: ubuntu-latest
     steps:
-      - run: echo "This workflow is disabled. Use send-am.yml."
+      - run: echo "removed"
