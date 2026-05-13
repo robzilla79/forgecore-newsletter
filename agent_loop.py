@@ -4,6 +4,7 @@ from __future__ import annotations
 import os
 import re
 import sys
+import shutil
 import time
 from pathlib import Path
 
@@ -580,6 +581,54 @@ def max_topic_retries(agent: str) -> int:
     return 0
 
 
+def find_em_override() -> Path | None:
+    """Check em/ for a hand-written piece matching today's issue slot.
+
+    Priority order:
+      1. em/newsletter-voice-piece-{issue_id()}.md   (exact slug match)
+      2. em/newsletter-voice-piece-{today_str()}.md  (date-only match)
+      3. em/newsletter-voice-piece-next.md            (generic 'next up' slot)
+
+    Any match causes the author step to be skipped entirely.
+    After publishing, the file is moved to em/published/ so it
+    cannot re-trigger on the next run.
+    """
+    em_dir = WORKSPACE / "em"
+    candidates = [
+        em_dir / f"newsletter-voice-piece-{issue_id()}.md",
+        em_dir / f"newsletter-voice-piece-{today_str()}.md",
+        em_dir / "newsletter-voice-piece-next.md",
+    ]
+    for path in candidates:
+        if path.exists():
+            return path
+    return None
+
+
+def apply_em_override(em_path: Path) -> str:
+    """Copy Em's hand-written piece into content/issues/, injecting required
+    boilerplate sections if missing, then archive it to em/published/.
+    Returns the final markdown string.
+    """
+    raw = load_text(em_path)
+    markdown = inject_missing_boilerplate_sections("em-override", raw)
+    validate_markdown("em-override", markdown)
+    write_text(issue_file(), markdown)
+
+    # Archive so the same file can't re-trigger next run
+    published_dir = WORKSPACE / "em" / "published"
+    published_dir.mkdir(exist_ok=True)
+    archive_name = f"{em_path.stem}-published-{issue_id()}.md"
+    shutil.move(str(em_path), str(published_dir / archive_name))
+
+    title = title_from_markdown(markdown, issue_id())
+    progress(
+        f"[em-override] '{title}' written by Em — skipping GPT author. "
+        f"Archived to em/published/{archive_name}"
+    )
+    return markdown
+
+
 def generate_markdown_with_duplicate_retries(agent: str, model: str) -> str:
     rejections: list[str] = []
     original_valid_draft = ""
@@ -622,6 +671,17 @@ def run(agent: str) -> int:
     model = choose_model(agent)
     progress(f"[{agent}] Starting with {model} (issue={issue_id()})")
     try:
+        # ── Em Override ──────────────────────────────────────────────────────
+        # If Em has written a piece for this slot, her words always win.
+        # GPT author is skipped entirely; editor still runs to polish.
+        if agent == "author":
+            em_path = find_em_override()
+            if em_path:
+                progress(f"[em-override] Found hand-written piece: {em_path.name} — Em's work takes priority")
+                apply_em_override(em_path)
+                progress(f"author: Em override complete (duration={time.time() - start:.2f}s)")
+                return 0
+
         clean_old_slot_file_for_author(agent)
         if agent in MEMO_AGENTS:
             memo_temp = 0.25 if agent == "scout" else 0.30
