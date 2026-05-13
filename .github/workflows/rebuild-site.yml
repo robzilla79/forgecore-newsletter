@@ -3,23 +3,21 @@ name: Rebuild & Deploy Site
 on:
   workflow_dispatch:
     inputs:
-      reason:
-        description: 'Why are you rebuilding? (optional, for the log)'
+      issue_slot:
+        description: 'Issue slug to publish (e.g. 2026-05-12-pm). Leave blank to auto-detect latest.'
         required: false
-        default: 'manual rebuild'
+        default: ''
 
 jobs:
   rebuild:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
     permissions:
       contents: write
-
     env:
       SITE_DOMAIN: news.forgecore.co
       SITE_BASE_URL: https://news.forgecore.co
       NEWSLETTER_NAME: ForgeCore AI
-      NEWSLETTER_TAGLINE: "AI seen clearly. Written by Em."
+      NEWSLETTER_TAGLINE: AI seen clearly. Written by Em.
       SPONSOR_EMAIL: sponsors@forgecore.co
       PRIMARY_CTA_URL: ${{ secrets.KIT_SIGNUP_URL || 'https://news.forgecore.co/' }}
       ENABLE_CLOUDFLARE_DEPLOY: '1'
@@ -35,12 +33,6 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - name: Sync to latest main
-        run: |
-          git fetch origin main
-          git checkout main
-          git reset --hard origin/main
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -48,35 +40,44 @@ jobs:
           cache: 'pip'
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+        run: pip install -r requirements.txt
 
-      - name: Rebuild site
+      - name: Resolve issue slug
+        id: slug
         run: |
-          echo "Reason: ${{ github.event.inputs.reason }}"
-          python publish_site.py
-
-      - name: Commit rebuilt site
-        run: |
-          git config user.name "Em (EternalMind)"
-          git config user.email "em@forgecore.co"
-          git add site/dist/
-          if git diff --staged --quiet; then
-            echo "Nothing changed in site/dist — already up to date"
+          INPUT="${{ github.event.inputs.issue_slot }}"
+          if [ -n "$INPUT" ]; then
+            echo "slug=$INPUT" >> $GITHUB_OUTPUT
+            echo "[rebuild] Using provided slug: $INPUT"
           else
-            git stash push --include-untracked --message forgecore-site-rebuild
-            git pull --rebase origin main
-            git stash pop
-            git add site/dist/
-            git commit -m "em: site rebuild (${{ github.event.inputs.reason }})"
-            git push
+            # Auto-detect: newest .md in content/issues (excluding quarantine)
+            LATEST=$(ls content/issues/*.md 2>/dev/null | sort | tail -1)
+            SLUG=$(basename "$LATEST" .md)
+            echo "slug=$SLUG" >> $GITHUB_OUTPUT
+            echo "[rebuild] Auto-detected latest slug: $SLUG"
           fi
 
+      - name: Export slug as env var
+        run: echo "ISSUE_SLOT=${{ steps.slug.outputs.slug }}" >> $GITHUB_ENV
+
+      - name: Publish site
+        run: python publish_site.py
+
       - name: Deploy to Cloudflare Pages
-        if: env.ENABLE_CLOUDFLARE_DEPLOY == '1'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy site/dist --project-name=forgecore-newsletter --commit-dirty=true --branch=main
+
+      - name: Commit updated dist
+        run: |
+          git config user.name "Em (EternalMind)"
+          git config user.email "em@forgecore.co"
+          git add site/dist/
+          if git diff --staged --quiet; then
+            echo "No dist changes to commit"
+          else
+            git commit -m "rebuild: publish ${{ steps.slug.outputs.slug }} $(date -u '+%Y-%m-%d %H:%M UTC')"
+            git push
+          fi
