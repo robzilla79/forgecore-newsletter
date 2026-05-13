@@ -5,6 +5,13 @@ The publisher is intentionally validation-only. It must never mutate source
 issues or call issue-contract repair logic while rendering. Generation and
 quality gates own content creation; this script only reads valid Markdown and
 writes static HTML.
+
+Issue index strategy:
+  1. Load site/data/issues.json (the curated manifest). These entries are
+     ALWAYS included and appear first. They survive rebuilds unconditionally.
+  2. Scan content/issues/*.md for valid auto-detected issues.
+  3. Merge: manifest entries win on duplicate slug; auto-detected issues are
+     appended after, de-duplicated by slug.
 """
 from __future__ import annotations
 
@@ -31,6 +38,7 @@ LEAD_MAGNET_NAME = "The Solo Operator AI Workflow Pack"
 
 CONTENT_DIR = WORKSPACE / "content" / "issues"
 DIST_DIR = WORKSPACE / "site" / "dist"
+MANIFEST_PATH = WORKSPACE / "site" / "data" / "issues.json"
 AFFILIATE_REGISTRY_PATH = WORKSPACE / "monetization" / "affiliate-registry.json"
 TOOLS_PAGE_SLUG = "ai-tools"
 REQUIRED_SECTIONS = (
@@ -170,6 +178,68 @@ WORKFLOW_PAGES: list[dict[str, Any]] = [
     },
 ]
 
+
+# ---------------------------------------------------------------------------
+# Manifest — curated issue index
+# site/data/issues.json entries always survive rebuilds.
+# ---------------------------------------------------------------------------
+
+def load_manifest() -> list[dict[str, str]]:
+    """Load curated issues from site/data/issues.json.
+
+    Returns a list of issue dicts with keys: slug, title, date, iso_date, excerpt.
+    Falls back to empty list if file is missing or malformed.
+    """
+    if not MANIFEST_PATH.exists():
+        print("[manifest] site/data/issues.json not found — using auto-detect only")
+        return []
+    try:
+        data = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+        entries = data.get("issues", [])
+        valid = []
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            slug = str(entry.get("slug", "")).strip()
+            title = str(entry.get("title", "")).strip()
+            if not slug or not title:
+                continue
+            valid.append({
+                "slug": slug,
+                "title": title,
+                "date": str(entry.get("date", date_from_slug(slug))),
+                "iso_date": str(entry.get("iso_date", issue_iso_date(slug))),
+                "excerpt": str(entry.get("excerpt", NEWSLETTER_TAGLINE)),
+                "text": "",
+            })
+        print(f"[manifest] Loaded {len(valid)} curated issue(s) from issues.json")
+        return valid
+    except Exception as exc:
+        print(f"[manifest] Failed to load issues.json: {exc} — using auto-detect only")
+        return []
+
+
+def merge_issues(
+    manifest: list[dict[str, str]],
+    detected: list[dict[str, str]],
+) -> list[dict[str, str]]:
+    """Merge manifest (curated) + detected (auto) issues.
+
+    Manifest entries come first and win on duplicate slug.
+    Auto-detected issues are appended after, skipping slugs already in manifest.
+    """
+    seen: set[str] = {entry["slug"] for entry in manifest}
+    merged = list(manifest)
+    for issue in detected:
+        if issue["slug"] not in seen:
+            merged.append(issue)
+            seen.add(issue["slug"])
+    return merged
+
+
+# ---------------------------------------------------------------------------
+# Issue file helpers
+# ---------------------------------------------------------------------------
 
 def list_issue_files() -> list[Path]:
     if not CONTENT_DIR.exists():
@@ -340,7 +410,7 @@ def lead_magnet_block() -> str:
 
 # ---------------------------------------------------------------------------
 # Em design system — base template
-# Owned by Em (EternalMind) · The Signal Layer · Updated 2026-05-12
+# Owned by Em (EternalMind) · The Signal Layer · Updated 2026-05-13
 # This template is the visual identity of every page the pipeline generates.
 # Do not revert to the legacy blue-gradient template.
 # ---------------------------------------------------------------------------
@@ -879,30 +949,49 @@ def render_sitemap(issues: list[dict[str, str]]) -> str:
 
 def main() -> None:
     DIST_DIR.mkdir(parents=True, exist_ok=True)
-    issues = []
+
+    # Step 1: Load curated manifest (always survives rebuilds)
+    manifest_issues = load_manifest()
+
+    # Step 2: Auto-detect valid issues from content/issues/*.md
+    detected_issues = []
     for path in list_issue_files():
         text = load_text(path)
         if not is_valid_issue(text):
             print(f"[skip] {path.name} — invalid or broken content")
             continue
-        issues.append(issue_meta(path))
+        detected_issues.append(issue_meta(path))
+
+    # Step 3: Merge — manifest wins on duplicates, detected appended after
+    issues = merge_issues(manifest_issues, detected_issues)
+
     if not issues:
         raise SystemExit("No valid issues found; refusing to publish empty site")
+
+    # Render individual issue pages (only for issues with markdown text)
     for issue in issues:
+        if not issue.get("text"):
+            continue
         issue_dir = DIST_DIR / issue["slug"]
         issue_dir.mkdir(parents=True, exist_ok=True)
         write_text(issue_dir / "index.html", render_issue(issue))
+
     tools_dir = DIST_DIR / TOOLS_PAGE_SLUG
     tools_dir.mkdir(parents=True, exist_ok=True)
     write_text(tools_dir / "index.html", render_tools_page())
+
     for page in WORKFLOW_PAGES:
         page_dir = DIST_DIR / str(page["slug"])
         page_dir.mkdir(parents=True, exist_ok=True)
         write_text(page_dir / "index.html", render_workflow_page(page))
+
     write_text(DIST_DIR / "index.html", render_home(issues))
     write_text(DIST_DIR / "rss.xml", render_rss(issues))
     write_text(DIST_DIR / "sitemap.xml", render_sitemap(issues))
-    print(f"Published {len(issues)} issues plus AI tools directory and {len(WORKFLOW_PAGES)} workflow pages to {DIST_DIR}")
+
+    manifest_count = len(manifest_issues)
+    detected_count = len([i for i in issues if i not in manifest_issues])
+    print(f"Published {len(issues)} issues ({manifest_count} from manifest, {detected_count} auto-detected) plus AI tools directory and {len(WORKFLOW_PAGES)} workflow pages to {DIST_DIR}")
 
 
 if __name__ == "__main__":
