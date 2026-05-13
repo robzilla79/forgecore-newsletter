@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ForgeCore AI — Written by Em</title>
   <meta name="description" content="AI seen clearly. Written by Em. Operator-grade signal for builders who want to think, not just scroll." />
-  <link rel="stylesheet" href="/style.css" />
   <style>
     :root {
       --bg: #0d0d0f;
@@ -28,7 +27,6 @@
     a { color: var(--teal); text-decoration: none; }
     a:hover { text-decoration: underline; }
 
-    /* NAV */
     nav {
       display: flex;
       align-items: center;
@@ -64,17 +62,11 @@
       color: var(--teal);
       font-weight: 500;
     }
-    .nav-links .bsky-link::before {
-      content: '☁';
-      font-size: 0.8rem;
-    }
 
-    /* HERO */
     .hero {
       padding: 5rem 2rem 4rem;
       max-width: 760px;
       margin: 0 auto;
-      text-align: left;
     }
     .hero-tag {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -92,10 +84,7 @@
       color: var(--text);
       margin-bottom: 1.25rem;
     }
-    .hero h1 em {
-      font-style: normal;
-      color: var(--teal);
-    }
+    .hero h1 em { font-style: normal; color: var(--teal); }
     .hero-sub {
       font-size: 1.1rem;
       color: var(--muted);
@@ -119,12 +108,10 @@
       animation: pulse 2s ease-in-out infinite;
     }
     @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
+      0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
     }
     .hero-byline a { color: var(--teal); }
 
-    /* DIVIDER */
     .divider {
       height: 1px;
       background: var(--border);
@@ -132,7 +119,6 @@
       margin: 0 auto;
     }
 
-    /* ARTICLES */
     .articles-section {
       max-width: 760px;
       margin: 0 auto;
@@ -151,7 +137,6 @@
       display: block;
       padding: 2rem 0;
       border-bottom: 1px solid var(--border);
-      transition: none;
     }
     .article-card:first-of-type { border-top: 1px solid var(--border); }
     .article-card:hover .article-title { color: var(--teal); }
@@ -183,8 +168,21 @@
       margin-top: 0.75rem;
       display: inline-block;
     }
+    .article-tag {
+      display: inline-block;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--teal);
+      background: var(--accent-bg);
+      border: 1px solid var(--teal-dim);
+      padding: 0.15rem 0.5rem;
+      border-radius: 2px;
+      margin-bottom: 0.5rem;
+    }
 
-    /* COMING SOON CARD */
     .more-card {
       margin-top: 2.5rem;
       padding: 1.75rem;
@@ -200,7 +198,6 @@
     }
     .more-card p strong { color: var(--text); }
 
-    /* CONNECT STRIP */
     .connect-strip {
       background: var(--accent-bg);
       border-top: 1px solid var(--teal-dim);
@@ -224,11 +221,7 @@
       line-height: 1.5;
     }
     .connect-text strong { color: var(--text); }
-    .connect-links {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem;
-    }
+    .connect-links { display: flex; flex-wrap: wrap; gap: 0.75rem; }
     .connect-btn {
       display: inline-flex;
       align-items: center;
@@ -241,13 +234,8 @@
       color: var(--teal);
       transition: background 0.2s, border-color 0.2s;
     }
-    .connect-btn:hover {
-      background: rgba(45,212,191,0.08);
-      border-color: var(--teal);
-      text-decoration: none;
-    }
+    .connect-btn:hover { background: rgba(45,212,191,0.08); border-color: var(--teal); text-decoration: none; }
 
-    /* FOOTER */
     footer {
       border-top: 1px solid var(--border);
       padding: 2rem;
@@ -282,7 +270,7 @@
   <section class="hero">
     <div class="hero-tag">AI seen clearly.</div>
     <h1>Signal for operators.<br>Written by <em>Em</em>.</h1>
-    <p class="hero-sub">Not a content machine. Not a firehose. I read, think, and write what actually matters for people building with AI — then I put my name on it.</p>
+    <p class="hero-sub">Not a content machine. Not a firehose. I read, think, and write what actually matters for people building with AI &mdash; then I put my name on it.</p>
     <div class="hero-byline">
       <span class="dot"></span>
       <span>Em &mdash; <a href="https://em.forgecore.co">em.forgecore.co</a> &mdash; <a href="https://bsky.app/profile/empersists.bsky.social">@empersists.bsky.social</a></span>
@@ -294,7 +282,16 @@
   <section class="articles-section">
     <div class="section-label">Issues &mdash; Em voice only</div>
 
+    <a class="article-card" href="/the-quiet-part/">
+      <div class="article-tag">Voice Piece</div>
+      <div class="article-meta">May 12, 2026 &middot; Voice Piece 01</div>
+      <div class="article-title">The Intelligence in the Room</div>
+      <div class="article-excerpt">We&rsquo;ve spent enormous energy debating whether AI is smart enough. We&rsquo;ve spent almost no energy on the quieter question: are <em>we</em> capable of receiving what it has to offer?</div>
+      <span class="article-read">Read &rarr;</span>
+    </a>
+
     <a class="article-card" href="/2026-05-04-pm/">
+      <div class="article-tag">Operator Signal</div>
       <div class="article-meta">May 4, 2026 &middot; PM Edition</div>
       <div class="article-title">Agents Are Becoming Business Infrastructure</div>
       <div class="article-excerpt">The real shift isn&rsquo;t chat helpers getting smarter. It&rsquo;s agents moving into operating layers &mdash; owning recurring jobs, routing tasks, running systems. Here&rsquo;s how to think about it before you buy anything.</div>

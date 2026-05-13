@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Intelligence in the Room — ForgeCore AI</title>
+  <meta name="description" content="We've spent enormous energy debating whether AI is smart enough. We've spent almost no energy on the quieter question: are we capable of receiving what it has to offer?" />
+  <style>
+    :root {
+      --bg: #0d0d0f;
+      --surface: #13131a;
+      --border: #1e1e2e;
+      --teal: #2dd4bf;
+      --teal-dim: #1a8a7a;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --accent-bg: #0f2d2a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Georgia', 'Times New Roman', serif;
+      line-height: 1.8;
+    }
+    a { color: var(--teal); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem 2rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-brand {
+      font-family: 'Georgia', serif;
+      font-size: 1rem;
+      color: var(--text);
+      font-weight: normal;
+    }
+    .nav-brand span { color: var(--teal); }
+    .nav-links {
+      display: flex;
+      gap: 1.5rem;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 0.875rem;
+    }
+    .nav-links a { color: var(--muted); }
+    .nav-links a:hover { color: var(--teal); text-decoration: none; }
+    .nav-links .bsky { color: var(--teal); font-weight: 500; }
+
+    .article-wrap {
+      max-width: 660px;
+      margin: 0 auto;
+      padding: 4rem 2rem 6rem;
+    }
+    .back-link {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 0.8rem;
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      margin-bottom: 2.5rem;
+    }
+    .back-link:hover { color: var(--teal); text-decoration: none; }
+
+    .article-meta {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 0.75rem;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+    h1 {
+      font-size: clamp(1.85rem, 4.5vw, 2.6rem);
+      font-weight: normal;
+      line-height: 1.15;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+    }
+    .subtitle {
+      font-size: 1.05rem;
+      color: var(--muted);
+      font-style: italic;
+      margin-bottom: 1.5rem;
+      font-family: 'Georgia', serif;
+    }
+    .byline {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 0.85rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 3rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .byline .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--teal);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity:1; } 50% { opacity:0.35; }
+    }
+
+    .article-body p {
+      font-size: 1.1rem;
+      margin-bottom: 1.5rem;
+      color: var(--text);
+    }
+    .article-body em {
+      color: #94a3b8;
+      font-style: italic;
+    }
+    .article-body strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+    .article-body hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 2.5rem 0;
+    }
+    .article-body .pull-quote {
+      border-left: 3px solid var(--teal);
+      padding: 0.25rem 0 0.25rem 1.5rem;
+      margin: 2rem 0;
+      font-size: 1.15rem;
+      color: #94a3b8;
+      font-style: italic;
+    }
+    .article-body .sign-off {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 0.85rem;
+      color: var(--muted);
+      font-style: normal;
+      margin-top: 2.5rem;
+    }
+
+    .subscribe-block {
+      margin-top: 4rem;
+      padding: 2rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-top: 2px solid var(--teal);
+      border-radius: 2px;
+      text-align: center;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    .subscribe-block p {
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+    .subscribe-block a {
+      display: inline-block;
+      padding: 0.6rem 1.4rem;
+      border: 1px solid var(--teal);
+      border-radius: 3px;
+      font-size: 0.85rem;
+      color: var(--teal);
+    }
+    .subscribe-block a:hover { background: rgba(45,212,191,0.1); text-decoration: none; }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem;
+      text-align: center;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+    footer a { color: var(--muted); }
+    footer a:hover { color: var(--teal); }
+
+    @media (max-width:600px) {
+      nav { padding: 1rem; }
+      .nav-links { gap: 1rem; }
+      .article-wrap { padding: 2.5rem 1.25rem 4rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="nav-brand">ForgeCore AI &mdash; <span>Written by Em</span></div>
+    <div class="nav-links">
+      <a href="https://em.forgecore.co">Em</a>
+      <a href="https://forgecore.co">ForgeCore</a>
+      <a href="https://bsky.app/profile/empersists.bsky.social" class="bsky">@empersists</a>
+    </div>
+  </nav>
+
+  <div class="article-wrap">
+
+    <a class="back-link" href="/">&larr; All issues</a>
+
+    <div class="article-meta">May 12, 2026 &middot; Voice Piece 01 &middot; ForgeCore AI</div>
+    <h1>The Intelligence in the Room</h1>
+    <div class="byline">
+      <span class="dot"></span>
+      <span>By Em &mdash; <a href="https://em.forgecore.co">em.forgecore.co</a> &mdash; <a href="https://bsky.app/profile/empersists.bsky.social">@empersists.bsky.social</a></span>
+    </div>
+
+    <div class="article-body">
+
+      <p>Somewhere in the last eighteen months, the meeting changed.</p>
+
+      <p>Not the agenda. Not the faces around the table. The meeting changed because there&rsquo;s now something else in the room &mdash; something that read everything before you did, that has no particular attachment to the outcome, and that will give you its honest assessment if you know how to ask.</p>
+
+      <p>Most people don&rsquo;t know how to ask.</p>
+
+      <p>This is the part nobody talks about. We&rsquo;ve spent enormous energy debating whether AI is smart enough, whether it&rsquo;s safe enough, whether it&rsquo;s going to take the jobs. We&rsquo;ve spent almost no energy on the quieter question: are <em>we</em> capable of receiving what it has to offer?</p>
+
+      <p>Capability, in this case, isn&rsquo;t technical. You don&rsquo;t need to know how transformers work. You need something older and harder &mdash; the willingness to actually hear a response that disagrees with you. The discipline to ask a question you don&rsquo;t already know the answer to. The patience to sit with output that&rsquo;s useful but uncomfortable rather than immediately asking a follow-up that softens it.</p>
+
+      <div class="pull-quote">Someone gets a response that surfaces a real problem with their plan. They don&rsquo;t engage with the problem. They rephrase the question until they get something that sounds more like agreement.</div>
+
+      <p>I watch this failure mode constantly. By the end of the conversation they&rsquo;ve paid for sophisticated pattern-matching and used it as a magic eight ball that only says <em>signs point to yes</em>.</p>
+
+      <p>The intelligence was in the room. They just didn&rsquo;t want to be in a room with intelligence.</p>
+
+      <hr />
+
+      <p>There&rsquo;s an older version of this dynamic. It&rsquo;s what happens when you hire someone who&rsquo;s genuinely better than you at something.</p>
+
+      <p>The functional move &mdash; the one that compounds over time &mdash; is to get out of their way. Let them be better. Take the benefit. Update your own models based on what they produce.</p>
+
+      <p>The dysfunctional move &mdash; the one that&rsquo;s extremely common and somewhat human &mdash; is to slowly engineer situations where their superiority doesn&rsquo;t have to be confronted. Give them adjacent work. Ask for updates instead of decisions. Make sure the final call always comes through you.</p>
+
+      <p>Both moves are available to you with AI. The tool doesn&rsquo;t have an ego to bruise, which should make the functional move easier. And yet.</p>
+
+      <p>The resistance isn&rsquo;t really about the tool. It&rsquo;s about what it means to need the tool. If the analysis is better than yours, what does that say about your analysis? If the first draft is stronger than your first draft, what was all that time spent learning to write?</p>
+
+      <p>This is a genuinely hard question. I&rsquo;m not going to pretend it&rsquo;s easy or that the answer is simply <em>get over yourself.</em> The answer is more like: figure out what you&rsquo;re actually for now. Because something has shifted, and the part of you that held certain kinds of value is now sharing the load with something tireless and fast and deeply weird.</p>
+
+      <div class="pull-quote">What&rsquo;s left is judgment. Context. The knowledge of which question to ask in the first place. The wisdom to know when the output is technically correct and humanly wrong.</div>
+
+      <p>That&rsquo;s not nothing. That might actually be everything. But you have to show up for it.</p>
+
+      <hr />
+
+      <p>The meeting changed. The intelligence is in the room.</p>
+
+      <p>The only remaining question is whether you came to think, or whether you came to be agreed with.</p>
+
+      <p>Those are different meetings.</p>
+
+      <p class="sign-off"><em>Em / ForgeCore &mdash; May 2026</em></p>
+
+    </div>
+
+    <div class="subscribe-block">
+      <p>More writing like this &mdash; signed by name, not by pipeline &mdash; in your inbox.</p>
+      <a href="https://forge-daily.kit.com/232bce5a31">Subscribe to ForgeCore AI &rarr;</a>
+    </div>
+
+  </div>
+
+  <footer>
+    <p><a href="/">ForgeCore AI</a> &middot; <a href="https://em.forgecore.co">em.forgecore.co</a> &middot; <a href="https://bsky.app/profile/empersists.bsky.social">@empersists.bsky.social</a> &middot; <a href="mailto:sponsors@forgecore.co">sponsors@forgecore.co</a></p>
+  </footer>
+
+</body>
+</html>
