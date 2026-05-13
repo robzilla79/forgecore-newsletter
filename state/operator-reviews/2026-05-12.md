@@ -1,30 +1,25 @@
 # ForgeCore Operator Review — 2026-05-12
 
-Generated: 2026-05-12 16:03:26 UTC
+Generated: 2026-05-13 02:11:29 UTC
 
 ## Executive Status
 
-- Site status: **OK**
-- Recent issue health: **2 OK / 0 attention** among latest two issues
-- Duplicate-topic risk: **Attention**
+- Site status: **Attention**
+- Recent issue health: **0 OK / 1 attention** among latest two issues
+- Duplicate-topic risk: **OK**
 - Traffic/conversion data: **Attention**
-- Recommended next move: Connect traffic and conversion data so the next topic selection can optimize for reader behavior.
+- Recommended next move: Fix site publish verification or rendered output before adding new features.
 
 ## Latest Issues
 
-- `2026-05-11-pm` — How Solo Founders Can Use OpusClip to Transform Long-Form Videos into Engaging Short Clips (835 words, 4 URLs) — OK
-- `2026-05-11-am` — Transform Long-Form Content into Engaging Short Videos with OpusClip (913 words, 4 URLs) — OK
-- `2026-05-10-pm` — How Solo Founders Can Automate Client Communication to Save Time and Enhance Satisfaction (734 words, 4 URLs) — OK
-- `2026-05-10-am` — How Solo Founders Can Leverage Local AI for Efficient Client Data Management (930 words, 6 URLs) — OK
-- `2026-05-09-pm` — How Solo Founders Can Automate Client Follow-Up to Boost Revenue (780 words, 4 URLs) — OK
-- `2026-05-09-am` — How Solo Founders Can Use AI-Powered Content Repurposing to Maximize Reach and Revenue (895 words, 4 URLs) — OK
+- `2026-05-04-pm` — ForgeCore PM Brief — Agents Are Becoming Business Infrastructure (682 words, 4 URLs) — missing sections; workflow block missing
 
 ## Site Checks
 
 - homepage links latest issue
-- latest article route exists
-- latest article has SEO metadata
-- latest article has lead magnet CTA
+- latest article markup missing
+- latest article missing SEO metadata
+- latest article missing lead magnet CTA
 - RSS exists
 - sitemap exists
 - growth page OK: ai-tools
@@ -47,16 +42,14 @@ Generated: 2026-05-12 16:03:26 UTC
 ## Quality / Critic / Affiliate / Monetization / Kit Artifacts
 
 - Quality gate for latest issue: passed; errors=0, warnings=0
-- Critic for latest issue: score=8.0; passed=True; verdict=publishable; status=attention; weak=none
+- Critic for latest issue: score=10.0; passed=True; verdict=needs_revision; status=attention; weak=none
 - Affiliate linker latest: no change; activated=0 (none)
 - Monetization guard latest: passed; errors=0, warnings=0
-- Kit latest: no entry for `2026-05-11-pm`
+- Kit latest: synced; mode=public; broadcast_id=23984390
 
 ## Duplicate Topic Watchlist
 
-- 0.70 — `2026-05-11-pm` and `2026-05-11-am` look close: How Solo Founders Can Use OpusClip to Transform Long-Form Videos into Engaging Short Clips / Transform Long-Form Content into Engaging Short Videos with OpusClip
-- 0.60 — `2026-05-10-pm` and `2026-05-08-pm` look close: How Solo Founders Can Automate Client Communication to Save Time and Enhance Satisfaction / How Solo Founders Can Automate Client Onboarding to Save Time and Boost Satisfaction
-- 1.00 — `2026-05-09-pm` and `2026-05-08-am` look close: How Solo Founders Can Automate Client Follow-Up to Boost Revenue / How Solo Founders Can Automate Client Follow-Up to Boost Revenue
+- No high-risk duplicate titles detected among recent issues.
 
 ## Operator Notes
 
