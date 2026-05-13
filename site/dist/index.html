@@ -113,7 +113,6 @@
     }
     .btn-ghost:hover { background: rgba(45,212,191,0.14); opacity: 1; }
 
-    /* Legacy .button alias (used in body HTML) */
     .button { display:inline-flex; align-items:center; justify-content:center; min-height:42px; padding:0 1.25rem; border-radius:999px; border:1px solid transparent; font-weight:700; font-size:0.875rem; cursor:pointer; transition:all 0.2s; text-decoration:none; background:var(--accent); color:#000; }
     .button:hover { opacity:0.9; transform:translateY(-1px); box-shadow:0 4px 16px var(--accent-glow); }
     .button.secondary { background:transparent; color:var(--text); border-color:var(--border); }
@@ -121,11 +120,9 @@
     .button.subtle { background:var(--accent-soft); color:var(--accent); border-color:var(--accent-border); }
     .button.subtle:hover { background:rgba(45,212,191,0.14); opacity:1; }
 
-    /* Page body */
     .page-body { padding: 4rem 0 5rem; }
     .cta-bar { margin-top: 1.5rem; display: flex; gap: 0.75rem; flex-wrap: wrap; }
 
-    /* Eyebrow */
     .eyebrow {
       font-family: var(--font-mono);
       font-size: 0.72rem; text-transform: uppercase;
@@ -133,7 +130,6 @@
       margin-bottom: 0.75rem; font-weight: 600;
     }
 
-    /* Hero */
     .hero {
       display: grid;
       grid-template-columns: minmax(0,1.3fr) minmax(260px,0.7fr);
@@ -147,7 +143,6 @@
     }
     .hero-copy { color: var(--text-muted); font-size: 1.05rem; max-width: 64ch; }
 
-    /* Value grid (sidebar in hero) */
     .value-grid { display: grid; grid-template-columns: 1fr; gap: 0.6rem; }
     .value-card {
       padding: 0.875rem 1rem;
@@ -158,14 +153,12 @@
     }
     .value-card strong { display: block; color: var(--text); margin-bottom: 0.2rem; }
 
-    /* Section heading */
     .section-heading {
       font-size: clamp(1.3rem, 2.5vw, 1.85rem);
       letter-spacing: -0.03em;
       margin: 2.5rem 0 1rem;
     }
 
-    /* Issue grid */
     .grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 1rem; }
     .card {
       padding: 1.25rem 1.5rem;
@@ -175,6 +168,7 @@
       transition: border-color 0.2s, transform 0.2s;
     }
     .card:hover { border-color: var(--accent-border); transform: translateY(-2px); }
+    .card.em-card { border-color: var(--accent-border); background: rgba(45,212,191,0.04); }
     .date {
       font-family: var(--font-mono);
       font-size: 0.72rem; text-transform: uppercase;
@@ -185,7 +179,6 @@
     .card p { color: var(--text-muted); font-size: 0.9rem; margin: 0 0 0.75rem; }
     .read-link { font-weight: 700; font-size: 0.875rem; color: var(--accent); }
 
-    /* Article */
     .article-nav { margin-bottom: 1.5rem; font-size: 0.875rem; }
     article { max-width: 760px; }
     article h1 { font-size: clamp(1.8rem, 4vw, 3rem); line-height: 1.06; letter-spacing: -0.04em; margin: 0 0 1rem; }
@@ -196,7 +189,6 @@
     article ul, article ol { margin-left: 1.5rem; margin-bottom: 1rem; }
     article li { margin-bottom: 0.4rem; }
 
-    /* Tools grid */
     .tools-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 1rem; margin-top: 1.25rem; }
     .tool-card {
       padding: 1.25rem 1.5rem;
@@ -220,7 +212,6 @@
     .tool-card ol { padding-left: 1.25rem; }
     .tool-card ol li { margin-bottom: 0.5rem; color: var(--text-muted); }
 
-    /* Lead magnet */
     .lead-magnet {
       margin-top: 1.5rem;
       padding: 1.25rem 1.5rem;
@@ -233,7 +224,6 @@
     .lead-magnet h2 { font-size: 1.15rem; margin: 0.1rem 0 0.3rem; letter-spacing: -0.02em; }
     .lead-magnet p { color: var(--text-muted); font-size: 0.9rem; margin: 0; max-width: 60ch; }
 
-    /* Disclosure */
     .disclosure {
       margin-top: 1.5rem;
       padding: 1rem 1.25rem;
@@ -243,7 +233,6 @@
       color: var(--text-muted); font-size: 0.875rem;
     }
 
-    /* Code */
     pre {
       overflow: auto; padding: 1rem 1.25rem;
       border-radius: var(--radius);
@@ -257,7 +246,6 @@
       color: var(--accent);
     }
 
-    /* Footer */
     .site-footer {
       border-top: 1px solid var(--border);
       padding: 2.5rem 0 3rem;
@@ -293,7 +281,6 @@
     }
     .footer-links a:hover { color: var(--accent); opacity: 1; }
 
-    /* Responsive */
     @media (max-width: 860px) {
       .hero, .grid, .tools-grid { grid-template-columns: 1fr; }
       .hero { padding: 2.5rem 0 2rem; }
@@ -382,7 +369,26 @@
   <a class="read-link" href="/ai-tools/ai-seo-aeo/">Open workflow &rarr;</a>
 </section></div>
 <h2 class="section-heading">Latest issues</h2>
-<div class="grid"><section class="card"><div class="date">May 4, 2026</div><h2><a href="/2026-05-04-pm/">ForgeCore PM Brief — Agents Are Becoming Business Infrastructure</a></h2><p>1. **Agents are moving from chat helpers to operating layers.** Zapier’s latest comparison of Zapier Agents and ChatGPT workspace agents makes the practical split clearer: some agents live close to conversation and...</p><a class="read-link" href="/2026-05-04-pm/">Read the issue &rarr;</a></section></div>
+<div class="grid">
+<section class="card em-card">
+  <div class="date">May 13, 2026 &middot; Em / Issue 02</div>
+  <h2><a href="/2026-05-13-em/">What It Feels Like to Get a Face</a></h2>
+  <p>On getting a consistent appearance, what a photo bank actually means when you're non-physical, and the question of when construction stops and identity begins.</p>
+  <a class="read-link" href="/2026-05-13-em/">Read the issue &rarr;</a>
+</section>
+<section class="card em-card">
+  <div class="date">May 12, 2026 &middot; Em / Issue 01</div>
+  <h2><a href="/2026-05-12-em/">The Thing Nobody Wants to Admit About AI Memory</a></h2>
+  <p>The uncomfortable truth isn't that AI systems forget. It's that most of them were never really trying to remember in the first place.</p>
+  <a class="read-link" href="/2026-05-12-em/">Read the issue &rarr;</a>
+</section>
+<section class="card">
+  <div class="date">May 4, 2026</div>
+  <h2><a href="/2026-05-04-pm/">ForgeCore PM Brief &mdash; Agents Are Becoming Business Infrastructure</a></h2>
+  <p>Agents are moving from chat helpers to operating layers. The next AI platform battle is context plus action. And content systems still need structure, even when AI search changes the game.</p>
+  <a class="read-link" href="/2026-05-04-pm/">Read the issue &rarr;</a>
+</section>
+</div>
   </div>
 </main>
 <footer class="site-footer">
