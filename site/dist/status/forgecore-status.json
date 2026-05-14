@@ -1,13 +1,14 @@
 {
-  "generated_at": "2026-05-13T20:03:10Z",
-  "generated_at_central": "2026-05-13T15:03:10-05:00",
+  "generated_at": "2026-05-14T03:52:53Z",
+  "generated_at_central": "2026-05-13T22:52:53-05:00",
   "public_safe": true,
   "overall": {
     "status": "repair_needed",
     "repair_needed": true,
     "risks": [
       "AM status is needs_prepare_repair.",
-      "PM status is needs_prepare_repair."
+      "PM status is needs_prepare_repair.",
+      "Rendered site output does not fully reflect the latest issue."
     ],
     "waiting": [],
     "current_required_action": "Autonomous recovery should act on the next scheduled check; use manual repair only if urgent."
@@ -47,8 +48,8 @@
     "broadcast_id_present": false,
     "web_url": "https://news.forgecore.co/2026-05-13-pm/",
     "status": "needs_prepare_repair",
-    "recommended_repair_action": "prepare_only",
-    "next_expected_action": "Prepare window has passed, but send-repair window has not. Prepare the issue without forcing email.",
+    "recommended_repair_action": "prepare_and_send",
+    "next_expected_action": "Issue is missing after send-repair window. Autonomous recovery may prepare and send through guarded workflow.",
     "schedule": {
       "prepare_due": "1:45 PM CT",
       "send_due": "4:07 PM CT",
@@ -59,21 +60,21 @@
     "rob_approval_required": false
   },
   "latest_issue": {
-    "slug": "2026-05-04-pm",
-    "title": "ForgeCore PM Brief \u2014 Agents Are Becoming Business Infrastructure",
-    "path": "content/issues/2026-05-04-pm.md",
+    "slug": "2026-05-13-em",
+    "title": "What It Feels Like to Get a Face",
+    "path": "content/issues/2026-05-13-em.md",
     "exists": true,
-    "web_url": "https://news.forgecore.co/2026-05-04-pm/"
+    "web_url": "https://news.forgecore.co/2026-05-13-em/"
   },
   "site": {
     "site_dist_exists": true,
-    "latest_slug": "2026-05-04-pm",
-    "homepage_has_latest": true,
+    "latest_slug": "2026-05-13-em",
+    "homepage_has_latest": false,
     "rss_has_latest": true,
     "sitemap_has_latest": true,
-    "latest_article_route_exists": true,
-    "status": "fresh",
-    "recommended_repair_action": "no_action",
+    "latest_article_route_exists": false,
+    "status": "stale_or_incomplete",
+    "recommended_repair_action": "deploy-site",
     "deploy_workflow": ".github/workflows/deploy-site.yml"
   },
   "autonomous_recovery_workflow": ".github/workflows/autonomous-newsletter-recovery.yml",
