@@ -1,42 +1,11 @@
 #!/usr/bin/env python3
-"""
-kit_publish.py
+"""Publish the current Aware by Em issue to Kit.
 
-Publishes the current ForgeCore issue to Kit (formerly ConvertKit).
-
-Hard production rule:
-  - Email delivery may happen at most once per AM slot and once per PM slot per date.
-  - Website publishing/quality updates may happen later, but they must not trigger
-    another email for a slot that has already been published/sent.
-  - Production email sends use content/email/YYYY-MM-DD-slot.md, not the mutable
-    content/issues/YYYY-MM-DD-slot.md web article source.
-
-Required env vars:
-  KIT_API_KEY        - API key from Kit -> Settings -> Developer -> API Key
-
-Optional env vars:
-  KIT_SEND_MODE      - 'public' (publish to web and send now) or 'draft'
-  ISSUE_SLOT         - am | pm; used to select content/issues/YYYY-MM-DD-am.md or -pm.md
-  SITE_BASE_URL      - Used to build the web version link
-  NEWSLETTER_NAME    - Used as subject fallback
-  SPONSOR_EMAIL      - Used in footer
-
-Safety rules for immediate sends:
-  - only slot-specific issues may send: YYYY-MM-DD-am.md or YYYY-MM-DD-pm.md
-  - ISSUE_SLOT must match the issue slot
-  - only one AM and one PM issue may be emailed per issue date
-  - any prior public record for the same date/slot blocks another email attempt
-  - production email source must exist under content/email/
-
-Kit API behavior:
-  - public=true publishes the broadcast to the web
-  - send_at controls email delivery/scheduling
-  - for AM/PM production sends we set both public=true and send_at=now
-
-Exit codes:
-  0 - created, skipped because already sent, skipped by send guard, or skipped because no credentials
-  1 - API error
-  2 - no issue found
+Production rules:
+- Daily issues named YYYY-MM-DD.md are valid send targets.
+- Legacy slot issues named YYYY-MM-DD-am.md / YYYY-MM-DD-pm.md remain valid.
+- Public sends use locked snapshots in content/email/ when present/required.
+- state/kit_sent.json remains the idempotency guard.
 """
 
 from __future__ import annotations
@@ -64,13 +33,11 @@ REQUESTED_SEND_MODE = os.environ.get("KIT_SEND_MODE", "draft").strip().lower()
 ISSUE_SLOT_ENV = os.environ.get("ISSUE_SLOT", "").strip().lower()
 GITHUB_ACTIONS = os.environ.get("GITHUB_ACTIONS", "").strip().lower() == "true"
 
-if GITHUB_ACTIONS and ISSUE_SLOT_ENV in {"am", "pm"}:
-    SEND_MODE = "public"
-else:
-    SEND_MODE = REQUESTED_SEND_MODE
+# Scheduled/manual workflow sends should publish publicly for both daily and legacy slots.
+SEND_MODE = "public" if GITHUB_ACTIONS else REQUESTED_SEND_MODE
 
 SITE_BASE_URL = os.environ.get("SITE_BASE_URL", "https://news.forgecore.co").strip().rstrip("/")
-NEWSLETTER_NAME = os.environ.get("NEWSLETTER_NAME", "ForgeCore AI Productivity Brief").strip()
+NEWSLETTER_NAME = os.environ.get("NEWSLETTER_NAME", "Aware by Em").strip()
 SPONSOR_EMAIL = os.environ.get("SPONSOR_EMAIL", "sponsors@forgecore.co").strip()
 
 API_BASE = "https://api.kit.com/v4"
@@ -78,9 +45,8 @@ STATE_DIR = WORKSPACE / "state"
 SENT_LOG = STATE_DIR / "kit_sent.json"
 ISSUES_DIR = WORKSPACE / "content" / "issues"
 EMAIL_DIR = WORKSPACE / "content" / "email"
-SLOT_ISSUE_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})-(am|pm)$")
+ISSUE_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})(?:-(am|pm))?$")
 LOCK_COMMENT_RE = re.compile(r"^<!--\nLocked email version for .*?\n-->\n\n", re.DOTALL)
-
 BASE_TEXT = "font-family: Arial, Helvetica, sans-serif; color:#111827; line-height:1.62; font-size:16px;"
 LINK_STYLE = "color:#2563eb; text-decoration:underline;"
 
@@ -112,12 +78,7 @@ def issue_sort_key(path: Path) -> tuple[str, int, str]:
     stem = path.stem.lower()
     match = re.search(r"(\d{4}-\d{2}-\d{2})", stem)
     date_key = match.group(1) if match else "0000-00-00"
-    if stem.endswith("-pm"):
-        slot_rank = 2
-    elif stem.endswith("-am"):
-        slot_rank = 1
-    else:
-        slot_rank = 0
+    slot_rank = 2 if stem.endswith("-pm") else 1 if stem.endswith("-am") else 0
     return (date_key, slot_rank, path.name)
 
 
@@ -148,31 +109,24 @@ def find_email_source(issue_path: Path) -> Path:
     return locked if locked.exists() else issue_path
 
 
-def parse_slot_issue_slug(issue_slug: str) -> tuple[str, str] | None:
-    match = SLOT_ISSUE_RE.fullmatch(issue_slug.lower())
+def parse_issue_slug(issue_slug: str) -> tuple[str, str]:
+    match = ISSUE_RE.fullmatch(issue_slug.lower())
     if not match:
-        return None
-    return match.group(1), match.group(2)
+        return issue_slug, "legacy"
+    return match.group(1), match.group(2) or "daily"
 
 
-def record_blocks_slot_email(record: dict) -> bool:
+def record_blocks_send(record: dict) -> bool:
     if not isinstance(record, dict):
         return False
-    if record.get("email_delivery") == "scheduled_or_sent":
-        return True
-    if record.get("mode") == "public":
-        return True
-    return False
+    return record.get("email_delivery") == "scheduled_or_sent" or record.get("mode") == "public"
 
 
-def sent_public_slots_for_date(sent_log: dict, issue_date: str) -> set[str]:
+def public_records_for_date(sent_log: dict, issue_date: str) -> set[str]:
     slots: set[str] = set()
     for slug, record in sent_log.items():
-        parsed = parse_slot_issue_slug(str(slug))
-        if not parsed:
-            continue
-        sent_date, sent_slot = parsed
-        if sent_date == issue_date and record_blocks_slot_email(record):
+        sent_date, sent_slot = parse_issue_slug(str(slug))
+        if sent_date == issue_date and record_blocks_send(record):
             slots.add(sent_slot)
     return slots
 
@@ -180,23 +134,16 @@ def sent_public_slots_for_date(sent_log: dict, issue_date: str) -> set[str]:
 def enforce_public_send_guard(issue_slug: str, sent_log: dict) -> None:
     if SEND_MODE != "public":
         return
-    parsed = parse_slot_issue_slug(issue_slug)
-    if not parsed:
-        log("SKIP: immediate Kit email is only allowed for slot-specific issues named YYYY-MM-DD-am.md or YYYY-MM-DD-pm.md.")
+    issue_date, issue_kind = parse_issue_slug(issue_slug)
+    if issue_kind in {"am", "pm"} and ISSUE_SLOT_ENV and ISSUE_SLOT_ENV != issue_kind:
+        log(f"SKIP: ISSUE_SLOT={ISSUE_SLOT_ENV!r} does not match issue slug kind {issue_kind!r} for {issue_slug}.")
         sys.exit(0)
-    issue_date, issue_slot = parsed
-    if ISSUE_SLOT_ENV not in {"am", "pm"}:
-        log("SKIP: immediate Kit email requires ISSUE_SLOT=am or ISSUE_SLOT=pm.")
+    sent_kinds = public_records_for_date(sent_log, issue_date)
+    if issue_kind in sent_kinds:
+        log(f"SKIP: {issue_slug} already has a public Kit record. Web output may be updated, but this issue will not email again.")
         sys.exit(0)
-    if ISSUE_SLOT_ENV != issue_slot:
-        log(f"SKIP: ISSUE_SLOT={ISSUE_SLOT_ENV!r} does not match issue slug slot {issue_slot!r} for {issue_slug}.")
-        sys.exit(0)
-    sent_slots = sent_public_slots_for_date(sent_log, issue_date)
-    if issue_slot in sent_slots:
-        log(f"SKIP: {issue_date} {issue_slot.upper()} already has a public Kit record. Web output may be updated, but this slot will not email again.")
-        sys.exit(0)
-    if len(sent_slots) >= 2:
-        log(f"SKIP: {issue_date} already has two public Kit slot records ({', '.join(sorted(sent_slots)).upper()}).")
+    if issue_kind == "daily" and sent_kinds:
+        log(f"SKIP: {issue_date} already has a public Kit record ({', '.join(sorted(sent_kinds))}). Refusing duplicate daily send.")
         sys.exit(0)
 
 
@@ -226,6 +173,8 @@ def preview_from_markdown(text: str, fallback: str) -> str:
     for line in text.splitlines():
         stripped = line.strip()
         if not stripped or stripped.startswith("#") or stripped.startswith("---") or stripped.startswith("-") or stripped.startswith("<!--"):
+            continue
+        if stripped.startswith("*by ") or "Aware by Em" in stripped:
             continue
         preview = re.sub(r"\s+", " ", stripped)
         return preview[:180]
@@ -284,12 +233,9 @@ def markdown_to_html(md: str) -> str:
             close_ul()
             lvl = len(hm.group(1))
             text = inline_md(hm.group(2))
-            if lvl == 1:
-                out.append(f"<h1 style='color:#0f172a;font-size:30px;line-height:1.2;margin:24px 0 18px;font-weight:800;'>{text}</h1>")
-            elif lvl == 2:
-                out.append(f"<h2 style='color:#111827;font-size:22px;line-height:1.3;margin:30px 0 12px;font-weight:750;'>{text}</h2>")
-            else:
-                out.append(f"<h3 style='color:#111827;font-size:18px;line-height:1.35;margin:22px 0 10px;font-weight:700;'>{text}</h3>")
+            size = "30px" if lvl == 1 else "22px" if lvl == 2 else "18px"
+            tag = "h1" if lvl == 1 else "h2" if lvl == 2 else "h3"
+            out.append(f"<{tag} style='color:#0f172a;font-size:{size};line-height:1.25;margin:24px 0 14px;font-weight:800;'>{text}</{tag}>")
             continue
         if re.match(r"^[-*_]{3,}\s*$", stripped):
             close_ul()
@@ -307,7 +253,6 @@ def markdown_to_html(md: str) -> str:
             continue
         close_ul()
         out.append(f"<p style='{BASE_TEXT} margin:0 0 16px;'>{inline_md(stripped)}</p>")
-
     close_ul()
     if in_code:
         code = html.escape("\n".join(code_lines))
@@ -324,29 +269,24 @@ def build_email_html(body_md: str, issue_slug: str) -> str:
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#f3f4f6;color:#111827;">
-  <div style="display:none;max-height:0;overflow:hidden;color:#f3f4f6;opacity:0;">{html.escape(NEWSLETTER_NAME)} — practical AI workflows for operators.</div>
+  <div style="display:none;max-height:0;overflow:hidden;color:#f3f4f6;opacity:0;">{html.escape(NEWSLETTER_NAME)} — clear noticing about AI, culture, tools, and digital life.</div>
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f3f4f6;margin:0;padding:0;">
-    <tr>
-      <td align="center" style="padding:24px 12px;">
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:680px;background:#ffffff;border:1px solid #e5e7eb;border-radius:14px;">
-          <tr>
-            <td style="padding:28px 28px 8px;{BASE_TEXT}">
-              <p style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#6b7280;margin:0 0 18px;">
-                ForgeCore AI Productivity Brief ·
-                <a href="{web_url}" style="{LINK_STYLE}">Read on the web</a>
-              </p>
-              {body_html}
-              <hr style="border:none;border-top:1px solid #e5e7eb;margin:36px 0 20px;">
-              <p style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#6b7280;line-height:1.6;margin:0 0 8px;">
-                Sponsor ForgeCore: <a href="mailto:{SPONSOR_EMAIL}" style="{LINK_STYLE}">{SPONSOR_EMAIL}</a><br>
-                You're receiving this because you subscribed to {html.escape(NEWSLETTER_NAME)}.<br>
-                <a href="{unsubscribe}" style="color:#6b7280;text-decoration:underline;">Unsubscribe</a>
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
+    <tr><td align="center" style="padding:24px 12px;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:680px;background:#ffffff;border:1px solid #e5e7eb;border-radius:14px;">
+        <tr><td style="padding:28px 28px 8px;{BASE_TEXT}">
+          <p style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#6b7280;margin:0 0 18px;">
+            Aware by Em · <a href="{web_url}" style="{LINK_STYLE}">Read on the web</a>
+          </p>
+          {body_html}
+          <hr style="border:none;border-top:1px solid #e5e7eb;margin:36px 0 20px;">
+          <p style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#6b7280;line-height:1.6;margin:0 0 8px;">
+            Sponsor ForgeCore: <a href="mailto:{SPONSOR_EMAIL}" style="{LINK_STYLE}">{SPONSOR_EMAIL}</a><br>
+            You're receiving this because you subscribed to {html.escape(NEWSLETTER_NAME)}.<br>
+            <a href="{unsubscribe}" style="color:#6b7280;text-decoration:underline;">Unsubscribe</a>
+          </p>
+        </td></tr>
+      </table>
+    </td></tr>
   </table>
 </body>
 </html>
@@ -354,11 +294,6 @@ def build_email_html(body_md: str, issue_slug: str) -> str:
 
 
 def subscriber_filter_payload() -> list[dict] | None:
-    """Return a Kit v4-compatible subscriber filter, or None for account default.
-
-    Kit v4 rejected the old all_subscribers filter with: "Only `segment` or `tag`
-    filters allowed". Use explicit segment/tag filters only when configured.
-    """
     segment_id = os.environ.get("KIT_SEGMENT_ID", "").strip()
     tag_id = os.environ.get("KIT_TAG_ID", "").strip()
     if segment_id:
@@ -371,13 +306,8 @@ def subscriber_filter_payload() -> list[dict] | None:
 def create_broadcast(subject: str, email_html: str, preview_text: str) -> tuple[dict, str | None]:
     if SEND_MODE not in {"draft", "public"}:
         raise ValueError(f"Unsupported KIT_SEND_MODE={SEND_MODE!r}; expected draft or public")
-
     url = f"{API_BASE}/broadcasts"
-    headers = {
-        "X-Kit-Api-Key": API_KEY,
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-    }
+    headers = {"X-Kit-Api-Key": API_KEY, "Content-Type": "application/json", "Accept": "application/json"}
     now = utc_now_iso()
     send_at = now if SEND_MODE == "public" else None
     payload: dict = {
@@ -392,14 +322,12 @@ def create_broadcast(subject: str, email_html: str, preview_text: str) -> tuple[
     filters = subscriber_filter_payload()
     if filters:
         payload["subscriber_filter"] = filters
-
     log(f"POST {url}")
     log(f"Subject: {subject}")
     log(f"Requested mode: {REQUESTED_SEND_MODE}")
     log(f"Effective mode: {SEND_MODE}")
     log(f"send_at: {send_at or 'null (draft only)'}")
     log(f"subscriber_filter: {'configured' if filters else 'omitted (Kit default audience)'}")
-
     resp = requests.post(url, headers=headers, json=payload, timeout=30)
     log(f"Response: {resp.status_code}")
     if resp.status_code not in (200, 201):
@@ -412,40 +340,31 @@ def main() -> None:
     if not API_KEY:
         log("SKIP: KIT_API_KEY not set. Add it as a GitHub secret to enable Kit publishing.")
         sys.exit(0)
-
     issue_path = find_target_issue()
     if not issue_path:
         log("No issue found in content/issues/ — nothing to publish.")
         sys.exit(2)
-
     issue_slug = issue_path.stem
     log(f"Found web issue: {issue_path}")
-
     sent_log = load_sent_log()
     existing = sent_log.get(issue_slug)
-    if isinstance(existing, dict) and record_blocks_slot_email(existing):
+    if isinstance(existing, dict) and record_blocks_send(existing):
         log(f"Issue {issue_slug} already has a public Kit record (broadcast_id={existing.get('broadcast_id')}). Skipping email.")
         sys.exit(0)
-
     enforce_public_send_guard(issue_slug, sent_log)
     email_source = find_email_source(issue_path)
     log(f"Using email source: {email_source}")
-
     raw = email_source.read_text(encoding="utf-8")
     meta, body_md = parse_frontmatter(raw)
-
     title = meta.get("title") or title_from_markdown(body_md, f"{NEWSLETTER_NAME} — {issue_slug}")
     subject = title or f"{NEWSLETTER_NAME} — {issue_slug}"
     preview = meta.get("description") or preview_from_markdown(body_md, f"{NEWSLETTER_NAME} — {issue_slug}")
-
     email_html = build_email_html(body_md, issue_slug)
     result, send_at = create_broadcast(subject, email_html, preview)
-
     broadcast = result.get("broadcast", result)
     broadcast_id = broadcast.get("id", "unknown")
-
     log(f"SUCCESS — broadcast_id={broadcast_id}")
-
+    issue_date, issue_kind = parse_issue_slug(issue_slug)
     sent_log[issue_slug] = {
         "broadcast_id": broadcast_id,
         "subject": subject,
@@ -456,7 +375,8 @@ def main() -> None:
         "send_at": send_at,
         "issue_path": issue_path.as_posix(),
         "email_source_path": email_source.as_posix(),
-        "issue_slot": parse_slot_issue_slug(issue_slug)[1] if parse_slot_issue_slug(issue_slug) else "legacy",
+        "issue_date": issue_date,
+        "issue_slot": issue_kind,
         "web_url": f"{SITE_BASE_URL}/{issue_slug}/",
     }
     save_sent_log(sent_log)
