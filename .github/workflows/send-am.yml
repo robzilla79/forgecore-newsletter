@@ -1,9 +1,8 @@
 name: Em Sends the AM Issue
 
+# AM send schedule removed. Send is now handled by send-daily.yml (manual).
+# This wrapper is kept for manual legacy slot use only.
 on:
-  schedule:
-    # Send window: 10:07 AM Central during daylight time, 9:07 AM Central during standard time.
-    - cron: '7 15 * * *'
   workflow_dispatch:
 
 permissions:

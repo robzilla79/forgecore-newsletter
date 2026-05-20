@@ -4,8 +4,9 @@ on:
   workflow_call:
     inputs:
       issue_slot:
-        required: true
+        required: false
         type: string
+        default: ''
     secrets:
       KIT_API_KEY:
         required: false
@@ -19,7 +20,7 @@ on:
         required: false
 
 concurrency:
-  group: forgecore-send-${{ inputs.issue_slot }}
+  group: forgecore-send-${{ inputs.issue_slot || 'daily' }}
   cancel-in-progress: false
 
 jobs:
@@ -30,13 +31,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      ISSUE_SLOT: ${{ inputs.issue_slot }}
+      ISSUE_SLOT: ${{ inputs.issue_slot || '' }}
       SITE_DOMAIN: news.forgecore.co
       SITE_BASE_URL: https://news.forgecore.co
-      NEWSLETTER_NAME: ForgeCore AI
+      NEWSLETTER_NAME: Aware by Em
       NEWSLETTER_TAGLINE: AI seen clearly. Written by Em.
-      TARGET_AUDIENCE: Operators and builders who want signal, not noise.
-      PRIMARY_CTA_TEXT: Read ForgeCore AI — written by Em
+      PRIMARY_CTA_TEXT: Read Aware by Em
       PRIMARY_CTA_URL: ${{ secrets.KIT_SIGNUP_URL || 'https://news.forgecore.co/' }}
       SPONSOR_EMAIL: sponsors@forgecore.co
       KIT_API_KEY: ${{ secrets.KIT_API_KEY }}
@@ -66,41 +66,18 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Confirm prepared slot issue exists
+      - name: Confirm prepared issue exists and is not already sent
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
-          from utils import issue_path_for_today, issue_slot, local_now, LOCAL_TZ_NAME
+          from utils import issue_path_for_today
 
-          SEND_WINDOWS = {
-              "am": (10, 7),
-              "pm": (16, 21),
-          }
-
-          def record_blocks_slot_email(record):
+          def record_blocks_send(record):
               if not isinstance(record, dict):
                   return False
               return record.get("email_delivery") == "scheduled_or_sent" or record.get("mode") == "public"
 
-          def assert_send_window(slot, already_sent):
-              if already_sent:
-                  return
-              hour_min = SEND_WINDOWS.get(slot)
-              if not hour_min:
-                  raise SystemExit(f"Unknown ISSUE_SLOT for send window: {slot!r}")
-              now = local_now()
-              current_minutes = now.hour * 60 + now.minute
-              allowed_minutes = hour_min[0] * 60 + hour_min[1]
-              print(f"Local time: {now.strftime('%Y-%m-%d %H:%M:%S %Z')} ({LOCAL_TZ_NAME})")
-              print(f"Earliest allowed {slot.upper()} send time: {hour_min[0]:02d}:{hour_min[1]:02d} local")
-              if current_minutes < allowed_minutes:
-                  raise SystemExit(
-                      f"Refusing early unsent {slot.upper()} email. "
-                      f"Current local time is before {hour_min[0]:02d}:{hour_min[1]:02d}."
-                  )
-
-          slot = issue_slot()
           issue = issue_path_for_today()
           email = Path('content/email') / issue.name
           sent_log_path = Path('state/kit_sent.json')
@@ -111,19 +88,18 @@ jobs:
               except Exception:
                   sent_log = {}
           existing = sent_log.get(issue.stem)
-          already_sent = record_blocks_slot_email(existing)
+          already_sent = record_blocks_send(existing)
 
-          print(f"Prepared issue path: {issue}")
-          print(f"Locked email path: {email}")
-          print(f"Already sent record: {already_sent}")
+          print(f"Issue path: {issue}")
+          print(f"Email snapshot path: {email}")
+          print(f"Already sent: {already_sent}")
 
           if not issue.exists():
-              raise SystemExit(f"Prepared issue not found for ISSUE_SLOT. Refusing to send: {issue}")
-          assert_send_window(slot, already_sent)
+              raise SystemExit(f"Prepared issue not found. Run generate first: {issue}")
           if already_sent:
-              print("Slot already has a public Kit record. Continuing so kit_publish.py can skip idempotently.")
+              print("Issue already sent. kit_publish.py will skip idempotently.")
           elif not email.exists():
-              raise SystemExit(f"Locked email snapshot not found for unsent ISSUE_SLOT. Refusing to send: {email}")
+              raise SystemExit(f"Locked email snapshot not found for unsent issue. Refusing to send: {email}")
           PY
 
       - name: Render current prepared web output
@@ -138,13 +114,8 @@ jobs:
       - name: Render lead magnet assets
         run: python lead_magnet_hardening.py
 
-      - name: Verify prepared AM issue before email
-        if: env.ISSUE_SLOT != 'pm'
+      - name: Verify prepared issue before email
         run: python verify_publish.py
-
-      - name: Verify prepared PM Brief before email
-        if: env.ISSUE_SLOT == 'pm'
-        run: python pm_verify_publish.py
 
       - name: Send prepared issue to Kit once
         run: python kit_publish.py
@@ -158,11 +129,11 @@ jobs:
           if git diff --staged --quiet; then
             echo "No Kit sent-log changes to commit"
           else
-            git stash push --include-untracked --message forgecore-kit-sent-log
+            git stash push --include-untracked --message aware-kit-sent-log
             git pull --rebase origin main
             git stash pop
             git add state/kit_sent.json
             TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M UTC')
-            git commit -m "em: sent ${ISSUE_SLOT} to Kit $TIMESTAMP"
+            git commit -m "em: sent issue ${ISSUE_SLOT:-daily} to Kit $TIMESTAMP"
             git push
           fi

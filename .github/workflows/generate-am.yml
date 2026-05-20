@@ -1,10 +1,14 @@
 name: Em Generates the AM Issue
 
+# AM schedule removed. Generate is now handled by generate-daily.yml.
+# This wrapper is kept for manual legacy slot use only.
 on:
-  schedule:
-    # 6:00 AM Central (CDT = UTC-5, so 11:00 UTC)
-    - cron: '0 11 * * *'
   workflow_dispatch:
+    inputs:
+      force_run:
+        description: 'Force run even if recent issue exists'
+        required: false
+        default: 'false'
 
 permissions:
   contents: write

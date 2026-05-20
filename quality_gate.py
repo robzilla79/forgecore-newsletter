@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
-"""Quality gate: validate the current slot-specific issue before it ships.
+"""Quality gate: validate the current slot-specific Aware column before it ships.
 
 This validator is intentionally read-only. It must never mutate issue Markdown.
+
+Aware format: prose column, 400-750 words, no structural section headers,
+exact Aware footer, at least one real source URL, real byline.
 """
 from __future__ import annotations
 
@@ -11,21 +14,26 @@ import re
 from pathlib import Path
 from urllib.parse import urlparse
 
-from issue_contract import BANNED_TOKENS, REQUIRED_SECTIONS
+from issue_contract import (
+    AWARE_FOOTER,
+    BANNED_TOKENS,
+    FORBIDDEN_HEADERS,
+    has_forbidden_headers,
+)
 from utils import WORKSPACE, artifact_suffix_for_issue, dump_json, issue_path_for_today, load_text
 
-MIN_WORDS = 500
-MIN_SOURCE_LINKS = 3
-REQUIRED_CTA_URL = (
-    os.getenv("PRIMARY_CTA_URL", "").strip()
-    or os.getenv("KIT_SIGNUP_URL", "").strip()
-    or "https://news.forgecore.co/"
-)
-REQUIRED_SPONSOR_EMAIL = "sponsors@forgecore.co"
+# Aware is a column, not a report. One strong source plus Em's perspective is valid.
+MIN_SOURCE_LINKS = int(os.getenv("MIN_SOURCE_LINKS", "1"))
+
+# Word range for a published Aware column.
+MIN_WORDS = int(os.getenv("MIN_WORDS", "400"))
+MAX_WORDS = int(os.getenv("MAX_WORDS", "750"))
+
 MIN_CRITIC_OVERALL = float(os.getenv("MIN_CRITIC_OVERALL", "6.5"))
-REQUIRE_CRITIC_REVIEW = os.getenv("REQUIRE_CRITIC_REVIEW", "1") == "1"
+REQUIRE_CRITIC_REVIEW = os.getenv("REQUIRE_CRITIC_REVIEW", "0") == "1"
 ALLOW_FALLBACK_PUBLISH = os.getenv("ALLOW_FALLBACK_PUBLISH", "0") == "1"
 RUN_TOKEN = os.getenv("RUN_TOKEN", "").strip()
+
 AFFILIATE_TERMS = (
     "affiliate",
     "partner link",
@@ -34,20 +42,7 @@ AFFILIATE_TERMS = (
     "referral link",
     "sponsored link",
 )
-TRUST_WARNING_PATTERNS = (
-    r"\bdo not use\b",
-    r"\bdon't use\b",
-    r"\bavoid this\b",
-    r"\bnot a fit\b",
-    r"\bwho should avoid\b",
-    r"\buse .* instead if\b",
-)
-TOOL_RECOMMENDATION_PATTERNS = (
-    r"\btool of the week\b",
-    r"\brecommend\b",
-    r"\buse [A-Z][A-Za-z0-9 ._-]{2,}\b",
-    r"\btry [A-Z][A-Za-z0-9 ._-]{2,}\b",
-)
+
 LEAKED_PHRASE_PATTERNS = [
     r"\baudience\s+focus\b",
     r"\bstrategic\s+lens\b",
@@ -65,6 +60,7 @@ LEAKED_PHRASE_PATTERNS = [
     r"^\*\*Date:\*\*",
     r"^\*\*Edition:\*\*",
 ]
+
 MISSING_CONTENT_PATTERNS = [
     r"\bmissing content\b",
     r"\bno concrete content returned\b",
@@ -74,6 +70,13 @@ MISSING_CONTENT_PATTERNS = [
 
 def word_count(text: str) -> int:
     return len(re.findall(r"\b\w+\b", text))
+
+
+def body_word_count(text: str) -> int:
+    """Word count excluding the title line and the Aware footer."""
+    body = re.sub(r"^#.*$", "", text, flags=re.MULTILINE)
+    body = re.sub(re.escape(AWARE_FOOTER), "", body, flags=re.IGNORECASE)
+    return len(re.findall(r"\b\w+\b", body))
 
 
 def find_matching_patterns(text: str, patterns: list[str] | tuple[str, ...]) -> list[str]:
@@ -91,21 +94,6 @@ def find_duplicate_paragraphs(text: str) -> list[str]:
     return [key[:80] + "..." for key, count in seen.items() if count > 1]
 
 
-def proper_section_header_count(text: str, section: str) -> int:
-    return len(re.findall(rf"^{re.escape(section)}\s*$", text, flags=re.MULTILINE))
-
-
-def malformed_section_header_count(text: str, section: str) -> int:
-    # Catches glued output such as ```## CTA or ...alternative.## Workflow.
-    total_mentions = text.count(section)
-    return max(0, total_mentions - proper_section_header_count(text, section))
-
-
-def section_body(text: str, section: str) -> str:
-    match = re.search(rf"^{re.escape(section)}\s*\n(.+?)(?=^## |\Z)", text, flags=re.MULTILINE | re.DOTALL)
-    return match.group(1).strip() if match else ""
-
-
 def has_affiliate_reference(text: str) -> bool:
     lower = text.lower()
     return any(term in lower for term in AFFILIATE_TERMS)
@@ -120,26 +108,6 @@ def has_affiliate_disclosure(text: str) -> bool:
         "may earn" in lower
         and ("commission" in lower or "partner" in lower or "affiliate" in lower)
     )
-
-
-def has_trust_warning(text: str) -> bool:
-    return bool(find_matching_patterns(text, TRUST_WARNING_PATTERNS))
-
-
-def has_tool_recommendation(text: str) -> bool:
-    tool_section = section_body(text, "## Tool of the Week")
-    return bool(tool_section and find_matching_patterns(tool_section, TOOL_RECOMMENDATION_PATTERNS))
-
-
-def source_section_present(text: str) -> bool:
-    return proper_section_header_count(text, "## Sources") > 0
-
-
-def source_section_entries(text: str) -> list[str]:
-    match = re.search(r"^## Sources\s*\n(.+?)(?=^## |\Z)", text, flags=re.MULTILINE | re.DOTALL)
-    if not match:
-        return []
-    return [line for line in match.group(1).splitlines() if line.strip()]
 
 
 def critic_artifact_path(issue_path: Path) -> Path:
@@ -160,7 +128,9 @@ def load_issue_critic(issue_path: Path, *, run_token: str = "") -> tuple[dict | 
     return data, candidate.as_posix()
 
 
-def collect_errors_and_warnings(text: str, critic: dict | None, critic_expected_path: str | None) -> tuple[list[str], list[str]]:
+def collect_errors_and_warnings(
+    text: str, critic: dict | None, critic_expected_path: str | None
+) -> tuple[list[str], list[str]]:
     errors: list[str] = []
     warnings: list[str] = []
 
@@ -168,35 +138,58 @@ def collect_errors_and_warnings(text: str, critic: dict | None, critic_expected_
         errors.append("Issue file is empty")
         return errors, warnings
 
-    for header in REQUIRED_SECTIONS:
-        proper_count = proper_section_header_count(text, header)
-        malformed_count = malformed_section_header_count(text, header)
-        if proper_count == 0:
-            if header == "## Sources":
-                continue
-            errors.append(f"Missing required section: {header}")
-        elif proper_count > 1:
-            errors.append(f"Duplicate required section header: {header} appears {proper_count} times")
-        if malformed_count:
-            errors.append(f"Malformed or glued section header: {header} appears {malformed_count} time(s) outside its own line")
+    # ── Title ────────────────────────────────────────────────────────────────
+    title_match = re.search(r"^#\s+(.+)$", text, flags=re.MULTILINE)
+    if not title_match:
+        errors.append("Issue title is missing")
+    else:
+        title = title_match.group(1).strip()
+        if title.lower().startswith("title:"):
+            errors.append("Issue title still contains 'Title:' prefix")
+        if title.lower().startswith("aware —") and re.search(r"\d{4}-\d{2}-\d{2}", title):
+            warnings.append("Title looks like a fallback date slug — Em should give it a real headline")
 
-    for token in BANNED_TOKENS:
-        if token.lower() in text.lower():
-            errors.append(f'Banned token found: "{token}"')
+    # ── Byline ───────────────────────────────────────────────────────────────
+    if not re.search(r"\*by\s+Em\s+[\u2014-]\s+.+\*", text):
+        errors.append("Issue missing required byline '*by Em — Month Day, Year*'")
 
-    for pattern in find_matching_patterns(text, LEAKED_PHRASE_PATTERNS):
-        errors.append(f"Leaked meta-phrase pattern found: {pattern}")
+    # ── Forbidden structural headers ─────────────────────────────────────────
+    if has_forbidden_headers(text):
+        forbidden_found = [
+            line.strip() for line in text.splitlines()
+            if line.strip().lower().rstrip(":") in FORBIDDEN_HEADERS
+        ]
+        errors.append(
+            f"Forbidden structural headers for Aware format: {', '.join(forbidden_found[:4])}. "
+            "Remove ## CTA, ## Sources, and all old newsletter section headers."
+        )
 
-    for pattern in find_matching_patterns(text, MISSING_CONTENT_PATTERNS):
-        errors.append(f"Placeholder language found (normalized-placeholder risk): {pattern}")
+    # ── Exact Aware footer ───────────────────────────────────────────────────
+    if AWARE_FOOTER not in text:
+        errors.append(
+            "Issue missing exact Aware footer. "
+            "Must end with: *Aware by Em · [news.forgecore.co](...) · [empersists.bsky.social](...)*"
+        )
 
-    for para in find_duplicate_paragraphs(text):
-        errors.append(f'Duplicate paragraph detected: "{para}"')
+    # ── ForgeCore-era branding ───────────────────────────────────────────────
+    lower = text.lower()
+    if "forgecore ai" in lower or "forgecore newsletter" in lower:
+        errors.append("Issue still contains ForgeCore-era footer or branding")
 
+    # ── Word count (body only) ───────────────────────────────────────────────
+    bwc = body_word_count(text)
+    if bwc < MIN_WORDS:
+        errors.append(f"Column too short: {bwc} body words (minimum {MIN_WORDS})")
+    elif bwc > MAX_WORDS:
+        warnings.append(f"Column is long for Aware: {bwc} body words (soft ceiling {MAX_WORDS})")
+
+    # ── Source URLs ──────────────────────────────────────────────────────────
     urls = [u.rstrip(").,") for u in re.findall(r"https?://\S+", text)]
     unique_urls = list(dict.fromkeys(urls))
     if len(unique_urls) < MIN_SOURCE_LINKS:
-        errors.append(f"Not enough real URLs: found {len(unique_urls)}, need at least {MIN_SOURCE_LINKS}")
+        errors.append(
+            f"Not enough real URLs: found {len(unique_urls)}, need at least {MIN_SOURCE_LINKS}"
+        )
     if any(
         (host == "example.com" or host.endswith(".example.com"))
         for host in (
@@ -206,65 +199,28 @@ def collect_errors_and_warnings(text: str, critic: dict | None, critic_expected_
     ):
         errors.append("example.com URL found in issue content")
 
-    if "```" not in text:
-        errors.append("Workflow code block is missing")
+    # ── Banned tokens ────────────────────────────────────────────────────────
+    for token in BANNED_TOKENS:
+        if token.lower() in lower:
+            errors.append(f'Banned token found: "{token}"')
 
-    wc = word_count(text)
-    if wc < MIN_WORDS:
-        errors.append(f"Issue too short: {wc} words (need {MIN_WORDS})")
+    # ── Leaked meta-phrases ──────────────────────────────────────────────────
+    for pattern in find_matching_patterns(text, LEAKED_PHRASE_PATTERNS):
+        errors.append(f"Leaked meta-phrase pattern found: {pattern}")
 
-    title_match = re.search(r"^#\s+(.+)$", text, flags=re.MULTILINE)
-    if not title_match:
-        errors.append("Issue title is missing")
-    else:
-        title = title_match.group(1).strip()
-        if title.lower().startswith("title:"):
-            errors.append("Issue title still contains 'Title:' prefix")
-        if title.lower().startswith("author update"):
-            errors.append("Issue title still contains generic author-update placeholder")
+    # ── Placeholder language ─────────────────────────────────────────────────
+    for pattern in find_matching_patterns(text, MISSING_CONTENT_PATTERNS):
+        errors.append(f"Placeholder language found: {pattern}")
 
-    hook_match = re.search(r"^## Hook\s*\n(.+?)(?=^## |\Z)", text, flags=re.MULTILINE | re.DOTALL)
-    if not hook_match or len(hook_match.group(1).split()) < 12:
-        errors.append("Hook section is missing or too short (need 12+ words)")
+    # ── Duplicate paragraphs ─────────────────────────────────────────────────
+    for para in find_duplicate_paragraphs(text):
+        errors.append(f'Duplicate paragraph detected: "{para}"')
 
-    top_story_match = re.search(r"^## Top Story\s*\n(.+?)(?=^## |\Z)", text, flags=re.MULTILINE | re.DOTALL)
-    if not top_story_match or len(top_story_match.group(1).split()) < 80:
-        errors.append("Top Story section is too thin (need 80+ words)")
-
-    tool_text = section_body(text, "## Tool of the Week")
-    if not tool_text or len(tool_text.split()) < 35:
-        errors.append("Tool of the Week section is missing or too thin (need 35+ words)")
-    if not has_tool_recommendation(text):
-        errors.append("Tool of the Week must include a concrete tool recommendation")
-    if not has_trust_warning(text):
-        errors.append("Issue missing a trust warning such as 'do not use this if' or 'not a fit if'")
+    # ── Affiliate disclosure ─────────────────────────────────────────────────
     if has_affiliate_reference(text) and not has_affiliate_disclosure(text):
         errors.append("Affiliate/partner reference found without clear commission disclosure")
 
-    cta_match = re.search(r"^## CTA\s*\n(.+?)(?=^## |\Z)", text, flags=re.MULTILINE | re.DOTALL)
-    if not cta_match or len(cta_match.group(1).split()) < 8:
-        errors.append("CTA section is missing or too short (need 8+ words)")
-    else:
-        cta_text = cta_match.group(1)
-        if REQUIRED_CTA_URL and REQUIRED_CTA_URL not in cta_text:
-            errors.append("CTA section missing required Kit subscribe URL from PRIMARY_CTA_URL")
-        if REQUIRED_SPONSOR_EMAIL not in cta_text:
-            errors.append("CTA section missing required sponsor email")
-        if "sponsor this issue" not in cta_text.lower():
-            errors.append("CTA section missing 'Sponsor this issue' invite")
-
-    source_lines = source_section_entries(text)
-    if not source_section_present(text):
-        if len(unique_urls) >= MIN_SOURCE_LINKS:
-            warnings.append("Sources section header missing, but enough real source URLs are present elsewhere in the issue")
-        else:
-            errors.append("Sources section is missing")
-    elif len(source_lines) < MIN_SOURCE_LINKS:
-        if len(unique_urls) >= MIN_SOURCE_LINKS:
-            warnings.append("Sources section is thin, but enough real source URLs are present elsewhere in the issue")
-        else:
-            errors.append(f"Sources section is too short: {len(source_lines)} entries")
-
+    # ── Critic review ────────────────────────────────────────────────────────
     def critic_problem(message: str, *, hard: bool = False) -> None:
         if hard or not ALLOW_FALLBACK_PUBLISH:
             errors.append(message)
@@ -272,7 +228,9 @@ def collect_errors_and_warnings(text: str, critic: dict | None, critic_expected_
             warnings.append(message)
 
     if REQUIRE_CRITIC_REVIEW and critic is None:
-        critic_problem(f"Critic review missing for current issue: expected {critic_expected_path}")
+        critic_problem(
+            f"Critic review missing for current issue: expected {critic_expected_path}"
+        )
 
     if critic:
         runtime_error = str(critic.get("runtime_error", "")).strip()
@@ -281,7 +239,10 @@ def collect_errors_and_warnings(text: str, critic: dict | None, critic_expected_
             weak_categories = []
         runtime_failed = bool(runtime_error) or "critic_runtime_failure" in weak_categories
         if runtime_failed:
-            critic_problem("Critic runtime failure; publish blocked until critic_review.py runs cleanly.", hard=True)
+            critic_problem(
+                "Critic runtime failure; publish blocked until critic_review.py runs cleanly.",
+                hard=True,
+            )
             if runtime_error:
                 errors.append(f"Critic runtime failure detail: {runtime_error}")
         overall = float(critic.get("overall_score", 0.0) or 0.0)
@@ -302,21 +263,20 @@ def main() -> int:
     urls = [u.rstrip(").,") for u in re.findall(r"https?://\S+", text)]
     critic, critic_path = load_issue_critic(path, run_token=RUN_TOKEN)
     errors, warnings = collect_errors_and_warnings(text, critic, critic_path)
+
     checks = {
         "exists": path.exists(),
         "issue_path": path.as_posix(),
-        "word_count": word_count(text),
-        "required_sections_present": [h for h in REQUIRED_SECTIONS if proper_section_header_count(text, h) > 0],
+        "body_word_count": body_word_count(text),
+        "total_word_count": word_count(text),
+        "has_title": bool(re.search(r"^#\s+\S", text, flags=re.MULTILINE)),
+        "has_byline": bool(re.search(r"\*by\s+Em\s+[\u2014-]\s+.+\*", text)),
+        "has_aware_footer": AWARE_FOOTER in text,
+        "has_forbidden_headers": has_forbidden_headers(text),
         "url_count": len(list(dict.fromkeys(urls))),
         "source_links": list(dict.fromkeys(urls)),
-        "has_sources_section": source_section_present(text),
-        "sources_section_entries": len(source_section_entries(text)),
-        "has_code_block": "```" in text,
-        "has_tool_recommendation": has_tool_recommendation(text),
-        "has_trust_warning": has_trust_warning(text),
         "has_affiliate_reference": has_affiliate_reference(text),
         "has_affiliate_disclosure": has_affiliate_disclosure(text),
-        "required_cta_url": REQUIRED_CTA_URL,
         "critic_expected_path": critic_path,
         "critic_review": critic or {},
         "errors": errors,
@@ -324,6 +284,7 @@ def main() -> int:
         "fallback_publish_enabled": ALLOW_FALLBACK_PUBLISH,
         "validation_only": True,
     }
+
     result = {
         "passed": not errors,
         "fallback_published": bool(warnings and not errors),

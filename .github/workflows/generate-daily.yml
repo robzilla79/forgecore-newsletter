@@ -1,8 +1,10 @@
-name: Em Generates the PM Issue
+name: Em Prepares Daily Issue
 
-# PM schedule removed. Generate is now handled by generate-daily.yml.
-# This wrapper is kept for manual legacy slot use only.
 on:
+  schedule:
+    # 7:00 AM CDT (UTC-5) = 12:00 UTC
+    # Adjust to 13:00 UTC when Central Standard Time (UTC-6) is in effect.
+    - cron: '0 12 * * *'
   workflow_dispatch:
     inputs:
       force_run:
@@ -15,8 +17,8 @@ permissions:
   actions: read
 
 jobs:
-  prepare-pm:
+  prepare-daily:
     uses: ./.github/workflows/generate.yml
     secrets: inherit
     with:
-      issue_slot: pm
+      issue_slot: ''

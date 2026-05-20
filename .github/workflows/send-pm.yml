@@ -1,9 +1,8 @@
 name: Em Sends the PM Issue
 
+# PM send schedule removed. Send is now handled by send-daily.yml (manual).
+# This wrapper is kept for manual legacy slot use only.
 on:
-  schedule:
-    # Send window: 4:21 PM Central during daylight time, 3:21 PM Central during standard time.
-    - cron: '21 21 * * *'
   workflow_dispatch:
 
 permissions:

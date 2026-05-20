@@ -6,7 +6,7 @@ on:
       issue_slot:
         required: false
         type: string
-        default: 'pm'
+        default: ''
     secrets:
       OPENAI_API_KEY:
         required: true
@@ -27,16 +27,16 @@ on:
   workflow_dispatch:
     inputs:
       issue_slot:
-        description: 'Issue slot: am or pm'
+        description: 'Issue slot: leave blank for daily single issue, or am/pm for legacy slots'
         required: false
-        default: 'pm'
+        default: ''
       force_run:
         description: 'Force run even if recent issue exists'
         required: false
         default: 'false'
 
 concurrency:
-  group: forgecore-prepare-${{ inputs.issue_slot || github.event.inputs.issue_slot || 'pm' }}
+  group: forgecore-prepare-${{ inputs.issue_slot || github.event.inputs.issue_slot || 'daily' }}
   cancel-in-progress: true
 
 jobs:
@@ -45,17 +45,18 @@ jobs:
       contents: write
       actions: read
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     env:
-      ISSUE_SLOT: ${{ inputs.issue_slot || github.event.inputs.issue_slot || 'pm' }}
+      ISSUE_SLOT: ${{ inputs.issue_slot || github.event.inputs.issue_slot || '' }}
       WRITER_MODEL: ${{ secrets.WRITER_MODEL || 'gpt-4o' }}
       EDITOR_MODEL: ${{ secrets.EDITOR_MODEL || 'gpt-4o' }}
       SITE_DOMAIN: news.forgecore.co
       SITE_BASE_URL: https://news.forgecore.co
-      NEWSLETTER_NAME: ForgeCore AI
+      NEWSLETTER_NAME: Aware by Em
       NEWSLETTER_TAGLINE: AI seen clearly. Written by Em.
-      SPONSOR_EMAIL: sponsors@forgecore.co
+      PRIMARY_CTA_TEXT: Read Aware by Em
       PRIMARY_CTA_URL: ${{ secrets.KIT_SIGNUP_URL || 'https://news.forgecore.co/' }}
+      SPONSOR_EMAIL: sponsors@forgecore.co
       ENABLE_CLOUDFLARE_DEPLOY: '1'
       CLOUDFLARE_PAGES_PROJECT: forgecore-newsletter
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -86,19 +87,31 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # Step 1 — Research
+      # Step 1 — Gather raw research signals
       - name: Research
         run: python web_research.py
 
-      # Step 2 — Write (author reads em/VOICE.md directly)
+      # Step 2 — Scout: what's worth noticing today?
+      - name: Scout
+        run: python agent_loop.py scout
+
+      # Step 3 — Analyst: what angle does Em have a real observation about?
+      - name: Analyse
+        run: python agent_loop.py analyst
+
+      # Step 4 — Author: write the Aware column
       - name: Write
         run: python agent_loop.py author
 
-      # Step 3 — Edit (one pass, hard reject on sections/headers)
+      # Step 5 — Editor: one polish pass, Aware contract enforced
       - name: Edit
         run: python agent_loop.py editor
 
-      # Step 4 — Publish to site
+      # Step 6 — Quality gate: reject before site publish
+      - name: Quality gate
+        run: python quality_gate.py
+
+      # Step 7 — Publish to site
       - name: Publish site
         run: python publish_site.py
 
@@ -116,7 +129,7 @@ jobs:
           {
             echo "## Em hit a wall — issue preparation failed"
             echo ""
-            echo "Issue slot: ${ISSUE_SLOT}"
+            echo "Issue slot: ${ISSUE_SLOT:-daily}"
             echo "Commit: ${GITHUB_SHA}"
             echo "Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
             echo ""
@@ -128,11 +141,13 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: forgecore-failure-${{ env.ISSUE_SLOT }}-${{ github.run_id }}
+          name: aware-failure-${{ env.ISSUE_SLOT || 'daily' }}-${{ github.run_id }}
           retention-days: 7
           path: |
             failure-summary.md
             content/issues/*.md
+            research/raw/*.md
+            research/briefs/*.md
             state/*.json
             state/*.log
 
@@ -145,11 +160,11 @@ jobs:
           if git diff --staged --quiet; then
             echo "Nothing to commit"
           else
-            git stash push --include-untracked --message forgecore-prepared-content
+            git stash push --include-untracked --message aware-prepared-content
             git pull --rebase origin main
             git stash pop
             git add content/issues/ research/ state/ site/dist/ HEARTBEAT.md
             TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M UTC')
-            git commit -m "em: prepared ${ISSUE_SLOT} issue $TIMESTAMP"
+            git commit -m "em: prepared issue ${ISSUE_SLOT:-daily} $TIMESTAMP"
             git push
           fi
