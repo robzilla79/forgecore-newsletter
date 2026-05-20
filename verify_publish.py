@@ -7,6 +7,7 @@ old operator playbook sections or ## CTA / ## Sources headings.
 """
 from __future__ import annotations
 
+import html
 import re
 import subprocess
 import sys
@@ -113,7 +114,7 @@ def first_sitemap_issue_slug(xml: str) -> str:
     return ""
 
 
-def require_metadata(html: str, slug: str) -> None:
+def require_metadata(html_text: str, slug: str) -> None:
     expected_url = f"https://news.forgecore.co/{slug}/"
     required = {
         "canonical URL": f'<link rel="canonical" href="{expected_url}">',
@@ -124,7 +125,7 @@ def require_metadata(html: str, slug: str) -> None:
         "mainEntityOfPage": '"mainEntityOfPage"',
     }
     for label, snippet in required.items():
-        if snippet not in html:
+        if snippet not in html_text:
             raise SystemExit(f"Article page missing {label}: {slug}")
 
 
@@ -134,8 +135,8 @@ def require_static_pages(sitemap_xml: str) -> None:
         url = f"https://news.forgecore.co/{slug}/"
         if not page.exists():
             raise SystemExit(f"Static page missing: site/dist/{slug}/index.html")
-        html = page.read_text(encoding="utf-8")
-        if '<link rel="canonical"' not in html or 'application/ld+json' not in html:
+        html_text = page.read_text(encoding="utf-8")
+        if '<link rel="canonical"' not in html_text or 'application/ld+json' not in html_text:
             raise SystemExit(f"Static page missing SEO metadata: {slug}")
         if url not in sitemap_xml:
             raise SystemExit(f"Sitemap missing static page URL: {url}")
@@ -163,6 +164,7 @@ def main() -> int:
 
     homepage_html = homepage.read_text(encoding="utf-8")
     article_html = article.read_text(encoding="utf-8")
+    article_text = html.unescape(article_html)
     rss_xml = rss.read_text(encoding="utf-8")
     sitemap_xml = sitemap.read_text(encoding="utf-8")
     latest_markdown = latest.read_text(encoding="utf-8")
@@ -180,7 +182,7 @@ def main() -> int:
         raise SystemExit("Homepage missing Aware by Em marker")
     if "Latest issues" not in homepage_html:
         raise SystemExit("Homepage missing Latest issues section")
-    if "&larr; All issues" not in article_html:
+    if "All issues" not in article_text or 'href="/"' not in article_html:
         raise SystemExit(f"Article page missing back link: {slug}")
     if "<article" not in article_html:
         raise SystemExit(f"Article page missing article markup: {slug}")
