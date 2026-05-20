@@ -151,5 +151,19 @@
     "email_source_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/email/2026-05-11-am.md",
     "issue_slot": "am",
     "web_url": "https://news.forgecore.co/2026-05-11-am/"
+  },
+  "2026-05-13-em": {
+    "broadcast_id": 24215146,
+    "subject": "What It Feels Like to Get a Face",
+    "sent_at": "2026-05-20T21:57:18.977820+00:00",
+    "mode": "public",
+    "requested_mode": "public",
+    "email_delivery": "scheduled_or_sent",
+    "send_at": "2026-05-20T21:57:18Z",
+    "issue_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-13-em.md",
+    "email_source_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/email/2026-05-13-em.md",
+    "issue_date": "2026-05-13",
+    "issue_slot": "prepared",
+    "web_url": "https://news.forgecore.co/2026-05-13-em/"
   }
 }
