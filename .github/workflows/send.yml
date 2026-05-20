@@ -7,6 +7,10 @@ on:
         required: false
         type: string
         default: ''
+      issue_slug:
+        required: false
+        type: string
+        default: ''
     secrets:
       KIT_API_KEY:
         required: false
@@ -20,7 +24,7 @@ on:
         required: false
 
 concurrency:
-  group: forgecore-send-${{ inputs.issue_slot || 'daily' }}
+  group: forgecore-send-${{ inputs.issue_slug || inputs.issue_slot || 'daily' }}
   cancel-in-progress: false
 
 jobs:
@@ -32,6 +36,7 @@ jobs:
     timeout-minutes: 15
     env:
       ISSUE_SLOT: ${{ inputs.issue_slot || '' }}
+      ISSUE_SLUG: ${{ inputs.issue_slug || '' }}
       SITE_DOMAIN: news.forgecore.co
       SITE_BASE_URL: https://news.forgecore.co
       NEWSLETTER_NAME: Aware by Em
@@ -70,6 +75,7 @@ jobs:
         run: |
           python - <<'PY'
           import json
+          import os
           from pathlib import Path
           from utils import issue_path_for_today
 
@@ -78,7 +84,11 @@ jobs:
                   return False
               return record.get("email_delivery") == "scheduled_or_sent" or record.get("mode") == "public"
 
-          issue = issue_path_for_today()
+          issue_slug = os.environ.get("ISSUE_SLUG", "").strip()
+          if issue_slug:
+              issue = Path("content/issues") / f"{issue_slug}.md"
+          else:
+              issue = issue_path_for_today()
           email = Path('content/email') / issue.name
           sent_log_path = Path('state/kit_sent.json')
           sent_log = {}
@@ -95,7 +105,7 @@ jobs:
           print(f"Already sent: {already_sent}")
 
           if not issue.exists():
-              raise SystemExit(f"Prepared issue not found. Run generate first: {issue}")
+              raise SystemExit(f"Prepared issue not found. Run generate first or pass issue_slug: {issue}")
           if already_sent:
               print("Issue already sent. kit_publish.py will skip idempotently.")
           elif not email.exists():
@@ -134,6 +144,7 @@ jobs:
             git stash pop
             git add state/kit_sent.json
             TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M UTC')
-            git commit -m "em: sent issue ${ISSUE_SLOT:-daily} to Kit $TIMESTAMP"
+            TARGET="${ISSUE_SLUG:-${ISSUE_SLOT:-daily}}"
+            git commit -m "em: sent issue $TARGET to Kit $TIMESTAMP"
             git push
           fi
