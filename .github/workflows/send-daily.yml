@@ -5,6 +5,12 @@ name: Em Sends Daily Issue
 #   - cron: '0 15 * * *'   # 10:00 AM CDT (UTC-5) = 15:00 UTC
 on:
   workflow_dispatch:
+    inputs:
+      issue_slug:
+        description: "Optional explicit issue slug to send, e.g. 2026-05-13-em"
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: write
@@ -16,3 +22,4 @@ jobs:
     secrets: inherit
     with:
       issue_slot: ''
+      issue_slug: ${{ inputs.issue_slug || '' }}
