@@ -71,11 +71,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Confirm prepared issue exists and is not already sent
+      - name: Confirm prepared issue exists and is not already sent or locked
         run: |
           python - <<'PY'
           import json
           import os
+          import sys
           from pathlib import Path
           from utils import issue_path_for_today
 
@@ -101,18 +102,23 @@ jobs:
               except Exception:
                   sent_log = {}
           existing = sent_log.get(issue.stem)
-          already_sent = record_blocks_send(existing)
+          already_blocked = record_blocks_send(existing)
+          delivery = existing.get("email_delivery", "") if isinstance(existing, dict) else ""
 
           print(f"Issue path: {issue}")
           print(f"Email snapshot path: {email}")
-          print(f"Already sent: {already_sent}")
+          print(f"Already blocked: {already_blocked} (email_delivery={delivery!r})")
 
           if not issue.exists():
-              raise SystemExit(f"Prepared issue not found. Run generate first or pass issue_slug: {issue}")
-          if already_sent:
-              print("Issue already sent or locked. kit_publish.py will skip idempotently.")
-          elif not email.exists():
-              raise SystemExit(f"Locked email snapshot not found for unsent issue. Refusing to send: {email}")
+              print(f"ERROR: Prepared issue not found: {issue}")
+              sys.exit(1)
+          if already_blocked:
+              print(f"STOP: Issue is already sent or locked (email_delivery={delivery!r}). Halting workflow.")
+              sys.exit(1)
+          if not email.exists():
+              print(f"ERROR: Locked email snapshot not found. Refusing to send: {email}")
+              sys.exit(1)
+          print("Preflight passed.")
           PY
 
       - name: Render current prepared web output
@@ -141,7 +147,7 @@ jobs:
           if git diff --staged --quiet; then
             echo "Lock already committed or issue already blocked — skipping."
           else
-            git commit -m "em: pre-send lock for ${ISSUE_SLUG:-${ISSUE_SLOT:-daily}}"
+            git commit -m "em: pre-send lock for ${ISSUE_SLUG:-${ISSUE_SLOT:-daily}} [run $GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT]"
             git push
           fi
 

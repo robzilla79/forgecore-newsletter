@@ -13,13 +13,15 @@ Default (no flag):
 --lock:
     Write a pre-send lock entry (email_delivery: "sending") to state/kit_sent.json
     and exit WITHOUT calling the Kit API. The caller must commit and push the lock
-    before running --send-locked.
+    before running --send-locked. The lock record includes a lock_id derived from
+    GITHUB_RUN_ID + GITHUB_RUN_ATTEMPT so only the owning run can send.
 
 --send-locked:
-    Verify that the lock exists for this exact issue and has email_delivery:
-    "sending". Then call the Kit API. On success, replace the lock with the
-    real broadcast record (email_delivery: "scheduled_or_sent").
-    Refuses to proceed if the lock is absent or in any other state.
+    Verify that the lock exists for this exact issue, has email_delivery: "sending",
+    and has a lock_id that matches this run's GITHUB_RUN_ID + GITHUB_RUN_ATTEMPT.
+    Then call the Kit API. On success, replace the lock with the real broadcast
+    record. Refuses to proceed if the lock is absent, in any other state, or owned
+    by a different run.
 """
 from __future__ import annotations
 
@@ -48,6 +50,12 @@ ISSUE_SLOT_ENV = os.environ.get("ISSUE_SLOT", "").strip().lower()
 ISSUE_SLUG_ENV = os.environ.get("ISSUE_SLUG", "").strip()
 GITHUB_ACTIONS = os.environ.get("GITHUB_ACTIONS", "").strip().lower() == "true"
 SEND_MODE = "public" if GITHUB_ACTIONS else REQUESTED_SEND_MODE
+
+# Lock identity: uniquely identifies this workflow run so --send-locked
+# can verify it is the run that wrote the lock.
+GITHUB_RUN_ID = os.environ.get("GITHUB_RUN_ID", "").strip()
+GITHUB_RUN_ATTEMPT = os.environ.get("GITHUB_RUN_ATTEMPT", "1").strip()
+RUN_LOCK_ID = f"{GITHUB_RUN_ID}-{GITHUB_RUN_ATTEMPT}" if GITHUB_RUN_ID else ""
 
 SITE_BASE_URL = os.environ.get("SITE_BASE_URL", "https://news.forgecore.co").strip().rstrip("/")
 NEWSLETTER_NAME = os.environ.get("NEWSLETTER_NAME", "Aware by Em").strip()
@@ -126,7 +134,7 @@ def record_blocks_send(record: dict) -> bool:
 
     Blocks on:
       - email_delivery: "scheduled_or_sent"  (real send completed)
-      - email_delivery: "sending"             (pre-send lock held)
+      - email_delivery: "sending"             (pre-send lock held by any run)
       - mode: "public"                        (legacy public record)
     """
     if not isinstance(record, dict):
@@ -163,7 +171,9 @@ def enforce_public_send_guard(issue_slug: str, sent_log: dict) -> None:
 
 
 def resolve_issue_and_email() -> tuple[Path, Path, str, str, str]:
-    """Resolve the target issue and email source. Returns (issue_path, email_source, issue_slug, issue_date, issue_kind)."""
+    """Resolve the target issue and email source.
+    Returns (issue_path, email_source, issue_slug, issue_date, issue_kind).
+    """
     issue_path = find_target_issue()
     if not issue_path or not issue_path.exists():
         log(f"No target issue found. ISSUE_SLUG={ISSUE_SLUG_ENV!r}")
@@ -240,10 +250,10 @@ def build_email_html(body_md: str, issue_slug: str) -> str:
     body_html = markdown_to_html(body_md)
     unsubscribe = "{{ unsubscribe_url }}"
     return (
-        f"""<!doctype html><html><body style="margin:0;background:#f3f4f6;color:#111827;"
-        "font-family:Arial,Helvetica,sans-serif;line-height:1.62;">"""
-        f"""<div style="max-width:680px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;"
-        "border-radius:14px;padding:28px;">"""
+        f'<!doctype html><html><body style="margin:0;background:#f3f4f6;color:#111827;'
+        f'font-family:Arial,Helvetica,sans-serif;line-height:1.62;">'
+        f'<div style="max-width:680px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;'
+        f'border-radius:14px;padding:28px;">'
         f'<p style="font-size:13px;color:#6b7280;">Aware by Em \u00b7 <a href="{web_url}">Read on the web</a></p>'
         f"{body_html}"
         f"<hr>"
@@ -309,8 +319,11 @@ def create_broadcast(subject: str, email_html: str, preview_text: str) -> tuple[
 def cmd_lock() -> None:
     """Write a pre-send lock to state/kit_sent.json and exit. Does not call Kit.
 
+    The lock record includes the lock_id for this run (GITHUB_RUN_ID-GITHUB_RUN_ATTEMPT)
+    so --send-locked can verify ownership before calling the Kit API.
+
     The caller must commit and push the lock before running --send-locked.
-    If a blocking record already exists (sent or in-flight), exits with a skip.
+    If a blocking record already exists (sent or locked by any run), exits with a skip.
     """
     if not API_KEY:
         log("SKIP: KIT_API_KEY not set.")
@@ -318,6 +331,8 @@ def cmd_lock() -> None:
 
     issue_path, email_source, issue_slug, issue_date, issue_kind = resolve_issue_and_email()
     log(f"Locking issue: {issue_slug}")
+    if RUN_LOCK_ID:
+        log(f"Lock ID: {RUN_LOCK_ID}")
 
     sent_log = load_sent_log()
     existing = sent_log.get(issue_slug)
@@ -333,6 +348,7 @@ def cmd_lock() -> None:
         "email_delivery": "sending",
         "mode": SEND_MODE,
         "requested_mode": REQUESTED_SEND_MODE,
+        "lock_id": RUN_LOCK_ID,
         "locked_at": utc_now_iso(),
         "issue_path": issue_path.as_posix(),
         "email_source_path": email_source.as_posix(),
@@ -349,11 +365,13 @@ def cmd_lock() -> None:
 # ---------------------------------------------------------------------------
 
 def cmd_send_locked() -> None:
-    """Call Kit only if the pre-send lock exists for this issue.
+    """Call Kit only if this run owns the pre-send lock for this issue.
 
     Refuses to proceed if:
       - The lock entry is missing.
       - The lock entry has any email_delivery other than "sending".
+      - The lock_id does not match this run's GITHUB_RUN_ID-GITHUB_RUN_ATTEMPT.
+
     On success, replaces the lock with the real broadcast record.
     """
     if not API_KEY:
@@ -363,14 +381,18 @@ def cmd_send_locked() -> None:
     issue_path, email_source, issue_slug, issue_date, issue_kind = resolve_issue_and_email()
     log(f"Found web issue: {issue_path}")
     log(f"Using email source: {email_source}")
+    if RUN_LOCK_ID:
+        log(f"This run's lock ID: {RUN_LOCK_ID}")
 
     sent_log = load_sent_log()
     lock = sent_log.get(issue_slug)
 
+    # Lock must exist.
     if lock is None:
         log(f"ERROR: No lock entry found for {issue_slug}. Run --lock and commit/push first.")
         sys.exit(1)
 
+    # Lock must be in "sending" state.
     delivery = lock.get("email_delivery", "")
     if delivery == "scheduled_or_sent":
         log(f"SKIP: {issue_slug} already has email_delivery=scheduled_or_sent. Nothing to do.")
@@ -379,17 +401,34 @@ def cmd_send_locked() -> None:
         log(f"ERROR: Lock for {issue_slug} has unexpected email_delivery={delivery!r}. Refusing to send.")
         sys.exit(1)
 
-    log(f"Lock confirmed for {issue_slug} (email_delivery=sending). Proceeding to Kit.")
+    # Lock must belong to this run.
+    lock_id = lock.get("lock_id", "")
+    if RUN_LOCK_ID and lock_id != RUN_LOCK_ID:
+        log(
+            f"ERROR: Lock for {issue_slug} is owned by run {lock_id!r}, "
+            f"not this run {RUN_LOCK_ID!r}. Refusing to send."
+        )
+        sys.exit(1)
+    if not RUN_LOCK_ID and lock_id:
+        # Running outside GitHub Actions — allow if lock_id is empty,
+        # but refuse if lock was set by a real Actions run.
+        log(
+            f"ERROR: Lock for {issue_slug} was set by Actions run {lock_id!r}. "
+            f"This run has no GITHUB_RUN_ID. Refusing to send."
+        )
+        sys.exit(1)
+
+    log(f"Lock ownership confirmed for {issue_slug}. Proceeding to Kit.")
 
     raw = email_source.read_text(encoding="utf-8")
     meta, body_md = parse_frontmatter(raw)
-    subject = meta.get("title") or title_from_markdown(body_md, f"{NEWSLETTER_NAME} — {issue_slug}")
-    preview = meta.get("description") or preview_from_markdown(body_md, f"{NEWSLETTER_NAME} — {issue_slug}")
+    subject = meta.get("title") or title_from_markdown(body_md, f"{NEWSLETTER_NAME} \u2014 {issue_slug}")
+    preview = meta.get("description") or preview_from_markdown(body_md, f"{NEWSLETTER_NAME} \u2014 {issue_slug}")
 
     result, send_at = create_broadcast(subject, build_email_html(body_md, issue_slug), preview)
     broadcast = result.get("broadcast", result)
     broadcast_id = broadcast.get("id", "unknown")
-    log(f"SUCCESS — broadcast_id={broadcast_id}")
+    log(f"SUCCESS \u2014 broadcast_id={broadcast_id}")
 
     sent_log[issue_slug] = {
         "broadcast_id": broadcast_id,
@@ -399,6 +438,7 @@ def cmd_send_locked() -> None:
         "requested_mode": REQUESTED_SEND_MODE,
         "email_delivery": "scheduled_or_sent" if send_at else "not_scheduled",
         "send_at": send_at,
+        "lock_id": RUN_LOCK_ID,
         "issue_path": issue_path.as_posix(),
         "email_source_path": email_source.as_posix(),
         "issue_date": issue_date,
@@ -410,7 +450,7 @@ def cmd_send_locked() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Default (no-flag) mode — backward-compatible
+# Default (no-flag) mode \u2014 backward-compatible
 # ---------------------------------------------------------------------------
 
 def cmd_default() -> None:
@@ -447,13 +487,13 @@ def cmd_default() -> None:
 
     raw = email_source.read_text(encoding="utf-8")
     meta, body_md = parse_frontmatter(raw)
-    subject = meta.get("title") or title_from_markdown(body_md, f"{NEWSLETTER_NAME} — {issue_slug}")
-    preview = meta.get("description") or preview_from_markdown(body_md, f"{NEWSLETTER_NAME} — {issue_slug}")
+    subject = meta.get("title") or title_from_markdown(body_md, f"{NEWSLETTER_NAME} \u2014 {issue_slug}")
+    preview = meta.get("description") or preview_from_markdown(body_md, f"{NEWSLETTER_NAME} \u2014 {issue_slug}")
 
     result, send_at = create_broadcast(subject, build_email_html(body_md, issue_slug), preview)
     broadcast = result.get("broadcast", result)
     broadcast_id = broadcast.get("id", "unknown")
-    log(f"SUCCESS — broadcast_id={broadcast_id}")
+    log(f"SUCCESS \u2014 broadcast_id={broadcast_id}")
 
     issue_date, issue_kind = parse_issue_slug(issue_slug)
     sent_log[issue_slug] = {
@@ -489,7 +529,7 @@ def main() -> None:
     group.add_argument(
         "--send-locked",
         action="store_true",
-        help="Call Kit only if the pre-send lock exists. Replace lock with real record on success.",
+        help="Call Kit only if this run owns the pre-send lock. Replace lock with real record on success.",
     )
     args = parser.parse_args()
 
