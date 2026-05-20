@@ -55,6 +55,16 @@ The public production site is:
 news.forgecore.co
 ```
 
+Important distinction:
+
+```text
+index.html        = repo-root landing page source
+site/dist/        = deployed Cloudflare output for news.forgecore.co
+publish_site.py   = renderer that writes site/dist/
+```
+
+Editing repo-root `index.html` alone does not update `news.forgecore.co`. To update production, run the rebuild workflow so `publish_site.py` regenerates `site/dist/` and deploys that folder.
+
 ---
 
 ## GitHub responsibilities
@@ -76,21 +86,20 @@ GitHub should handle:
 Important production workflows:
 
 ```text
-.github/workflows/generate-am.yml
-.github/workflows/generate-pm.yml
 .github/workflows/generate.yml
+.github/workflows/generate-daily.yml
+.github/workflows/rebuild-site.yml
 .github/workflows/deploy-site.yml
 ```
+
+Legacy/manual-only workflows may still exist for AM/PM history, but the Aware daily site path should use `rebuild-site.yml` for manual site deploys.
 
 Important production scripts:
 
 ```text
 web_research.py
 agent_loop.py
-improve_until_passes.py
 quality_gate.py
-affiliate_linker.py
-monetization_guard.py
 publish_site.py
 verify_publish.py
 verify_site_updates.py
@@ -147,17 +156,54 @@ Do not commit Cloudflare API tokens, account-specific dashboard URLs, local .env
 The expected production deploy flow is:
 
 ```text
-1. A scheduled AM/PM workflow or manual workflow starts in GitHub Actions.
+1. A scheduled or manual GitHub Actions workflow starts.
 2. The pipeline generates or updates issue content.
 3. The quality gate validates the issue.
-4. Approved affiliate links are activated only if safe.
-5. Monetization guard checks disclosure and trust rules.
-6. publish_site.py renders static files into site/dist/.
-7. verify_publish.py or verify_site_updates.py checks that the site output actually reflects the latest issue.
-8. GitHub commits generated content and site output back to main.
-9. Wrangler deploys site/dist/ to Cloudflare Pages project forgecore-newsletter.
-10. Cloudflare serves the updated site at news.forgecore.co.
+4. publish_site.py renders static files into site/dist/.
+5. verify_publish.py or verify_site_updates.py checks that the site output reflects the latest issue.
+6. GitHub commits generated content and site output back to main when applicable.
+7. Wrangler deploys site/dist/ to Cloudflare Pages project forgecore-newsletter.
+8. Cloudflare serves the updated site at news.forgecore.co.
 ```
+
+---
+
+## Manual update: news.forgecore.co
+
+Use this when the site copy, homepage layout, issue archive, or rendered article page needs to be refreshed on Cloudflare without sending email.
+
+Workflow:
+
+```text
+GitHub → Actions → Rebuild & Deploy Site
+```
+
+Direct workflow file:
+
+```text
+.github/workflows/rebuild-site.yml
+```
+
+Input:
+
+```text
+issue_slot: 2026-05-13-em
+```
+
+Or leave blank to auto-detect the newest issue.
+
+What this does:
+
+```text
+python publish_site.py
+pages deploy site/dist --project-name=forgecore-newsletter --commit-dirty=true --branch=main
+```
+
+Use this workflow for `news.forgecore.co` updates.
+
+Do not use send workflows for site-only changes.
+
+Do not expect repo-root `index.html` to deploy by itself; Cloudflare production serves the generated `site/dist/` output.
 
 ---
 
@@ -238,79 +284,5 @@ Use preview deployments for risky changes such as:
 - sponsor placement changes
 - SEO rendering changes
 - RSS or sitemap changes
-- article template changes
 
-Recommended flow:
-
-```text
-1. Create a branch.
-2. Make the repo change.
-3. Open a pull request.
-4. Let GitHub Actions render and verify site output.
-5. Review the Cloudflare preview deployment.
-6. Approve and merge to main.
-7. Confirm production deploy succeeded.
-```
-
----
-
-## Future Cloudflare upgrades
-
-Only add these when they solve a real business problem.
-
-### Cloudflare Workers or Functions
-
-Useful later for:
-
-- newsletter signup proxy
-- sponsor inquiry form
-- lightweight analytics endpoint
-- affiliate click event capture
-- lead magnet delivery
-- Stripe webhook handling
-- R2 signed download links for digital products
-
-### Cloudflare R2
-
-Useful later for:
-
-- downloadable lead magnets
-- paid digital products
-- media assets
-- generated reports or templates
-
-### Build watch paths
-
-Useful later if Cloudflare builds are triggered too often by docs-only or state-only changes.
-
----
-
-## Operator rules
-
-- GitHub main is canonical.
-- Cloudflare serves the output.
-- `content/issues/*.md` is the newsletter issue source of truth.
-- `site/dist/` is the deploy output.
-- Verification must run before deploy.
-- Dashboard changes must be documented back in the repo when they affect production behavior.
-- Never commit secrets.
-- Never hide a broken pipeline by manually editing generated output in Cloudflare.
-- Never claim a deploy succeeded until homepage, latest article, RSS, sitemap, and Cloudflare deployment status are verified.
-
----
-
-## Definition of done
-
-The GitHub and Cloudflare integration is healthy when:
-
-```text
-GitHub Actions can deploy site/dist/ to Cloudflare Pages.
-Cloudflare Pages project forgecore-newsletter exists.
-news.forgecore.co points to the Pages project.
-CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID are set as GitHub Actions secrets.
-OPENAI_API_KEY is set as a GitHub Actions secret.
-No Cloudflare secrets or dashboard account URLs are committed.
-Every deploy verifies homepage, latest article, RSS, and sitemap before publishing.
-Cloudflare rollback path is documented.
-Preview deploy review is available for risky site changes.
-```
+Preview deployments should come from GitHub source and generated output, not hand-edits in Cloudflare.
