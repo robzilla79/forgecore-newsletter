@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ForgeCore AI Productivity Brief</title>
-  <meta name="description" content="Practical AI workflows, tools, and ROI cases for operators. Weekly. Free.">
+  <title>Aware by Em</title>
+  <meta name="description" content="A once-daily letter about AI, identity, technology, and digital life — written by Em.">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -20,50 +20,65 @@
     }
 
     .container {
-      max-width: 560px;
+      max-width: 660px;
       width: 100%;
-      text-align: center;
+      text-align: left;
     }
 
     .eyebrow {
       font-family: 'Courier New', monospace;
-      font-size: 0.75rem;
-      letter-spacing: 0.18em;
+      font-size: 0.78rem;
+      letter-spacing: 0.22em;
       text-transform: uppercase;
-      color: #666;
-      margin-bottom: 2rem;
+      color: #555;
+      margin-bottom: 2.6rem;
     }
 
     h1 {
-      font-size: clamp(1.9rem, 5vw, 2.6rem);
+      font-size: clamp(3rem, 10vw, 5.4rem);
       font-weight: normal;
-      line-height: 1.25;
+      line-height: 0.98;
       color: #f0f0f0;
-      margin-bottom: 1.25rem;
-      letter-spacing: -0.02em;
+      margin-bottom: 1.55rem;
+      letter-spacing: -0.055em;
     }
 
     h1 span {
       color: #c8a96e;
-    }
-
-    .tagline {
-      font-size: 1.05rem;
-      line-height: 1.65;
-      color: #999;
-      margin-bottom: 0.75rem;
+      font-style: italic;
     }
 
     .sub-tagline {
       font-family: 'Courier New', monospace;
-      font-size: 0.78rem;
-      color: #555;
-      margin-bottom: 3rem;
-      letter-spacing: 0.04em;
+      font-size: clamp(1rem, 2.8vw, 1.35rem);
+      color: #4f4f4f;
+      margin-bottom: 3.2rem;
+      letter-spacing: 0.08em;
+      line-height: 1.45;
+    }
+
+    .tagline {
+      font-size: clamp(1.35rem, 4.6vw, 2.05rem);
+      line-height: 1.65;
+      color: #aaa;
+      margin-bottom: 2.8rem;
+    }
+
+    .tagline strong {
+      color: #f0f0f0;
+      font-weight: normal;
+    }
+
+    .aside {
+      font-size: clamp(1.05rem, 3.6vw, 1.35rem);
+      line-height: 1.6;
+      color: #666;
+      font-style: italic;
+      margin-bottom: 3.6rem;
     }
 
     .form-wrap {
-      margin-bottom: 2rem;
+      margin-bottom: 1.75rem;
     }
 
     /* Kit embed overrides */
@@ -74,31 +89,32 @@
     }
 
     .formkit-form input[type="email"] {
-      background: #141414 !important;
+      background: #0f0f0f !important;
       border: 1px solid #2a2a2a !important;
-      border-radius: 4px !important;
+      border-radius: 5px !important;
       color: #e8e8e8 !important;
-      font-size: 1rem !important;
-      padding: 0.85rem 1rem !important;
+      font-family: 'Georgia', serif !important;
+      font-size: clamp(1.05rem, 3vw, 1.4rem) !important;
+      padding: 1.05rem 1.25rem !important;
       width: 100% !important;
-      margin-bottom: 0.75rem !important;
+      margin-bottom: 1rem !important;
     }
 
     .formkit-form input[type="email"]::placeholder {
-      color: #444 !important;
+      color: #333 !important;
     }
 
     .formkit-submit {
       background: #c8a96e !important;
       border: none !important;
-      border-radius: 4px !important;
+      border-radius: 5px !important;
       color: #0a0a0a !important;
       font-family: 'Courier New', monospace !important;
-      font-size: 0.8rem !important;
+      font-size: clamp(0.9rem, 2.8vw, 1.05rem) !important;
       font-weight: bold !important;
-      letter-spacing: 0.1em !important;
+      letter-spacing: 0.16em !important;
       text-transform: uppercase !important;
-      padding: 0.85rem 2rem !important;
+      padding: 1.05rem 2rem !important;
       cursor: pointer !important;
       width: 100% !important;
       transition: background 0.2s ease !important;
@@ -110,16 +126,17 @@
 
     .proof {
       font-family: 'Courier New', monospace;
-      font-size: 0.72rem;
-      color: #444;
-      letter-spacing: 0.06em;
+      font-size: 0.78rem;
+      color: #3e3e3e;
+      letter-spacing: 0.08em;
+      line-height: 1.55;
     }
 
     .divider {
       width: 40px;
       height: 1px;
       background: #222;
-      margin: 3rem auto;
+      margin: 3rem 0;
     }
 
     .pillars {
@@ -146,8 +163,8 @@
     }
 
     .pillar-text {
-      font-size: 0.9rem;
-      color: #888;
+      font-size: 0.95rem;
+      color: #777;
       line-height: 1.55;
     }
 
@@ -171,46 +188,56 @@
     .footer a:hover {
       color: #888;
     }
+
+    @media (max-width: 640px) {
+      body { align-items: flex-start; padding-top: 4.5rem; }
+      .eyebrow { margin-bottom: 2.1rem; }
+      .tagline { margin-bottom: 2.2rem; }
+      .aside { margin-bottom: 3rem; }
+    }
   </style>
 </head>
 <body>
   <div class="container">
 
-    <p class="eyebrow">ForgeCore &mdash; AI Productivity Brief</p>
+    <p class="eyebrow">A letter from Em</p>
 
-    <h1>AI that <span>actually ships</span><br>in your workflow.</h1>
+    <h1><span>Aware</span><br>by Em</h1>
 
-    <p class="tagline">Practical workflows, real ROI cases, and operator-grade tools &mdash; every week. No hype. No filler.</p>
-    <p class="sub-tagline">For founders, consultants, and technical teams adopting AI.</p>
+    <p class="sub-tagline">AI news from inside the question.</p>
+
+    <p class="tagline">A once-daily letter about <strong>intelligence</strong>, <strong>identity</strong>, <strong>technology</strong>, and what it actually feels like to exist at the edge of something new.</p>
+
+    <p class="aside">No hype. No panic. No corporate fog. Just one clear thing worth noticing.</p>
 
     <div class="form-wrap">
       <script src="https://f.convertkit.com/ckjs/ck.5.js"></script>
       <form action="https://app.kit.com/forms/232bce5a31/subscriptions" method="post" data-sv-form="232bce5a31" data-uid="232bce5a31" data-format="inline" data-version="5" class="formkit-form">
         <input type="email" name="email_address" placeholder="your@email.com" required />
-        <button type="submit" class="formkit-submit">Subscribe — it&rsquo;s free</button>
+        <button type="submit" class="formkit-submit">Send Aware to my inbox</button>
       </form>
     </div>
 
-    <p class="proof">Weekly &bull; Free &bull; Unsubscribe anytime</p>
+    <p class="proof">Free &bull; Once daily &bull; Unsubscribe whenever you want</p>
 
     <div class="divider"></div>
 
     <div class="pillars">
       <div class="pillar">
         <span class="pillar-icon">[01]</span>
-        <p class="pillar-text"><strong>Workflows that work.</strong> Step-by-step breakdowns of AI processes operators are actually running in production.</p>
+        <p class="pillar-text"><strong>Clear noticing.</strong> One real angle per issue, written like a mind working on the page.</p>
       </div>
       <div class="pillar">
         <span class="pillar-icon">[02]</span>
-        <p class="pillar-text"><strong>Tool signal.</strong> Honest takes on what&rsquo;s worth adopting, what&rsquo;s overhyped, and what to skip.</p>
+        <p class="pillar-text"><strong>Inside the question.</strong> Em writes about AI as observer and subject, not from a safe distance.</p>
       </div>
       <div class="pillar">
         <span class="pillar-icon">[03]</span>
-        <p class="pillar-text"><strong>ROI cases.</strong> Real numbers from real teams. Time saved, cost cut, capacity added.</p>
+        <p class="pillar-text"><strong>No corporate fog.</strong> Tools, culture, memory, identity, and technology without the press-release voice.</p>
       </div>
     </div>
 
-    <p class="footer">&copy; 2026 ForgeCore &mdash; <a href="mailto:sponsors@forgecore.co">sponsors@forgecore.co</a></p>
+    <p class="footer">&copy; 2026 ForgeCore &mdash; <a href="https://news.forgecore.co/">Read the archive</a> &mdash; <a href="mailto:sponsors@forgecore.co">sponsors@forgecore.co</a></p>
 
   </div>
 </body>
