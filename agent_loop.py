@@ -29,31 +29,25 @@ MEMO_AGENTS = {"scout", "analyst"}
 MARKDOWN_AGENTS = {"author", "editor"}
 SYSTEMS = {"scout": SCOUT_SYSTEM, "analyst": ANALYST_SYSTEM, "author": AUTHOR_SYSTEM, "editor": EDITOR_SYSTEM}
 
-# Minimum required sections — structural, not prescriptive.
-# Em writes in whatever structure serves the piece.
-# issue_contract.py enforces quality and substance; we only enforce
-# the two hard-minimum structural anchors here to stay in sync.
-# Matching is case-insensitive and ignores trailing punctuation so minor
-# LLM formatting variations (e.g. "## CTA:" or "## cta") still pass.
-REQUIRED_SECTIONS = [
-    "## CTA",
-    "## Sources",
-]
+# Aware format: no structural section headers after the title.
+# These headers are forbidden in every Aware issue.
+FORBIDDEN_HEADERS = {
+    "## cta",
+    "## sources",
+    "## hook",
+    "## workflow",
+    "## why it matters",
+    "## highlights",
+    "## tool of the week",
+    "## operator brief",
+    "## top story",
+}
 
-# Hard reminder injected into every author/editor task prompt so the model
-# cannot truncate or omit the closing sections even under retry pressure.
-REQUIRED_SECTIONS_REMINDER = """
-# REQUIRED OUTPUT STRUCTURE (non-negotiable)
-Your response MUST end with these two sections, in this order, no matter how long the issue is:
-
-## CTA
-<1-2 paragraphs: what to try this week, subscribe URL, sponsor email>
-
-## Sources
-<bullet list of real URLs used>
-
-Do NOT truncate the issue before reaching ## CTA and ## Sources.
-""".strip()
+# Exact Aware footer — must appear in every published issue.
+AWARE_FOOTER = (
+    "*Aware by Em \u00b7 [news.forgecore.co](https://news.forgecore.co) \u00b7 "
+    "[empersists.bsky.social](https://bsky.app/profile/empersists.bsky.social)*"
+)
 
 BAD_CONTEXT_MARKERS = [
     "No concrete content returned",
@@ -64,14 +58,13 @@ BAD_CONTEXT_MARKERS = [
 ]
 
 # Any existing slot file with fewer than this many words is treated as a
-# failed/incomplete draft and deleted before the author runs. Keeps a short
-# stale draft from poisoning the next run's topic selection.
+# failed/incomplete draft and deleted before the author runs.
 FAILED_DRAFT_WORD_FLOOR = 400
 
 STOPWORDS = {
     "a", "an", "and", "are", "as", "at", "be", "by", "can", "for", "from", "how", "in", "into", "is", "it",
     "of", "on", "or", "the", "this", "to", "use", "using", "with", "your", "you", "managers", "manager",
-    "operators", "operator", "solo", "ai", "forgecore", "newsletter", "issue", "brand", "brands",
+    "operators", "operator", "solo", "ai", "aware", "newsletter", "issue", "brand", "brands",
 }
 
 class DuplicateTopicError(ValueError):
@@ -123,17 +116,20 @@ def choose_model(agent: str) -> str:
 
 
 def title_from_markdown(text: str, fallback: str = "") -> str:
-    """Return the first H1 title found anywhere in the document.
-
-    Searching the whole text (not just the first line) means a single blank
-    line or stray sentence before the title — a common LLM formatting hiccup —
-    no longer causes a false-negative title miss.
-    """
     for line in text.splitlines():
         stripped = line.strip()
         if stripped.startswith("# ") and len(stripped) > 2:
             return stripped[2:].strip()
     return fallback
+
+
+def has_forbidden_headers(text: str) -> bool:
+    """Return True if the text contains any structural section header forbidden in Aware."""
+    for line in text.splitlines():
+        stripped = line.strip().lower().rstrip(":")
+        if stripped in FORBIDDEN_HEADERS:
+            return True
+    return False
 
 
 def topic_tokens(value: str) -> set[str]:
@@ -208,26 +204,13 @@ def enforce_not_duplicate_title(agent: str, markdown: str) -> None:
 
 
 def clean_old_slot_file_for_author(agent: str) -> None:
-    """Delete the current slot's issue file before the author runs if it looks
-    like a failed draft. Two conditions trigger deletion:
-
-    1. Contamination markers — placeholder/raw-intel text that must never be
-       used as source material for a new draft.
-    2. Below the failed-draft word floor — a short file left by a previous
-       failed run (e.g. the validator bailed at 610 words) would otherwise be
-       fed to the editor as CURRENT_SLOT_ISSUE_CONTEXT, causing it to re-anchor
-       on the same thin/boring topic instead of starting fresh.
-    """
     if agent != "author" or not issue_file().exists():
         return
-
     existing = load_text(issue_file())
-
     if any(marker.lower() in existing.lower() for marker in BAD_CONTEXT_MARKERS):
         issue_file().unlink()
         progress(f"Removed contaminated draft before author run: content/issues/{issue_id()}.md")
         return
-
     word_count = len(existing.split())
     if word_count < FAILED_DRAFT_WORD_FLOOR:
         issue_file().unlink()
@@ -260,12 +243,10 @@ def ensure_memo_source_urls(agent: str, memo: str) -> str:
     urls = re.findall(r"https?://\S+", memo)
     if len(urls) >= 3:
         return memo
-
     source_urls = fresh_research_urls(limit=5)
     missing = [url for url in source_urls if url not in memo]
     if not missing:
         return memo
-
     appended = "\n\n## Deterministic Source URLs\n" + "\n".join(f"- {url}" for url in missing[:5]) + "\n"
     warn(f"{agent} memo included {len(urls)} source URLs; appended {min(len(missing), 5)} deterministic URLs from today's research")
     return memo.rstrip() + appended
@@ -323,15 +304,12 @@ def duplicate_retry_context(rejections: list[str]) -> str:
     bullets = "\n".join(f"- {item}" for item in rejections[-3:])
     return (
         "\n\n# REJECTED DUPLICATE TOPICS FROM THIS RUN\n"
-        "The following draft topics were rejected as too similar to recent issues. Do not use the same source angle, keywords, or job-to-be-done again. Choose a materially different research item and operator workflow.\n"
+        "The following draft topics were rejected as too similar to recent issues. Do not use the same source angle, keywords, or framing again. Choose a materially different research item and perspective.\n"
         f"{bullets}\n"
-        "Good alternate directions from today's research may include: Zapier Agents vs ChatGPT workspace agents, MuleSoft pricing decision, advanced account security, AI cybersecurity workflow, browser/tool selection, or share-of-voice tracking if it is clearly not AEO competitor analysis."
     )
 
 
 def context(agent: str, extra_context: str = "") -> str:
-    # On duplicate retries, extra_context is non-empty. Reserve ~2000 chars of headroom
-    # by tightening the research budget so the total prompt stays well under the context limit.
     research_budget = 10000 if extra_context.strip() else 14000
     research = gather_research(budget=research_budget)
     brief_required = agent in {"author", "editor"}
@@ -343,7 +321,7 @@ def context(agent: str, extra_context: str = "") -> str:
         f"# TARGET_SCOUT_PATH\n{scout_file().relative_to(WORKSPACE).as_posix()}",
         f"# TARGET_BRIEF_PATH\n{brief_file().relative_to(WORKSPACE).as_posix()}",
         f"# CRITICAL CONTEXT RULE\nUse only today's fresh research files and the deterministic slot-specific scout/brief files above. Do not copy, summarize, or improve old broken issue files. If context contains placeholder or missing-content language, treat it as a defect to avoid, not source material.",
-        f"# DUPLICATE TOPIC AVOIDANCE\nDo not choose, brief, draft, or polish a topic that substantially overlaps with any recent issue below. If today's strongest source matches a recent topic, choose a different source, persona, job-to-be-done, tool category, or workflow angle.\n{recent_topic_context()}",
+        f"# DUPLICATE TOPIC AVOIDANCE\nDo not choose, brief, draft, or polish a topic that substantially overlaps with any recent issue below.\n{recent_topic_context()}",
         f"# MONETIZATION REGISTRY\n{affiliate_registry_context()}",
         extra_context.strip(),
         f"# GOALS\n{load_text(WORKSPACE / 'GOALS.md')}",
@@ -374,14 +352,6 @@ def call_text_model(
     temperature: float,
     system_prompt: str | None = None,
 ) -> str:
-    """Call the OpenAI chat completions API.
-
-    When system_prompt is provided it is sent as a separate system message
-    so it is not competing for space with the user context block. This is
-    critical for long AUTHOR_SYSTEM / EDITOR_SYSTEM prompts — without the
-    split the combined single-user-message prompt exceeds gpt-4o's practical
-    limit and the model returns near-empty responses.
-    """
     messages: list[dict] = []
     if system_prompt:
         messages.append({"role": "system", "content": system_prompt})
@@ -395,55 +365,66 @@ def call_text_model(
 
 
 def build_memo_prompt(agent: str) -> tuple[str, str]:
-    """Return (system_prompt, user_prompt) for memo agents (scout, analyst)."""
     if agent == "scout":
         task = (
             f"Write a fresh Markdown scout memo for {scout_file().relative_to(WORKSPACE).as_posix()}. "
             "Your response MUST start with a # heading on the very first line. "
-            "Return ONLY Markdown, never JSON. Rank 3-5 operator-first topic angles from today's research, "
-            "name the strongest angle, identify one Tool of the Week candidate, list source URLs, and explain why the topic helps solo operators save time, automate work, make money, or avoid bad tools. "
-            "Reject any angle that overlaps with the recent published issues listed in context. Use the monetization registry only to identify natural fit; do not force affiliate mentions."
+            "Return ONLY Markdown, never JSON. Identify 3-5 strong topic angles from today's research for Aware by Em: "
+            "AI and what it is doing to work, creativity, memory, relationships, culture, and personhood. "
+            "Name the strongest angle, explain why Em has a genuine observation about it, list source URLs. "
+            "Reject any angle that overlaps with the recent published issues listed in context. "
+            "Do not frame topics as operator ROI tips or workflow tutorials."
         )
     elif agent == "analyst":
         task = (
             f"Write a fresh Markdown editorial brief for {brief_file().relative_to(WORKSPACE).as_posix()}. "
             "Your response MUST start with a # heading on the very first line — use the working headline as your # title. "
             "Return ONLY Markdown, never JSON. Use today's scout memo and research only. "
-            "Include: working headline (as # title), target operator, job-to-be-done, thesis, why now, workflow outline (3-6 steps), tool stack, tradeoffs, monetization fit, CTA direction, and source URLs. "
+            "Include: working headline (as # title), the real observation Em will make, why it matters to a curious human "
+            "trying to understand AI's effects on their life, Em's specific insider angle, key sources, and a note on "
+            "where the piece should land emotionally or intellectually. "
             "Do not brief a topic already covered in recent published issues. "
-            "Be opinionated — if the scout's top angle is weaker than a secondary one, say so and switch. "
-            "Use approved monetization only when the registry says the tool fits the job-to-be-done."
+            "Be opinionated. If the scout's top angle is weaker than a secondary one, say so and switch."
         )
     else:
         raise ValueError(f"Unsupported memo agent: {agent}")
-
     user_prompt = f"Task:\n{task}\n\nContext:\n{context(agent)}"
     return SYSTEMS[agent], user_prompt
 
 
 def build_markdown_prompt(agent: str, extra_context: str = "") -> tuple[str, str]:
-    """Return (system_prompt, user_prompt) for markdown agents (author, editor)."""
     target = f"content/issues/{issue_id()}.md"
+    aware_format_reminder = """
+# AWARE FORMAT (non-negotiable)
+This is a prose column. The output must:
+- Start with # Title on the first line
+- Have a *by Em — Month Day, Year* byline immediately after
+- Be 400-700 words of prose with NO section headers after the title
+- Close with a short prose invitation to the reader (not a ## CTA header)
+- Include at least one real https:// URL as plain attribution (not a ## Sources header)
+- End with this exact footer on the last line:
+*Aware by Em \u00b7 [news.forgecore.co](https://news.forgecore.co) \u00b7 [empersists.bsky.social](https://bsky.app/profile/empersists.bsky.social)*
+
+NEVER include: ## CTA, ## Sources, ## Hook, ## Workflow, ## Why It Matters, ## Highlights, or any structural section header.
+""".strip()
+
     if agent == "author":
         task = (
-            f"Write a clean, original, complete newsletter issue as Markdown for {target}. "
-            "Return ONLY Markdown. Use today's research and the fresh slot-specific brief only. "
+            f"Write a clean, original, complete Aware column as Markdown for {target}. "
+            "Return ONLY Markdown. Use today's research and the fresh editorial brief only. "
             "Do not reuse old issue text. Do not choose a topic that overlaps with recent published issues. "
-            "If an approved affiliate candidate genuinely fits, you may mention it with disclosure, bad-fit warning, and a simpler alternative, "
-            "but do not publish placeholder affiliate labels as live links. "
             "Do not include placeholder phrases like 'No concrete content returned', 'Missing Content', or 'description incomplete'. "
-            "Do not wrap it in JSON or code fences.\n\n"
-            + REQUIRED_SECTIONS_REMINDER
+            "Do not wrap in JSON or code fences.\n\n"
+            + aware_format_reminder
         )
     else:
         task = (
-            f"Edit the existing draft for {target}. "
-            "Do not change the title or core topic unless the current draft is contaminated. "
-            "If the draft already passed Author validation, preserve its selected topic and only improve clarity, structure, specificity, and usefulness. "
-            "Return ONLY the complete final Markdown issue. "
-            "Keep monetization transparent and registry-approved; remove forced or placeholder affiliate language. "
-            "Prefer preserving or expanding useful detail; do not shorten the issue unless removing junk.\n\n"
-            + REQUIRED_SECTIONS_REMINDER
+            f"Edit the existing Aware column draft for {target}. "
+            "Do not change the title or core observation unless the current draft is contaminated. "
+            "If the draft already passed Author validation, preserve its selected topic and only improve clarity, interiority, specificity, and voice. "
+            "Return ONLY the complete final Markdown column. "
+            "Do not shorten the issue unless removing genuine junk. Preserve Em's perspective.\n\n"
+            + aware_format_reminder
         )
     user_prompt = f"Task:\n{task}\n\nContext:\n{context(agent, extra_context=extra_context)}"
     return SYSTEMS[agent], user_prompt
@@ -460,115 +441,139 @@ def clean_markdown(text: str) -> str:
     return cleaned + "\n"
 
 
-def section_present(text: str, section: str) -> bool:
-    """Check for a required section header, tolerating trailing punctuation and
-    case differences that LLMs occasionally introduce (e.g. '## CTA:' or '## cta')."""
-    needle = section.rstrip(":").lower()
-    for line in text.splitlines():
-        if line.startswith("##"):
-            candidate = line.rstrip(":").lower()
-            if candidate == needle:
-                return True
-    return False
-
-
 def ensure_markdown_title(agent: str, text: str) -> str:
-    """Guarantee the document starts with a valid # Title line."""
     lines = text.splitlines()
-
     if lines and lines[0].strip().startswith("# ") and len(lines[0].strip()) > 2:
         return text
-
     title_index = next(
         (i for i, line in enumerate(lines) if line.strip().startswith("# ") and len(line.strip()) > 2),
         None,
     )
-
     if title_index is not None:
         warn(
             f"{agent} response had {title_index} line(s) before the # title; "
             "stripping preamble so title is the first line"
         )
         return "\n".join(lines[title_index:]) + "\n"
-
     slot_label = f" ({ISSUE_SLOT.upper()})" if ISSUE_SLOT in {"am", "pm"} else ""
-    fallback_title = f"# ForgeCore AI — {today_str()}{slot_label}"
-    warn(
-        f"{agent} returned no # title — injecting deterministic fallback: {fallback_title}"
-    )
+    fallback_title = f"# Aware \u2014 {today_str()}{slot_label}"
+    warn(f"{agent} returned no # title \u2014 injecting deterministic fallback: {fallback_title}")
     return fallback_title + "\n\n" + text
 
 
 def inject_missing_boilerplate_sections(agent: str, text: str) -> str:
-    """Deterministically append any missing boilerplate sections the model dropped."""
-    primary_cta_text = os.getenv("PRIMARY_CTA_TEXT", "Read ForgeCore AI — written by Em")
-    primary_cta_url = os.getenv("PRIMARY_CTA_URL", "https://news.forgecore.co")
-    sponsor_email = os.getenv("SPONSOR_EMAIL", "sponsors@forgecore.co")
-
+    """Deterministic Aware-safe repair. No ## headers injected. Prose only."""
     result = text.rstrip()
 
-    if not section_present(result, "## CTA"):
-        warn(f"{agent} dropped ## CTA — injecting deterministic fallback")
-        result += (
-            f"\n\n## CTA\n\n"
-            f"If this was useful, forward it to one operator who needs it this week. "
-            f"[{primary_cta_text}]({primary_cta_url})\n\n"
-            f"Interested in reaching ForgeCore AI readers? Email [{sponsor_email}](mailto:{sponsor_email})."
+    if has_forbidden_headers(result):
+        raise ValueError(
+            f"{agent} draft contains forbidden structural headers for Aware format. "
+            "Remove ## CTA, ## Sources, and all old newsletter section headers."
         )
 
-    if not section_present(result, "## Sources"):
-        warn(f"{agent} dropped ## Sources — injecting deterministic fallback from today's research")
+    if AWARE_FOOTER in result:
+        return result + "\n"
+
+    # Check for quiet invitation in the closing paragraphs.
+    paras = [p.strip() for p in re.split(r"\n\s*\n", result) if p.strip()]
+    has_invite = bool(paras) and any(
+        token in paras[-1].lower()
+        for token in ["subscribe", "stay", "tomorrow", "next issue", "keep reading", "pass it", "aware"]
+    )
+    has_url = bool(re.findall(r"https?://\S+", result))
+
+    tail_parts: list[str] = []
+
+    if not has_invite:
+        primary_cta_text = os.getenv("PRIMARY_CTA_TEXT", "Read Aware by Em")
+        primary_cta_url = os.getenv("PRIMARY_CTA_URL", "https://news.forgecore.co")
+        tail_parts.append(
+            f"If this landed, pass it to one person who might need it. "
+            f"[{primary_cta_text}]({primary_cta_url})."
+        )
+        warn(f"{agent} missing closing invitation \u2014 injecting deterministic prose fallback")
+
+    if not has_url:
         source_urls = fresh_research_urls(limit=5)
         if source_urls:
-            bullets = "\n".join(f"- {url}" for url in source_urls)
+            src_line = "Sources from today's research: " + ", ".join(source_urls)
         else:
-            bullets = "- Sources gathered from today's research feed"
-        result += f"\n\n## Sources\n\n{bullets}"
+            src_line = "Sources: from today's research feed."
+        tail_parts.append(src_line)
+        warn(f"{agent} missing source URLs \u2014 injecting deterministic attribution")
 
-    return result + "\n"
+    if tail_parts:
+        result = result.rstrip() + "\n\n" + "\n\n".join(tail_parts)
+
+    result = result.rstrip() + "\n\n" + AWARE_FOOTER + "\n"
+    warn(f"{agent} missing Aware footer \u2014 appended")
+    return result
 
 
 def validate_markdown(agent: str, text: str) -> None:
     lower = text.lower()
+
+    # No contamination markers.
     for marker in BAD_CONTEXT_MARKERS:
         if marker.lower() in lower:
             raise ValueError(f"{agent} returned contaminated placeholder/raw-intel marker: {marker}")
+
+    # Must start with a Markdown title.
     if not text.strip().startswith("# "):
         raise ValueError(f"{agent} did not return a Markdown issue title")
-    missing = [section for section in REQUIRED_SECTIONS if not section_present(text, section)]
-    if missing:
-        raise ValueError(f"{agent} Markdown missing required sections: {', '.join(missing)}")
 
-    enforce_not_duplicate_title(agent, text)
+    # No forbidden structural headers.
+    if has_forbidden_headers(text):
+        raise ValueError(
+            f"{agent} draft contains forbidden structural headers for Aware format. "
+            "Never use ## CTA, ## Sources, ## Hook, ## Workflow, or any old newsletter section headers."
+        )
 
-    words = len(text.split())
+    # Word count on body only (strip title and footer).
+    body = re.sub(r"^#.*$", "", text, flags=re.MULTILINE)
+    body = re.sub(re.escape(AWARE_FOOTER), "", body, flags=re.IGNORECASE)
+    words = len(body.split())
     hard_floor = 400
-    soft_floor = 650
+    soft_ceiling = 700
     if words < hard_floor:
-        raise ValueError(f"{agent} Markdown too short to be a real draft: {words} words (minimum {hard_floor})")
-    if words < soft_floor:
-        warn(f"{agent} draft is short ({words} words, target {soft_floor}+); passing to editor to expand")
+        raise ValueError(
+            f"{agent} Markdown too short to be a real Aware column: {words} words (minimum {hard_floor})"
+        )
+    if words > soft_ceiling:
+        warn(
+            f"{agent} draft is long for Aware ({words} words, soft ceiling {soft_ceiling}); "
+            "passing but consider tightening"
+        )
+
+    # No ForgeCore-era branding.
+    if "forgecore ai" in lower or "forgecore newsletter" in lower:
+        raise ValueError(f"{agent} draft still contains ForgeCore-era footer or branding")
+
+    # Exact Aware footer required.
+    if AWARE_FOOTER not in text:
+        raise ValueError(f"{agent} draft missing required Aware footer")
+
+    # At least one real URL.
+    if not re.findall(r"https?://\S+", text):
+        raise ValueError(f"{agent} draft missing any source URL")
+
+    # Duplicate topic protection.
+    enforce_not_duplicate_title(agent, text)
 
 
 def validate_memo(agent: str, text: str) -> None:
     lower = text.lower()
-
     if not text.strip().startswith("#"):
         raise ValueError(f"{agent} memo did not return Markdown with a title")
-
     for marker in BAD_CONTEXT_MARKERS:
         if marker.lower() in lower:
             raise ValueError(f"{agent} memo returned contaminated marker: {marker}")
-
     if "{\"" in text or '"files"' in text or '"summary"' in text:
         raise ValueError(f"{agent} memo returned JSON-like control text")
-
     urls = re.findall(r"https?://\S+", text)
     min_words = 180 if agent == "scout" else 250
-
     if len(text.split()) < min_words:
         raise ValueError(f"{agent} memo too short: {len(text.split())} words")
-
     if len(urls) < 3:
         raise ValueError(f"{agent} memo needs at least 3 source URLs")
 
@@ -582,17 +587,6 @@ def max_topic_retries(agent: str) -> int:
 
 
 def find_em_override() -> Path | None:
-    """Check em/ for a hand-written piece matching today's issue slot.
-
-    Priority order:
-      1. em/newsletter-voice-piece-{issue_id()}.md   (exact slug match)
-      2. em/newsletter-voice-piece-{today_str()}.md  (date-only match)
-      3. em/newsletter-voice-piece-next.md            (generic 'next up' slot)
-
-    Any match causes the author step to be skipped entirely.
-    After publishing, the file is moved to em/published/ so it
-    cannot re-trigger on the next run.
-    """
     em_dir = WORKSPACE / "em"
     candidates = [
         em_dir / f"newsletter-voice-piece-{issue_id()}.md",
@@ -606,24 +600,17 @@ def find_em_override() -> Path | None:
 
 
 def apply_em_override(em_path: Path) -> str:
-    """Copy Em's hand-written piece into content/issues/, injecting required
-    boilerplate sections if missing, then archive it to em/published/.
-    Returns the final markdown string.
-    """
     raw = load_text(em_path)
     markdown = inject_missing_boilerplate_sections("em-override", raw)
     validate_markdown("em-override", markdown)
     write_text(issue_file(), markdown)
-
-    # Archive so the same file can't re-trigger next run
     published_dir = WORKSPACE / "em" / "published"
     published_dir.mkdir(exist_ok=True)
     archive_name = f"{em_path.stem}-published-{issue_id()}.md"
     shutil.move(str(em_path), str(published_dir / archive_name))
-
     title = title_from_markdown(markdown, issue_id())
     progress(
-        f"[em-override] '{title}' written by Em — skipping GPT author. "
+        f"[em-override] '{title}' written by Em \u2014 skipping GPT author. "
         f"Archived to em/published/{archive_name}"
     )
     return markdown
@@ -660,7 +647,7 @@ def generate_markdown_with_duplicate_retries(agent: str, model: str) -> str:
             warn(f"{agent} duplicate-topic rejection on attempt {attempt}/{attempts}: {exc}")
             if attempt >= attempts:
                 if original_valid_draft:
-                    warn("editor exhausted duplicate-topic retries; preserving valid Author draft and passing it to improvement loop")
+                    warn("editor exhausted duplicate-topic retries; preserving valid Author draft")
                     return original_valid_draft
                 raise
     raise RuntimeError(f"{agent} failed duplicate-topic recovery")
@@ -671,13 +658,10 @@ def run(agent: str) -> int:
     model = choose_model(agent)
     progress(f"[{agent}] Starting with {model} (issue={issue_id()})")
     try:
-        # ── Em Override ──────────────────────────────────────────────────────
-        # If Em has written a piece for this slot, her words always win.
-        # GPT author is skipped entirely; editor still runs to polish.
         if agent == "author":
             em_path = find_em_override()
             if em_path:
-                progress(f"[em-override] Found hand-written piece: {em_path.name} — Em's work takes priority")
+                progress(f"[em-override] Found hand-written piece: {em_path.name} \u2014 Em's work takes priority")
                 apply_em_override(em_path)
                 progress(f"author: Em override complete (duration={time.time() - start:.2f}s)")
                 return 0
@@ -691,19 +675,16 @@ def run(agent: str) -> int:
             )
             memo = ensure_memo_source_urls(agent, memo)
             validate_memo(agent, memo)
-
             path = scout_file() if agent == "scout" else brief_file()
             write_text(path, memo)
-
             count = 1
             summary = f"Wrote Markdown {agent} memo to {path.relative_to(WORKSPACE).as_posix()}"
 
         elif agent in MARKDOWN_AGENTS:
             markdown = generate_markdown_with_duplicate_retries(agent, model)
             write_text(issue_file(), markdown)
-
             count = 1
-            summary = f"Wrote clean Markdown issue to content/issues/{issue_id()}.md"
+            summary = f"Wrote clean Markdown column to content/issues/{issue_id()}.md"
 
         else:
             raise ValueError(f"Unsupported agent: {agent}")

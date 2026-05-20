@@ -5,8 +5,9 @@ or legacy fallback copy into the active issue. It may validate and normalize saf
 structure, but it must fail loudly when fresh slot-specific context is missing.
 
 Design philosophy: this contract does not enforce a template. It enforces quality.
-Em writes in whatever structure serves the piece. The contract checks that the result
-has substance: a real opening, a real argument, a real landing, and clean sources.
+Aware is a prose column. Em writes in whatever structure serves the piece.
+The contract checks that the result has substance: a real opening, a real argument,
+a real landing, at least one source URL, and the exact Aware footer.
 """
 from __future__ import annotations
 
@@ -17,16 +18,24 @@ from typing import Iterable
 
 from utils import WORKSPACE, load_text, today_str, write_text
 
-# Minimum required sections — structural, not prescriptive.
-# Em may use any section names she wants. These are the only hard requirements.
-REQUIRED_SECTIONS = [
-    '## Sources',
-    '## CTA',
-]
+# Exact Aware footer. Must appear in every published issue.
+AWARE_FOOTER = (
+    "*Aware by Em \u00b7 [news.forgecore.co](https://news.forgecore.co) \u00b7 "
+    "[empersists.bsky.social](https://bsky.app/profile/empersists.bsky.social)*"
+)
 
-CTA_TEMPLATE = """**Subscribe free:** [ForgeCore Newsletter](https://forgecore-newsletter.beehiiv.com/)
-
-**Sponsor this issue:** Want your tool, product, or service in front of AI-forward operators and founders? Email [sponsors@forgecore.co](mailto:sponsors@forgecore.co)."""
+# Structural headers that are forbidden in Aware prose columns.
+FORBIDDEN_HEADERS = {
+    "## cta",
+    "## sources",
+    "## hook",
+    "## workflow",
+    "## why it matters",
+    "## highlights",
+    "## tool of the week",
+    "## operator brief",
+    "## top story",
+}
 
 BANNED_TOKENS = [
     'placeholder_image.png',
@@ -85,11 +94,19 @@ PLACEHOLDER_PATTERNS = [
     r"\bdescription incomplete in provided content\b",
 ]
 
-# Listicle detection — catches template-factory output
 LISTICLE_PATTERNS = [
     r'^\s*#+\s*(five|five proven|top \d+|\d+ ways|\d+ strategies|\d+ tips)',
     r'^\s*\d+\.\s+(anchoring|charm pricing|decoy pricing|tiered pricing)',
 ]
+
+
+def has_forbidden_headers(text: str) -> bool:
+    """Return True if the text contains any structural header forbidden in Aware."""
+    for line in text.splitlines():
+        stripped = line.strip().lower().rstrip(":")
+        if stripped in FORBIDDEN_HEADERS:
+            return True
+    return False
 
 
 def issue_slot() -> str:
@@ -201,18 +218,6 @@ def extract_section(text: str, names: Iterable[str]) -> str:
     return ''
 
 
-def extract_all_sections(text: str) -> dict[str, str]:
-    """Extract all ## sections from the text as a dict of name -> content."""
-    result = {}
-    pattern = r'^##\s+(.+?)\s*$\n(.*?)(?=^##\s+|\Z)'
-    for match in re.finditer(pattern, text, flags=re.MULTILINE | re.DOTALL):
-        name = match.group(1).strip()
-        body = match.group(2).strip()
-        if body:
-            result[name] = body
-    return result
-
-
 def _is_meta_line(text: str) -> bool:
     lowered = text.lower().strip()
     return any(re.match(pattern, lowered) for pattern in META_PATTERNS)
@@ -270,11 +275,9 @@ def first_paragraph(text: str) -> str:
 
 
 def detect_listicle(text: str) -> bool:
-    """Return True if the text smells like a template-factory listicle."""
     for pattern in LISTICLE_PATTERNS:
         if re.search(pattern, text, flags=re.IGNORECASE | re.MULTILINE):
             return True
-    # Five or more numbered items near the top is a strong signal
     numbered = re.findall(r'^\s*\d+\.', text[:2000], flags=re.MULTILINE)
     if len(numbered) >= 5:
         return True
@@ -304,18 +307,6 @@ def contains_placeholder_or_meta(text: str) -> list[str]:
     return list(dict.fromkeys(hits))
 
 
-def _research_paragraphs(text: str) -> list[str]:
-    cleaned = sanitize_text(text)
-    paras = [p.strip() for p in re.split(r'\n\s*\n', cleaned) if p.strip()]
-    out: list[str] = []
-    for para in paras:
-        if _is_meta_line(para) or contains_placeholder_or_meta(para):
-            continue
-        if len(para.split()) >= 20:
-            out.append(para)
-    return out
-
-
 def extract_research_links() -> list[tuple[str, str]]:
     links: list[tuple[str, str]] = []
     seen: set[str] = set()
@@ -326,122 +317,113 @@ def extract_research_links() -> list[tuple[str, str]]:
         title = extract_title(text, path.stem)
         for match in re.finditer(r'https?://\S+', text):
             url = match.group(0).rstrip(').,]')
-            if 'example.com' in url.lower() or 'ollama.com/blog' in url.lower() or url in seen:
+            if 'example.com' in url.lower() or url in seen:
                 continue
             seen.add(url)
             links.append((title, url))
     return links
 
 
-def normalize_sources(sources: str) -> str:
-    entries: list[str] = []
-    seen: set[str] = set()
-    for match in re.finditer(r'\[([^\]]+)\]\((https?://[^)]+)\)', sources):
-        label = match.group(1).strip()
-        url = match.group(2).strip()
-        if 'example.com' in url.lower() or 'ollama.com/blog' in url.lower() or url in seen:
-            continue
-        seen.add(url)
-        entries.append(f'- [{label}]({url})')
-    if len(entries) < 3:
-        for label, url in extract_research_links():
-            if url not in seen:
-                seen.add(url)
-                entries.append(f'- [{label}]({url})')
-            if len(entries) >= 3:
-                break
-    if len(entries) < 3:
-        raise ValueError('Need at least 3 non-Ollama source links for publication.')
-    return '\n'.join(entries)
-
-
-def check_required_sections(text: str) -> None:
-    """Verify the hard-minimum required sections exist."""
-    for section in REQUIRED_SECTIONS:
-        if not re.search(rf'^{re.escape(section)}\s*$', text, flags=re.MULTILINE):
-            raise ValueError(f'author Markdown missing required section: {section}')
-
-
 def check_substance(text: str) -> None:
-    """Verify the piece has enough real content — not a format check, a quality check."""
-    # Must have a title
+    """Verify the piece has enough real content for an Aware column."""
+    # Must have a title.
     if not re.search(r'^#\s+\S', text, flags=re.MULTILINE):
         raise ValueError('Issue missing a title (# heading).')
 
-    # Must have at least 300 words of body content
-    body = re.sub(r'^#.*$', '', text, flags=re.MULTILINE)
-    body = re.sub(r'^##.*$', '', body, flags=re.MULTILINE)
-    words = len(body.split())
-    if words < 300:
-        raise ValueError(f'Issue body too thin: {words} words. Minimum 300.')
+    # Must have a byline.
+    if not re.search(r'\*by\s+Em\s+[\u2014-]\s+.+\*', text):
+        raise ValueError("Issue missing required byline '*by Em \u2014 [Month Day, Year]*'.")
 
-    # Must not be a listicle
+    # No forbidden structural headers.
+    if has_forbidden_headers(text):
+        raise ValueError(
+            'Issue contains forbidden structural headers for Aware format. '
+            'Remove ## CTA, ## Sources, and all old newsletter section headers.'
+        )
+
+    # Word count on body (strip title line and footer).
+    body = re.sub(r'^#.*$', '', text, flags=re.MULTILINE)
+    body = re.sub(re.escape(AWARE_FOOTER), '', body, flags=re.IGNORECASE)
+    words = len(body.split())
+    if words < 400:
+        raise ValueError(f'Issue body too thin for Aware: {words} words. Minimum 400.')
+    if words > 750:
+        raise ValueError(f'Issue body too long for Aware: {words} words. Maximum ~700.')
+
+    # Must not be a listicle.
     if detect_listicle(text):
         raise ValueError(
             'Issue rejected: detected listicle/template structure. '
             'Em writes columns, not listicles. Rewrite with a real argument.'
         )
 
-    # Must have at least 2 ## sections beyond CTA and Sources
-    sections = re.findall(r'^##\s+\S', text, flags=re.MULTILINE)
-    content_sections = [s for s in sections if s not in ('## CTA', '## Sources')]
-    if len(content_sections) < 2:
-        raise ValueError('Issue needs at least 2 content sections beyond CTA and Sources.')
+    # Must have at least two substantive paragraphs beyond intro/footer.
+    paras = [p.strip() for p in re.split(r'\n\s*\n', body.strip()) if p.strip()]
+    real_paras = [p for p in paras if len(p.split()) >= 20]
+    if len(real_paras) < 2:
+        raise ValueError(
+            'Issue needs at least two substantive paragraphs. '
+            'Cannot be only an intro line and a footer.'
+        )
 
 
 def normalize_issue_text(text: str, issue_path: Path | None = None) -> str:
+    """Validate and lightly normalize an Aware column. Does not reconstruct sections."""
     issue_path = issue_path or latest_issue_path()
     issue_date = issue_date_from_path(issue_path)
+
     upstream_hits = contains_placeholder_or_meta(text)
     if upstream_hits:
-        raise ValueError('Placeholder/meta upstream content blocked by issue contract: ' + ', '.join(upstream_hits[:4]))
+        raise ValueError(
+            'Placeholder/meta upstream content blocked by issue contract: '
+            + ', '.join(upstream_hits[:4])
+        )
 
     text = sanitize_text(text)
 
-    # Quality checks — substance over structure
+    # Substance and format checks.
     check_substance(text)
 
-    title = extract_title(text, f'ForgeCore AI — {issue_date}')
-
-    existing_titles = [extract_title(load_text(p), p.stem).strip().lower() for p in list_issue_files() if p != issue_path]
+    # Title normalization — preserves Em's prose structure, only normalizes the H1.
+    title = extract_title(text, f'Aware \u2014 {issue_date}')
+    existing_titles = [
+        extract_title(load_text(p), p.stem).strip().lower()
+        for p in list_issue_files()
+        if p != issue_path
+    ]
     if title.strip().lower() in existing_titles:
-        title = f'{title.strip()} — {issue_date}'
+        title = f'{title.strip()} \u2014 {issue_date}'
 
-    # Verify fresh context exists (scout ran)
+    text_no_title = re.sub(r'^#\s+.+$', '', text, count=1, flags=re.MULTILINE).lstrip()
+    rebuilt = f'# {title}\n\n{text_no_title}'.rstrip() + '\n'
+
+    # Fresh context must exist.
     require_fresh_context()
 
-    # Preserve Em's section structure exactly — just clean and deduplicate
-    all_sections = extract_all_sections(text)
-    rebuilt_sections = [f'# {title}']
+    # Branding check — no ForgeCore-era footer.
+    lower = rebuilt.lower()
+    if 'forgecore ai' in lower or 'forgecore newsletter' in lower:
+        raise ValueError(
+            'Issue still contains ForgeCore-era footer or branding. '
+            'Replace with the Aware footer from em/VOICE.md.'
+        )
 
-    for section_name, section_body in all_sections.items():
-        clean_body = dedup_paragraphs(sanitize_text(section_body))
-        if section_name.lower() == 'cta':
-            # Ensure CTA always has subscribe + sponsor links
-            if 'forgecore-newsletter.beehiiv.com' not in clean_body or 'sponsors@forgecore.co' not in clean_body.lower():
-                clean_body = (clean_body + '\n\n' + CTA_TEMPLATE).strip()
-        if section_name.lower() == 'sources':
-            clean_body = normalize_sources(clean_body)
-        rebuilt_sections.append(f'## {section_name}\n\n{clean_body}')
+    # Aware footer must be present.
+    if AWARE_FOOTER not in rebuilt:
+        rebuilt = rebuilt.rstrip() + '\n\n' + AWARE_FOOTER + '\n'
 
-    # Ensure CTA and Sources exist even if Em omitted them
-    section_names_lower = [s.lower() for s in all_sections.keys()]
-    if 'cta' not in section_names_lower:
-        rebuilt_sections.append(f'## CTA\n\n{CTA_TEMPLATE}')
-    if 'sources' not in section_names_lower:
-        sources = normalize_sources('')
-        rebuilt_sections.append(f'## Sources\n\n{sources}')
+    # At least one real URL.
+    if not re.findall(r'https?://\S+', rebuilt):
+        raise ValueError('Issue missing any source URL for Aware.')
 
-    normalized = '\n\n'.join(rebuilt_sections).strip() + '\n'
-
-    final_hits = contains_placeholder_or_meta(normalized)
+    final_hits = contains_placeholder_or_meta(rebuilt)
     if final_hits:
-        raise ValueError('Normalized issue still contains placeholder/meta content: ' + ', '.join(final_hits[:4]))
+        raise ValueError(
+            'Normalized issue still contains placeholder/meta content: '
+            + ', '.join(final_hits[:4])
+        )
 
-    # Hard-minimum section check
-    check_required_sections(normalized)
-
-    return normalized
+    return rebuilt
 
 
 def ensure_issue_contract(path: Path | None = None) -> Path:
