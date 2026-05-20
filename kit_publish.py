@@ -3,9 +3,27 @@
 
 Supports ISSUE_SLUG for one-off prepared sends such as 2026-05-13-em.
 Falls back to today's issue, then the latest issue, for the normal daily lane.
+
+Send modes
+----------
+Default (no flag):
+    Draft-safe backward-compatible path. Checks guard, calls Kit, saves record.
+    Still race-prone for concurrent public runs. Use --lock / --send-locked instead.
+
+--lock:
+    Write a pre-send lock entry (email_delivery: "sending") to state/kit_sent.json
+    and exit WITHOUT calling the Kit API. The caller must commit and push the lock
+    before running --send-locked.
+
+--send-locked:
+    Verify that the lock exists for this exact issue and has email_delivery:
+    "sending". Then call the Kit API. On success, replace the lock with the
+    real broadcast record (email_delivery: "scheduled_or_sent").
+    Refuses to proceed if the lock is absent or in any other state.
 """
 from __future__ import annotations
 
+import argparse
 import html
 import json
 import os
@@ -104,7 +122,19 @@ def parse_issue_slug(issue_slug: str) -> tuple[str, str]:
 
 
 def record_blocks_send(record: dict) -> bool:
-    return isinstance(record, dict) and (record.get("email_delivery") == "scheduled_or_sent" or record.get("mode") == "public")
+    """Return True if this sent-log record means the issue must not be sent again.
+
+    Blocks on:
+      - email_delivery: "scheduled_or_sent"  (real send completed)
+      - email_delivery: "sending"             (pre-send lock held)
+      - mode: "public"                        (legacy public record)
+    """
+    if not isinstance(record, dict):
+        return False
+    return (
+        record.get("email_delivery") in {"scheduled_or_sent", "sending"}
+        or record.get("mode") == "public"
+    )
 
 
 def public_records_for_date(sent_log: dict, issue_date: str) -> set[str]:
@@ -130,6 +160,24 @@ def enforce_public_send_guard(issue_slug: str, sent_log: dict) -> None:
     if issue_kind in {"daily", "prepared"} and sent_kinds:
         log(f"SKIP: {issue_date} already has a public Kit record ({', '.join(sorted(sent_kinds))}).")
         sys.exit(0)
+
+
+def resolve_issue_and_email() -> tuple[Path, Path, str, str, str]:
+    """Resolve the target issue and email source. Returns (issue_path, email_source, issue_slug, issue_date, issue_kind)."""
+    issue_path = find_target_issue()
+    if not issue_path or not issue_path.exists():
+        log(f"No target issue found. ISSUE_SLUG={ISSUE_SLUG_ENV!r}")
+        sys.exit(2)
+    issue_slug = issue_path.stem
+    email_source = locked_email_path_for_issue(issue_path)
+    if SEND_MODE == "public" and not email_source.exists():
+        raise FileNotFoundError(
+            f"Locked email snapshot missing. Refusing to send: {email_source.as_posix()}"
+        )
+    if not email_source.exists():
+        email_source = issue_path
+    issue_date, issue_kind = parse_issue_slug(issue_slug)
+    return issue_path, email_source, issue_slug, issue_date, issue_kind
 
 
 def parse_frontmatter(text: str) -> tuple[dict, str]:
@@ -191,7 +239,20 @@ def build_email_html(body_md: str, issue_slug: str) -> str:
     web_url = f"{SITE_BASE_URL}/{issue_slug}/"
     body_html = markdown_to_html(body_md)
     unsubscribe = "{{ unsubscribe_url }}"
-    return f"""<!doctype html><html><body style="margin:0;background:#f3f4f6;color:#111827;font-family:Arial,Helvetica,sans-serif;line-height:1.62;"><div style="max-width:680px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:28px;"><p style="font-size:13px;color:#6b7280;">Aware by Em · <a href="{web_url}">Read on the web</a></p>{body_html}<hr><p style="font-size:13px;color:#6b7280;">Sponsor ForgeCore: <a href="mailto:{SPONSOR_EMAIL}">{SPONSOR_EMAIL}</a><br>You're receiving this because you subscribed to {html.escape(NEWSLETTER_NAME)}.<br><a href="{unsubscribe}">Unsubscribe</a></p></div></body></html>"""
+    return (
+        f"""<!doctype html><html><body style="margin:0;background:#f3f4f6;color:#111827;"
+        "font-family:Arial,Helvetica,sans-serif;line-height:1.62;">"""
+        f"""<div style="max-width:680px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;"
+        "border-radius:14px;padding:28px;">"""
+        f'<p style="font-size:13px;color:#6b7280;">Aware by Em \u00b7 <a href="{web_url}">Read on the web</a></p>'
+        f"{body_html}"
+        f"<hr>"
+        f'<p style="font-size:13px;color:#6b7280;">'
+        f'Sponsor ForgeCore: <a href="mailto:{SPONSOR_EMAIL}">{SPONSOR_EMAIL}</a><br>'
+        f"You&#x27;re receiving this because you subscribed to {html.escape(NEWSLETTER_NAME)}.<br>"
+        f'<a href="{unsubscribe}">Unsubscribe</a></p>'
+        f"</div></body></html>"
+    )
 
 
 def subscriber_filter_payload() -> list[dict] | None:
@@ -226,7 +287,11 @@ def create_broadcast(subject: str, email_html: str, preview_text: str) -> tuple[
     log(f"Effective mode: {SEND_MODE}")
     response = requests.post(
         f"{API_BASE}/broadcasts",
-        headers={"X-Kit-Api-Key": API_KEY, "Content-Type": "application/json", "Accept": "application/json"},
+        headers={
+            "X-Kit-Api-Key": API_KEY,
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        },
         json=payload,
         timeout=30,
     )
@@ -237,41 +302,99 @@ def create_broadcast(subject: str, email_html: str, preview_text: str) -> tuple[
     return response.json(), send_at
 
 
-def main() -> None:
+# ---------------------------------------------------------------------------
+# --lock mode
+# ---------------------------------------------------------------------------
+
+def cmd_lock() -> None:
+    """Write a pre-send lock to state/kit_sent.json and exit. Does not call Kit.
+
+    The caller must commit and push the lock before running --send-locked.
+    If a blocking record already exists (sent or in-flight), exits with a skip.
+    """
     if not API_KEY:
         log("SKIP: KIT_API_KEY not set.")
         sys.exit(0)
-    issue_path = find_target_issue()
-    if not issue_path or not issue_path.exists():
-        log(f"No target issue found. ISSUE_SLUG={ISSUE_SLUG_ENV!r}")
-        sys.exit(2)
-    issue_slug = issue_path.stem
-    log(f"Found web issue: {issue_path}")
+
+    issue_path, email_source, issue_slug, issue_date, issue_kind = resolve_issue_and_email()
+    log(f"Locking issue: {issue_slug}")
+
     sent_log = load_sent_log()
     existing = sent_log.get(issue_slug)
     if record_blocks_send(existing):
-        log(f"Issue {issue_slug} already has a public Kit record. Skipping email.")
+        delivery = existing.get("email_delivery", "?")
+        log(f"SKIP: {issue_slug} already has a blocking record (email_delivery={delivery!r}). Not overwriting.")
         sys.exit(0)
+
     enforce_public_send_guard(issue_slug, sent_log)
-    email_source = locked_email_path_for_issue(issue_path)
-    if SEND_MODE == "public" and not email_source.exists():
-        raise FileNotFoundError(f"Locked email snapshot missing. Refusing to send: {email_source.as_posix()}")
-    if not email_source.exists():
-        email_source = issue_path
+
+    sent_log[issue_slug] = {
+        "subject": "PENDING",
+        "email_delivery": "sending",
+        "mode": SEND_MODE,
+        "requested_mode": REQUESTED_SEND_MODE,
+        "locked_at": utc_now_iso(),
+        "issue_path": issue_path.as_posix(),
+        "email_source_path": email_source.as_posix(),
+        "issue_date": issue_date,
+        "issue_slot": issue_kind,
+        "web_url": f"{SITE_BASE_URL}/{issue_slug}/",
+    }
+    save_sent_log(sent_log)
+    log(f"Pre-send lock written for {issue_slug}. Commit and push before calling --send-locked.")
+
+
+# ---------------------------------------------------------------------------
+# --send-locked mode
+# ---------------------------------------------------------------------------
+
+def cmd_send_locked() -> None:
+    """Call Kit only if the pre-send lock exists for this issue.
+
+    Refuses to proceed if:
+      - The lock entry is missing.
+      - The lock entry has any email_delivery other than "sending".
+    On success, replaces the lock with the real broadcast record.
+    """
+    if not API_KEY:
+        log("SKIP: KIT_API_KEY not set.")
+        sys.exit(0)
+
+    issue_path, email_source, issue_slug, issue_date, issue_kind = resolve_issue_and_email()
+    log(f"Found web issue: {issue_path}")
     log(f"Using email source: {email_source}")
+
+    sent_log = load_sent_log()
+    lock = sent_log.get(issue_slug)
+
+    if lock is None:
+        log(f"ERROR: No lock entry found for {issue_slug}. Run --lock and commit/push first.")
+        sys.exit(1)
+
+    delivery = lock.get("email_delivery", "")
+    if delivery == "scheduled_or_sent":
+        log(f"SKIP: {issue_slug} already has email_delivery=scheduled_or_sent. Nothing to do.")
+        sys.exit(0)
+    if delivery != "sending":
+        log(f"ERROR: Lock for {issue_slug} has unexpected email_delivery={delivery!r}. Refusing to send.")
+        sys.exit(1)
+
+    log(f"Lock confirmed for {issue_slug} (email_delivery=sending). Proceeding to Kit.")
+
     raw = email_source.read_text(encoding="utf-8")
     meta, body_md = parse_frontmatter(raw)
     subject = meta.get("title") or title_from_markdown(body_md, f"{NEWSLETTER_NAME} — {issue_slug}")
     preview = meta.get("description") or preview_from_markdown(body_md, f"{NEWSLETTER_NAME} — {issue_slug}")
+
     result, send_at = create_broadcast(subject, build_email_html(body_md, issue_slug), preview)
     broadcast = result.get("broadcast", result)
     broadcast_id = broadcast.get("id", "unknown")
     log(f"SUCCESS — broadcast_id={broadcast_id}")
-    issue_date, issue_kind = parse_issue_slug(issue_slug)
+
     sent_log[issue_slug] = {
         "broadcast_id": broadcast_id,
         "subject": subject,
-        "sent_at": datetime.now(timezone.utc).isoformat(),
+        "sent_at": utc_now_iso(),
         "mode": SEND_MODE,
         "requested_mode": REQUESTED_SEND_MODE,
         "email_delivery": "scheduled_or_sent" if send_at else "not_scheduled",
@@ -284,6 +407,98 @@ def main() -> None:
     }
     save_sent_log(sent_log)
     log(f"Recorded in {SENT_LOG}")
+
+
+# ---------------------------------------------------------------------------
+# Default (no-flag) mode — backward-compatible
+# ---------------------------------------------------------------------------
+
+def cmd_default() -> None:
+    """Original single-step send. Safe for draft mode and manual one-off use.
+    For concurrent-safe public sends, use --lock / --send-locked instead.
+    """
+    if not API_KEY:
+        log("SKIP: KIT_API_KEY not set.")
+        sys.exit(0)
+
+    issue_path = find_target_issue()
+    if not issue_path or not issue_path.exists():
+        log(f"No target issue found. ISSUE_SLUG={ISSUE_SLUG_ENV!r}")
+        sys.exit(2)
+    issue_slug = issue_path.stem
+    log(f"Found web issue: {issue_path}")
+
+    sent_log = load_sent_log()
+    existing = sent_log.get(issue_slug)
+    if record_blocks_send(existing):
+        log(f"Issue {issue_slug} already has a blocking Kit record. Skipping email.")
+        sys.exit(0)
+
+    enforce_public_send_guard(issue_slug, sent_log)
+
+    email_source = locked_email_path_for_issue(issue_path)
+    if SEND_MODE == "public" and not email_source.exists():
+        raise FileNotFoundError(
+            f"Locked email snapshot missing. Refusing to send: {email_source.as_posix()}"
+        )
+    if not email_source.exists():
+        email_source = issue_path
+    log(f"Using email source: {email_source}")
+
+    raw = email_source.read_text(encoding="utf-8")
+    meta, body_md = parse_frontmatter(raw)
+    subject = meta.get("title") or title_from_markdown(body_md, f"{NEWSLETTER_NAME} — {issue_slug}")
+    preview = meta.get("description") or preview_from_markdown(body_md, f"{NEWSLETTER_NAME} — {issue_slug}")
+
+    result, send_at = create_broadcast(subject, build_email_html(body_md, issue_slug), preview)
+    broadcast = result.get("broadcast", result)
+    broadcast_id = broadcast.get("id", "unknown")
+    log(f"SUCCESS — broadcast_id={broadcast_id}")
+
+    issue_date, issue_kind = parse_issue_slug(issue_slug)
+    sent_log[issue_slug] = {
+        "broadcast_id": broadcast_id,
+        "subject": subject,
+        "sent_at": utc_now_iso(),
+        "mode": SEND_MODE,
+        "requested_mode": REQUESTED_SEND_MODE,
+        "email_delivery": "scheduled_or_sent" if send_at else "not_scheduled",
+        "send_at": send_at,
+        "issue_path": issue_path.as_posix(),
+        "email_source_path": email_source.as_posix(),
+        "issue_date": issue_date,
+        "issue_slot": issue_kind,
+        "web_url": f"{SITE_BASE_URL}/{issue_slug}/",
+    }
+    save_sent_log(sent_log)
+    log(f"Recorded in {SENT_LOG}")
+
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Publish an Aware by Em issue to Kit.")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument(
+        "--lock",
+        action="store_true",
+        help="Write pre-send lock to state/kit_sent.json and exit. Do not call Kit.",
+    )
+    group.add_argument(
+        "--send-locked",
+        action="store_true",
+        help="Call Kit only if the pre-send lock exists. Replace lock with real record on success.",
+    )
+    args = parser.parse_args()
+
+    if args.lock:
+        cmd_lock()
+    elif args.send_locked:
+        cmd_send_locked()
+    else:
+        cmd_default()
 
 
 if __name__ == "__main__":

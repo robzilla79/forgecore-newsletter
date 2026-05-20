@@ -82,7 +82,10 @@ jobs:
           def record_blocks_send(record):
               if not isinstance(record, dict):
                   return False
-              return record.get("email_delivery") == "scheduled_or_sent" or record.get("mode") == "public"
+              return (
+                  record.get("email_delivery") in {"scheduled_or_sent", "sending"}
+                  or record.get("mode") == "public"
+              )
 
           issue_slug = os.environ.get("ISSUE_SLUG", "").strip()
           if issue_slug:
@@ -107,7 +110,7 @@ jobs:
           if not issue.exists():
               raise SystemExit(f"Prepared issue not found. Run generate first or pass issue_slug: {issue}")
           if already_sent:
-              print("Issue already sent. kit_publish.py will skip idempotently.")
+              print("Issue already sent or locked. kit_publish.py will skip idempotently.")
           elif not email.exists():
               raise SystemExit(f"Locked email snapshot not found for unsent issue. Refusing to send: {email}")
           PY
@@ -127,10 +130,28 @@ jobs:
       - name: Verify prepared issue before email
         run: python verify_publish.py
 
-      - name: Send prepared issue to Kit once
-        run: python kit_publish.py
+      - name: Write pre-send lock
+        run: python kit_publish.py --lock
 
-      - name: Commit Kit sent log
+      - name: Commit pre-send lock
+        run: |
+          git config user.name "Em (EternalMind)"
+          git config user.email "em@forgecore.co"
+          git add state/kit_sent.json
+          if git diff --staged --quiet; then
+            echo "Lock already committed or issue already blocked — skipping."
+          else
+            git commit -m "em: pre-send lock for ${ISSUE_SLUG:-${ISSUE_SLOT:-daily}}"
+            git push
+          fi
+
+      - name: Pull latest state before send
+        run: git pull --rebase origin main
+
+      - name: Send to Kit (locked)
+        run: python kit_publish.py --send-locked
+
+      - name: Commit final sent log
         if: success()
         run: |
           git config user.name "Em (EternalMind)"
