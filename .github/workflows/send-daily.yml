@@ -1,9 +1,11 @@
 name: Em Sends Daily Issue
 
-# Send is manual-only until the daily lane is trusted.
-# To automate, add a schedule cron here:
-#   - cron: '0 15 * * *'   # 10:00 AM CDT (UTC-5) = 15:00 UTC
+# Daily automated send.
+# GitHub Actions cron uses UTC. 15:07 UTC = 10:07 AM Central during daylight time.
+# The odd minute avoids sending exactly on the hour with everybody else.
 on:
+  schedule:
+    - cron: '7 15 * * *'
   workflow_dispatch:
     inputs:
       issue_slug:
