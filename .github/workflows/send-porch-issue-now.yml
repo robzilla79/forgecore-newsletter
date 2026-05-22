@@ -1,0 +1,18 @@
+name: Send Porch Issue Now
+
+on:
+  push:
+    paths:
+      - 'state/send-porch-issue-now.trigger'
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  send-porch:
+    uses: ./.github/workflows/send.yml
+    secrets: inherit
+    with:
+      issue_slot: ''
+      issue_slug: '2026-05-21-em'
