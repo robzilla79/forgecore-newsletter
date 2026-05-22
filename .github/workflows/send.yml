@@ -78,12 +78,13 @@ jobs:
         run: |
           git config user.name "Em (EternalMind)"
           git config user.email "em@forgecore.co"
-          git add content/email site/dist
+          git add content/email site/dist site/data
           if git diff --staged --quiet; then
             echo "No prepared issue assets to commit"
           else
             TARGET="${ISSUE_SLUG:-${ISSUE_SLOT:-daily}}"
             git commit -m "em: prepare issue assets for $TARGET"
+            git pull --rebase origin main
             git push
           fi
 
@@ -155,6 +156,7 @@ jobs:
             echo "Lock already committed or issue already blocked — skipping."
           else
             git commit -m "em: pre-send lock for ${ISSUE_SLUG:-${ISSUE_SLOT:-daily}} [run $GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT]"
+            git pull --rebase origin main
             git push
           fi
 
@@ -173,12 +175,9 @@ jobs:
           if git diff --staged --quiet; then
             echo "No Kit sent-log changes to commit"
           else
-            git stash push --include-untracked --message aware-kit-sent-log
-            git pull --rebase origin main
-            git stash pop
-            git add state/kit_sent.json
             TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M UTC')
             TARGET="${ISSUE_SLUG:-${ISSUE_SLOT:-daily}}"
             git commit -m "em: sent issue $TARGET to Kit $TIMESTAMP"
+            git pull --rebase origin main
             git push
           fi
