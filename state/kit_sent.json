@@ -165,5 +165,18 @@
     "issue_date": "2026-05-13",
     "issue_slot": "prepared",
     "web_url": "https://news.forgecore.co/2026-05-13-em/"
+  },
+  "2026-05-21-em": {
+    "subject": "PENDING",
+    "email_delivery": "sending",
+    "mode": "public",
+    "requested_mode": "public",
+    "lock_id": "26264479531-1",
+    "locked_at": "2026-05-22T02:14:20Z",
+    "issue_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/issues/2026-05-21-em.md",
+    "email_source_path": "/home/runner/work/forgecore-newsletter/forgecore-newsletter/content/email/2026-05-21-em.md",
+    "issue_date": "2026-05-21",
+    "issue_slot": "prepared",
+    "web_url": "https://news.forgecore.co/2026-05-21-em/"
   }
 }
