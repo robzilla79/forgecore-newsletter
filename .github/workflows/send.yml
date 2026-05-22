@@ -71,6 +71,25 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Prepare issue email and static site assets
+        run: python prepare_issue_assets.py --issue-slug "${ISSUE_SLUG}"
+
+      - name: Commit prepared issue assets
+        run: |
+          git config user.name "Em (EternalMind)"
+          git config user.email "em@forgecore.co"
+          git add content/email site/dist
+          if git diff --staged --quiet; then
+            echo "No prepared issue assets to commit"
+          else
+            TARGET="${ISSUE_SLUG:-${ISSUE_SLOT:-daily}}"
+            git commit -m "em: prepare issue assets for $TARGET"
+            git push
+          fi
+
+      - name: Pull latest prepared assets before preflight
+        run: git pull --rebase origin main
+
       - name: Confirm prepared issue exists and is not already sent or locked
         run: |
           python - <<'PY'
@@ -120,18 +139,6 @@ jobs:
               sys.exit(1)
           print("Preflight passed.")
           PY
-
-      - name: Render current prepared web output
-        run: python publish_site.py
-
-      - name: Apply AI search hardening
-        run: python ai_search_hardening.py
-
-      - name: Apply business hardening
-        run: python business_hardening.py
-
-      - name: Render lead magnet assets
-        run: python lead_magnet_hardening.py
 
       - name: Verify prepared issue before email
         run: python verify_publish.py
