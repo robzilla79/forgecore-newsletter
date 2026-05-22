@@ -3,7 +3,11 @@ name: Send Porch Issue Now
 on:
   push:
     paths:
+      - '.github/workflows/send-porch-issue-now.yml'
+      - 'content/email/2026-05-21-em.md'
+      - 'site/dist/2026-05-21-em/index.html'
       - 'state/send-porch-issue-now.trigger'
+  workflow_dispatch:
 
 permissions:
   contents: write
