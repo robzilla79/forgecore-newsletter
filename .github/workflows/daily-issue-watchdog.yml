@@ -1,0 +1,81 @@
+name: Daily Issue Watchdog
+
+on:
+  schedule:
+    # Redundant cadence guard after the primary 7:00 AM CDT daily run.
+    # Uses America/Chicago below so the issue date matches the business day.
+    - cron: '30 13 * * *'
+    - cron: '30 15 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: daily-issue-watchdog
+  cancel-in-progress: false
+
+jobs:
+  check-and-dispatch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Check for today's issue artifact
+        id: issue
+        shell: bash
+        run: |
+          set -euo pipefail
+          issue_date="$(TZ=America/Chicago date +%F)"
+          echo "issue_date=${issue_date}" >> "$GITHUB_OUTPUT"
+
+          candidates=(
+            "content/issues/${issue_date}.md"
+            "content/issues/${issue_date}-em.md"
+            "content/issues/${issue_date}-am.md"
+            "content/issues/${issue_date}-pm.md"
+          )
+
+          found="false"
+          for path in "${candidates[@]}"; do
+            if [ -s "$path" ]; then
+              echo "found=true" >> "$GITHUB_OUTPUT"
+              echo "found_path=$path" >> "$GITHUB_OUTPUT"
+              echo "[watchdog] Found issue artifact: $path"
+              found="true"
+              break
+            fi
+          done
+
+          if [ "$found" = "false" ]; then
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "found_path=" >> "$GITHUB_OUTPUT"
+            echo "[watchdog] Missing issue artifact for ${issue_date}"
+          fi
+
+      - name: Dispatch daily generator if missing
+        if: steps.issue.outputs.found != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "[watchdog] Dispatching generate.yml for missing daily issue ${ISSUE_DATE}"
+          gh workflow run generate.yml \
+            --ref main \
+            -f issue_slot='' \
+            -f force_run='true'
+        env:
+          ISSUE_DATE: ${{ steps.issue.outputs.issue_date }}
+
+      - name: Report no action needed
+        if: steps.issue.outputs.found == 'true'
+        shell: bash
+        run: |
+          echo "[watchdog] Daily issue already present: ${{ steps.issue.outputs.found_path }}"
