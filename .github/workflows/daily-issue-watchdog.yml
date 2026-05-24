@@ -63,6 +63,7 @@ jobs:
         if: steps.issue.outputs.found != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_DATE: ${{ steps.issue.outputs.issue_date }}
         shell: bash
         run: |
           set -euo pipefail
@@ -71,8 +72,6 @@ jobs:
             --ref main \
             -f issue_slot='' \
             -f force_run='true'
-        env:
-          ISSUE_DATE: ${{ steps.issue.outputs.issue_date }}
 
       - name: Report no action needed
         if: steps.issue.outputs.found == 'true'
