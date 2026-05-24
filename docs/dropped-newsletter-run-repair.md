@@ -1,8 +1,70 @@
 # Dropped Newsletter Run Repair Playbook
 
-Use this playbook when a ForgeCore AM or PM newsletter run is missed, skipped, failed, or only partially completed.
+Use this playbook when the daily Aware issue is missed, skipped, failed, or only partially completed.
 
-The goal is to let the team repair the publishing system on the fly without creating duplicate Kit emails, stale web output, or hidden manual fixes.
+The goal is to repair through the production automation path, not by manually writing source files or hiding a missed run.
+
+---
+
+## Current production path
+
+The live daily publishing path is:
+
+```text
+.github/workflows/generate-daily.yml
+→ .github/workflows/generate.yml
+→ web_research.py
+→ agent_loop.py scout / analyst / author / editor
+→ quality_gate.py
+→ publish_site.py
+→ Cloudflare Pages deploy
+→ commit generated artifacts
+```
+
+The source of truth for issue content remains:
+
+```text
+content/issues/*.md
+```
+
+The deploy target remains:
+
+```text
+site/dist/
+```
+
+---
+
+## Automatic recovery guard
+
+The redundant cadence guard is:
+
+```text
+.github/workflows/daily-issue-watchdog.yml
+```
+
+It runs after the primary daily schedule window and checks whether today's America/Chicago business-date issue artifact exists in `content/issues/`.
+
+It accepts these artifact names:
+
+```text
+content/issues/YYYY-MM-DD.md
+content/issues/YYYY-MM-DD-em.md
+content/issues/YYYY-MM-DD-am.md
+content/issues/YYYY-MM-DD-pm.md
+```
+
+If a non-empty artifact exists, the watchdog does nothing.
+
+If no non-empty artifact exists, the watchdog dispatches the shared generator:
+
+```text
+.github/workflows/generate.yml
+issue_slot: ''
+force_run: true
+```
+
+The watchdog does not write issue content directly, send Kit email directly, or bypass the generator, quality gate, render, or deploy path.
 
 ---
 
@@ -11,259 +73,157 @@ The goal is to let the team repair the publishing system on the fly without crea
 Repair the missing stage only.
 
 ```text
-If the issue was not generated: prepare it.
-If the issue was generated but email was not sent: send it.
-If neither happened: prepare and then send.
-If email already sent: do not send again.
+If today's issue was not generated: let the watchdog dispatch generate.yml, or manually run generate-daily.yml / generate.yml.
+If the issue exists but the site did not update: run the generator/render/deploy path, then verify site artifacts.
+If email/broadcast delivery is part of the current system and did not happen: verify state/kit_sent.json and Kit first; never send twice.
+If the issue already exists and the site is current: do not generate another issue.
 ```
 
 ---
 
-## Main repair workflow
+## Manual recovery path
 
-Use this workflow for recovery:
+Use this when the watchdog did not run, did not dispatch, or the business day cannot wait for the next watchdog check.
 
-```text
-.github/workflows/repair-dropped-newsletter-run.yml
-```
-
-Manual run path:
+Preferred manual path:
 
 ```text
 GitHub
 → Actions
-→ Repair Dropped Newsletter Run
+→ Em Prepares Daily Issue
 → Run workflow
+→ force_run: true
 ```
 
-Inputs:
+Alternative direct generator path:
 
 ```text
-issue_slot: am | pm
-repair_action: prepare_only | send_only | prepare_and_send
-reason: short reason for audit trail
+GitHub
+→ Actions
+→ Em Prepares the Issue
+→ Run workflow
+→ issue_slot: blank
+→ force_run: true
 ```
+
+Use the legacy AM/PM wrappers only for explicit slot testing or legacy recovery. They are no longer the scheduled production cadence.
 
 ---
 
-## Choose the right repair action
-
-### prepare_only
-
-Use when:
-
-```text
-The AM/PM issue did not generate.
-No content/issues/YYYY-MM-DD-slot.md exists.
-No content/email/YYYY-MM-DD-slot.md exists.
-The scheduled prepare workflow failed before producing a usable issue.
-```
-
-Expected result:
-
-```text
-content/issues/YYYY-MM-DD-slot.md exists.
-content/email/YYYY-MM-DD-slot.md exists.
-site/dist/ updates.
-Cloudflare deploys the web version.
-No Kit email is sent by this repair action.
-```
-
-### send_only
-
-Use when:
-
-```text
-The issue exists.
-The locked email snapshot exists.
-The web version is published or ready.
-The Kit send did not happen.
-state/kit_sent.json does not show a public record for this slot.
-```
-
-Expected result:
-
-```text
-Kit broadcast is created.
-state/kit_sent.json records the broadcast.
-No new article generation happens.
-```
-
-### prepare_and_send
-
-Use when:
-
-```text
-The slot was completely dropped.
-There is no generated issue.
-There is no sent Kit record.
-The team wants to recover both web and email in one run.
-```
-
-Expected result:
-
-```text
-Issue is generated.
-Email snapshot is locked.
-Site is rendered and verified.
-Cloudflare deploys the web version.
-Kit sends once if the send window and duplicate-send guard allow it.
-state/kit_sent.json records the send.
-```
-
----
-
-## Before running repair
+## Before manual recovery
 
 Check these first:
 
 ```text
-[ ] Which slot dropped: AM or PM?
-[ ] Did content/issues/YYYY-MM-DD-slot.md get created?
-[ ] Did content/email/YYYY-MM-DD-slot.md get created?
+[ ] Does content/issues/YYYY-MM-DD.md exist?
+[ ] Does content/issues/YYYY-MM-DD-em.md exist?
+[ ] Does any same-day AM/PM artifact exist?
+[ ] Did the Daily Issue Watchdog already dispatch generate.yml?
+[ ] Is a generate.yml run currently in progress?
 [ ] Did site/dist/ update?
 [ ] Did Cloudflare deploy?
-[ ] Did state/kit_sent.json already record a send?
-[ ] Did Kit already create the broadcast?
+[ ] If email/broadcast is expected, does state/kit_sent.json already record a send?
+[ ] If email/broadcast is expected, did Kit already create or send a broadcast?
 ```
 
-Never run a send repair if Kit or `state/kit_sent.json` already shows a public send for the slot.
+Never create a manual issue file to paper over the missed run unless Rob explicitly chooses emergency editorial rescue over automation repair.
+
+Never run a send repair if Kit or `state/kit_sent.json` already shows a public send for the date/slot.
 
 ---
 
-## After running repair
+## After recovery
 
 Verify:
 
 ```text
-[ ] GitHub Actions repair workflow completed successfully.
+[ ] GitHub Actions generator or watchdog workflow completed successfully.
 [ ] Latest issue exists in content/issues/.
-[ ] Locked email snapshot exists in content/email/ if email was sent.
 [ ] Homepage links the latest issue.
 [ ] Latest article route exists.
 [ ] RSS includes the latest issue.
 [ ] Sitemap includes the latest issue.
 [ ] Cloudflare deployment succeeded.
-[ ] Kit broadcast exists if send was expected.
-[ ] state/kit_sent.json was updated if send was expected.
-[ ] No duplicate email was sent.
+[ ] If email/broadcast is expected, Kit broadcast exists.
+[ ] If email/broadcast is expected, state/kit_sent.json was updated.
+[ ] No duplicate issue or email was produced.
 ```
+
+Do not call the issue live until the site route or deploy evidence confirms it.
 
 ---
 
 ## Duplicate-send protection
 
-The send workflow and `kit_publish.py` are designed to block duplicate public emails by date and slot.
+If public email/broadcast sending is enabled in the current system, duplicate-send protection is mandatory.
 
-The guard checks:
+The guard must check:
 
 ```text
-Issue filename is slot-specific: YYYY-MM-DD-am.md or YYYY-MM-DD-pm.md.
-ISSUE_SLOT matches the filename slot.
-state/kit_sent.json does not already record a public send for the slot.
-Only one AM and one PM public send are allowed per issue date.
+Issue filename/date matches the intended send date.
+state/kit_sent.json does not already record a public send for the date/slot.
+Only one public send is allowed for the same date/slot unless Rob explicitly approves an incident resend.
 ```
 
 Do not delete or edit `state/kit_sent.json` just to force another send.
 
-If a resend is truly needed, treat it as an incident and get Rozilla approval.
+If a resend is truly needed, treat it as an incident and get Rob approval.
 
 ---
 
 ## Common repair scenarios
 
-### Scenario 1: AM prepare failed
+### Scenario 1: Daily issue missing after schedule window
+
+Expected automatic behavior:
 
 ```text
-issue_slot: am
-repair_action: prepare_only
-reason: AM prepare failed before issue creation
+Daily Issue Watchdog runs.
+No non-empty same-day issue artifact is found.
+Watchdog dispatches generate.yml with force_run: true.
+Generator produces issue, renders site, deploys, and commits artifacts.
 ```
 
-Then verify the web version. If email also missed later, run `send_only` after confirming no send record exists.
-
-### Scenario 2: AM issue exists, but Kit did not send
+Manual fallback:
 
 ```text
-issue_slot: am
-repair_action: send_only
-reason: AM Kit send failed after prepare succeeded
+Run Em Prepares Daily Issue with force_run: true.
 ```
 
-Use only if `state/kit_sent.json` does not already show a public AM send.
+### Scenario 2: Watchdog found an issue, but site is stale
 
-### Scenario 3: PM slot completely dropped
+Do not write a new issue.
 
-```text
-issue_slot: pm
-repair_action: prepare_and_send
-reason: PM schedule did not run
-```
-
-Use when both generation and send are missing.
-
-### Scenario 4: Site updated but Cloudflare did not deploy
-
-Do not use the Kit repair workflow first.
-
-Use the site deploy workflow:
+Run the generator/render/deploy path or the relevant site deploy path, then verify:
 
 ```text
-.github/workflows/deploy-site.yml
-```
-
-Then verify:
-
-```text
-news.forgecore.co
+homepage
 latest article route
 RSS
 sitemap
+Cloudflare deployment
 ```
 
-### Scenario 5: Email already sent but article has a typo
+### Scenario 3: Generator failed before producing an issue
 
-Do not resend.
+Do not patch around it with a hand-written issue by default.
 
-Fix the web article through GitHub, re-render, deploy, and optionally correct the Kit public post if appropriate.
+Inspect the failed run artifacts and logs first. Fix the generator, research, model, quality gate, render, or deploy failure that blocked production. Then rerun the daily generator with `force_run: true`.
+
+### Scenario 4: Email/broadcast delivery failed after issue generation
+
+First verify whether email sending is active in the current workflow.
+
+If it is active, check `state/kit_sent.json` and Kit before any resend. If no send exists, run the smallest send-only recovery path available in the current repo. If no send-only workflow exists, treat that as an incident and add one rather than hand-sending from memory.
 
 ---
 
-## Team escalation rules
+## Removed workflow warning
 
-Escalate to Rozilla before action if:
-
-```text
-A duplicate public email may have gone out.
-A sponsor or affiliate issue was sent incorrectly.
-The repair would send outside the normal AM/PM cadence.
-state/kit_sent.json conflicts with what the Kit dashboard shows.
-The team is considering deleting send records.
-The repair involves an erratum or apology email.
-```
-
-The team may repair without waiting when:
+Do not use this removed workflow:
 
 ```text
-The scheduled prepare workflow failed and no email has sent.
-The scheduled send failed and the slot has no public send record.
-The Cloudflare deploy failed but the generated site output is valid.
-A workflow was cancelled or skipped before subscriber impact.
+.github/workflows/repair-dropped-newsletter-run.yml
 ```
 
----
-
-## Definition of done
-
-A dropped run is fully repaired when:
-
-```text
-The intended AM/PM issue exists.
-The site reflects the issue.
-Cloudflare served the updated site.
-The intended email was either sent once or intentionally skipped.
-state/kit_sent.json matches Kit send reality.
-No duplicate email was sent.
-The failure reason is understood.
-A prevention fix is identified if the same failure can recur.
-```
+It is a disabled noop retained only as an audit marker. The active recovery path is the daily generator plus `daily-issue-watchdog.yml`.
