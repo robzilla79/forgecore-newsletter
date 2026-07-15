@@ -1,15 +1,15 @@
 {
-  "generated_at": "2026-07-15T08:22:27Z",
-  "generated_at_central": "2026-07-15T03:22:27-05:00",
+  "generated_at": "2026-07-15T13:52:26Z",
+  "generated_at_central": "2026-07-15T08:52:26-05:00",
   "public_safe": true,
   "overall": {
     "status": "repair_needed",
     "repair_needed": true,
     "risks": [
+      "AM status is needs_prepare_repair.",
       "Rendered site output does not fully reflect the latest issue."
     ],
     "waiting": [
-      "AM status is pending_prepare.",
       "PM status is pending_prepare."
     ],
     "current_required_action": "Autonomous recovery should act on the next scheduled check; use manual repair only if urgent."
@@ -25,9 +25,9 @@
     "kit_sent_record_exists": false,
     "broadcast_id_present": false,
     "web_url": "https://news.forgecore.co/2026-07-15-am/",
-    "status": "pending_prepare",
-    "recommended_repair_action": "no_action",
-    "next_expected_action": "Prepare window opens at 7:45 AM CT.",
+    "status": "needs_prepare_repair",
+    "recommended_repair_action": "prepare_only",
+    "next_expected_action": "Prepare window has passed, but send-repair window has not. Prepare the issue without forcing email.",
     "schedule": {
       "prepare_due": "7:45 AM CT",
       "send_due": "10:07 AM CT",
