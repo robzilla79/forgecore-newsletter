@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-07-16T19:19:57Z",
-  "generated_at_central": "2026-07-16T14:19:57-05:00",
+  "generated_at": "2026-07-17T03:14:26Z",
+  "generated_at_central": "2026-07-16T22:14:26-05:00",
   "public_safe": true,
   "overall": {
     "status": "repair_needed",
@@ -48,8 +48,8 @@
     "broadcast_id_present": false,
     "web_url": "https://news.forgecore.co/2026-07-16-pm/",
     "status": "needs_prepare_repair",
-    "recommended_repair_action": "prepare_only",
-    "next_expected_action": "Prepare window has passed, but send-repair window has not. Prepare the issue without forcing email.",
+    "recommended_repair_action": "prepare_and_send",
+    "next_expected_action": "Issue is missing after send-repair window. Autonomous recovery may prepare and send through guarded workflow.",
     "schedule": {
       "prepare_due": "1:45 PM CT",
       "send_due": "4:07 PM CT",
