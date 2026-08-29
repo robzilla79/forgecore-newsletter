@@ -1,6 +1,6 @@
 # ForgeCore Operator Review — 2026-08-28
 
-Generated: 2026-08-28 07:59:00 UTC
+Generated: 2026-08-29 04:49:28 UTC
 
 ## Executive Status
 
@@ -43,9 +43,9 @@ Generated: 2026-08-28 07:59:00 UTC
 ## Quality / Critic / Affiliate / Monetization / Kit Artifacts
 
 - Quality gate for latest issue: passed; errors=0, warnings=0
-- Critic for latest issue: score=10.0; passed=True; verdict=needs_revision; status=attention; weak=none
+- Critic for latest issue: score=8.0; passed=True; verdict=publishable; status=attention; weak=none
 - Affiliate linker latest: no change; activated=0 (none)
-- Monetization guard latest: passed; errors=0, warnings=1
+- Monetization guard latest: passed; errors=0, warnings=0
 - Kit latest: no entry for `2026-05-24-em`
 
 ## Duplicate Topic Watchlist
