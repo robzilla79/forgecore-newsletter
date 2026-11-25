@@ -1,6 +1,6 @@
-# ForgeCore Operator Review — 2026-11-24
+# ForgeCore Operator Review — 2026-11-25
 
-Generated: 2026-11-24 07:37:57 UTC
+Generated: 2026-11-25 06:06:14 UTC
 
 ## Executive Status
 
